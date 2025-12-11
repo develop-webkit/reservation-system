@@ -1,0 +1,282 @@
+/* src/index.css */
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+:root {
+  --sidebar-width: 250px;
+  --topbar-height: 50px;
+  --sidebar-bg-color: #0b1a2d; /* A dark blue close to the image */
+}
+
+/* ------------------------------------
+   1. Sidebar Styling
+   ------------------------------------ */
+#sidebar-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background-color: var(--sidebar-bg-color);
+  color: white;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+}
+
+.components {
+  padding: 15px 0;
+}
+
+.components li {
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-link {
+  padding: 8px 15px;
+  color: #c9d6e4;
+  display: block;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.sidebar-link:hover, .components li.active-link .sidebar-link {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-left: 5px solid #007bff; /* Highlight border */
+  padding-left: 10px; /* Adjust padding due to border */
+}
+
+.sidebar-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* ------------------------------------
+   2. TopBar Styling
+   ------------------------------------ */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    height: var(--topbar-height);
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 999;
+}
+
+.topbar .icon-group i {
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #555;
+}
+
+/* ------------------------------------
+   3. Main Content Wrapper
+   ------------------------------------ */
+#content-wrapper {
+    margin-left: var(--sidebar-width);
+    padding-top: var(--topbar-height); /* Space for the fixed topbar */
+    min-height: 100vh;
+    background-color: #f8f9fa; /* Light background for main area */
+    width: 100%;
+}
+
+/* ------------------------------------
+   5. Login Page Styling
+   ------------------------------------ */
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Gradient based on the image */
+    background: linear-gradient(135deg, #4c66ff 0%, #a453e0 100%);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 380px; /* Standard login card width */
+    background-color: white;
+    border-radius: 12px;
+}
+
+.login-logo {
+    width: 60px; /* Sizing the logo */
+}
+
+/* Bootstrap Icon adjustments for the form */
+.input-group-text {
+    background-color: #f8f9fa; /* Light grey background */
+    border-right: none;
+}
+.form-control {
+    border-left: none;
+}
+
+
+/* ------------------------------------
+   6. Booking Chart Styling
+   ------------------------------------ */
+.booking-chart-container {
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.chart-grid-wrapper {
+    overflow-x: auto; /* Allows horizontal scrolling of the chart area */
+    overflow-y: hidden;
+}
+
+/* Base Grid Row Style */
+.chart-row {
+    display: grid;
+    /* Grid gap is 1px for the day separators */
+    grid-gap: 1px;
+    background-color: #dee2e6; /* Light grey for grid lines */
+    align-items: center;
+}
+
+/* Room/Date Header Styling */
+.chart-date-header {
+    background-color: #f8f9fa; /* Lighter header background */
+    position: sticky; /* Sticky header when scrolling down */
+    top: 0;
+    z-index: 50;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.date-cell {
+    height: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: white;
+}
+
+.date-cell.weekend {
+    background-color: #fff3cd; /* Light yellow background for weekends */
+}
+
+/* Room Type Grouping Header */
+.room-type-header {
+    background-color: #e9ecef;
+    font-weight: bold;
+    cursor: pointer;
+    padding-left: 10px !important;
+    grid-column: 1 / -1; /* Spans the entire width */
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
+.room-type-header.collapsed {
+    background-color: #e0e0e0;
+}
+
+
+/* Individual Room Row Styling */
+.room-data-row {
+    height: 40px;
+    background-color: white; /* Room rows themselves are white */
+}
+
+.room-name-cell {
+    background-color: #f8f9fa; /* Separates the room column visually */
+    border-right: 1px solid #dee2e6;
+    height: 100%;
+}
+
+/* Reservation Bar Styling */
+.reservation-bar {
+    z-index: 10;
+    height: 70%;
+    border-radius: 3px;
+    cursor: pointer;
+    overflow: hidden;
+    line-height: 1.5;
+    white-space: nowrap;
+    /* Custom colors from image */
+    &.bg-success { background-color: #28a745 !important; }
+    &.bg-info { background-color: #17a2b8 !important; }
+    &.bg-warning { background-color: #ffc107 !important; color: #333 !important;} /* Warning bar is dark text */
+    &.bg-danger { background-color: #dc3545 !important; }
+}
+
+/* Placeholder for the floating hover/context menus */
+.hover-info-popup, .context-menu {
+    position: absolute;
+    z-index: 2000;
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Update base link hover/active styles */
+.sidebar-link {
+    /* ... existing styles ... */
+    cursor: pointer; /* Ensure non-link parents are clickable */
+}
+
+/* Base Active/Hover Style for Parent and Child */
+.sidebar-link:hover, 
+.components li.active-link .sidebar-link,
+.components li.active-link-sub .sidebar-link,
+.sidebar-link.active-link { /* Style for parent when clicked */
+    color: white !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-left: 3px solid #007bff; 
+    padding-left: 12px; 
+}
+
+/* Sub-Menu Styles */
+.sub-menu {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0;
+    margin-left: 0;
+    list-style: none;
+}
+.sub-menu .sidebar-link.sub-link {
+    padding-left: 30px; /* Indent sub-items */
+    font-size: 0.95rem;
+    color: #c9d6e4;
+    border-left: none !important;
+}
+
+.sub-menu li.active-link-sub .sidebar-link.sub-link {
+    font-weight: bold;
+    color: white !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Accordion Chevron Animation */
+.chevron-icon {
+    transition: transform 0.3s ease;
+}
+
+.chevron-icon.open {
+    transform: rotate(90deg);
+}
+
+/* Custom CSS for the 'collapse' class for accordion functionality */
+.collapse:not(.show) {
+    display: none;
+}
+.collapse.show {
+    display: block;
+}
