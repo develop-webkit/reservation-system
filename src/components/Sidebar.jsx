@@ -130,16 +130,6 @@ const Sidebar = () => {
                 {/* ... (rest of the component) ... */}
             </ul>
 
-            {/* Footer Text */}
-            <div className="mt-3">
-                <p className="sidebar-footer-group">RMS Billing</p>
-                <div className="sidebar-footer text-muted small p-2">
-                    Mount Morgan Space Solutions<br/>
-                    RMS Client No: 22063<br/>
-                    User: HGManager<br/>
-                    Live
-                </div>
-            </div>
         </div>
     );
 };

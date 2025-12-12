@@ -280,3 +280,94 @@
 .collapse.show {
     display: block;
 }
+
+/* ------------------------------------
+   7. Reservation Tooltip Styling (Hover Popup)
+   ------------------------------------ */
+.reservation-tooltip-popup {
+    /* Based on the image: Dark blue header, black/dark background for body */
+    background-color: #2c3e50; /* Dark background for the body */
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    width: 300px;
+    z-index: 5000; /* Ensure it's on top of everything */
+    pointer-events: none; /* Crucial: Allows clicking through to elements underneath */
+    transition: opacity 0.2s ease-in-out;
+}
+
+.reservation-tooltip-popup .tooltip-header {
+    background-color: #1f3044; /* Slightly darker header */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reservation-tooltip-popup .tooltip-body {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.reservation-tooltip-popup .tooltip-detail {
+    margin-bottom: 2px;
+}
+
+/* Highlighted green/text-success color for Arrive/Depart/Status */
+.reservation-tooltip-popup .tooltip-detail .text-success {
+    color: #4CAF50 !important; /* Custom green that matches the image */
+}
+
+/* ------------------------------------
+   8. User Dropdown Styling
+   ------------------------------------ */
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.user-dropdown .dropdown-menu {
+    position: absolute;
+    top: 100%; /* Position right below the button */
+    right: 0;
+    min-width: 280px; /* Width based on the image */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: none;
+    padding: 0;
+    border-radius: 4px;
+    z-index: 1050; /* Above TopBar elements */
+}
+
+.user-dropdown .dropdown-header {
+    background-color: #0b1a2d; /* Dark blue background from sidebar */
+    color: white;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.user-dropdown .dropdown-item {
+    padding: 10px 15px;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.user-dropdown .dropdown-item:hover {
+    background-color: #f1f1f1;
+    color: #007bff;
+}
+
+
+/* Add to src/index.css */
+
+.profile-nav li {
+    cursor: pointer;
+    margin-bottom: 3px;
+    transition: background-color 0.2s;
+}
+
+.profile-nav li:hover:not(.active-profile-tab) {
+    background-color: #e9ecef; /* Light hover effect */
+}
+
+/* Ensure 'cursor-pointer' is defined if not using a utility library */
+.cursor-pointer {
+    cursor: pointer;
+}

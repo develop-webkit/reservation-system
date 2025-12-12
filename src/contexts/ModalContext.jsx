@@ -1,5 +1,7 @@
 // src/contexts/ModalContext.jsx
 import React, { createContext, useState, useContext, useCallback } from 'react';
+// 🚨 FIX: Import the Modal component from its location
+import Modal from '../components/Modal'; 
 
 const ModalContext = createContext();
 
@@ -36,7 +38,7 @@ export const ModalProvider = ({ children }) => {
     return (
         <ModalContext.Provider value={value}>
             {children}
-            <modal 
+            <Modal // This now refers to the imported Modal component
                 isOpen={modal.isOpen}
                 title={modal.title}
                 onClose={closeModal}
@@ -44,7 +46,7 @@ export const ModalProvider = ({ children }) => {
                 isFullWidth={modal.options.isFullWidth}
             >
                 {modal.content}
-            </modal>
+            </Modal>
         </ModalContext.Provider>
     );
 };

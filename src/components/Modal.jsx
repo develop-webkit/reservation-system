@@ -8,27 +8,44 @@ const Modal = ({ isOpen, title, onClose, children, size = 'lg', isFullWidth = fa
     const modalClass = isOpen ? 'modal fade show d-block' : 'modal fade';
     
     const dialogClass = isFullWidth 
-        ? 'modal-dialog modal-fullscreen' 
+        ? 'modal-dialog modal-xl' 
         : `modal-dialog modal-${size}`;
     
     if (!isOpen) return null; // Only render when open
 
     return (
         <>
-            {/* The Modal Backdrop */}
-            <div className="modal-backdrop fade show"></div> 
+            {/* The Modal Backdrop: Needs fixed positioning and high z-index */}
+            <div 
+                className="modal-backdrop fade show"
+                // ADDED CSS: Ensures backdrop covers the entire screen
+                style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 1040 }} 
+            ></div> 
 
-            {/* The Modal */}
+            {/* The Modal container: Needs fixed positioning and even higher z-index */}
             <div 
                 className={modalClass} 
                 tabIndex="-1" 
                 role="dialog" 
-                style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} // Darkened background
+                // CRITICAL ADDITIONS: Position fixed, align to center, and high z-index
+                style={{ 
+                    position: 'fixed', // Position must be fixed to float
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0,
+                    zIndex: 1050, // Higher than backdrop
+                    overflowX: 'hidden', 
+                    overflowY: 'auto',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)' // Darkened background
+                }} 
                 onClick={onClose} // Close on backdrop click
             >
                 <div 
                     className={dialogClass} 
                     role="document" 
+                    // ADDED STYLE: Center the dialog vertically (optional, but standard for modals)
+                    style={{ margin: '1.75rem auto' }}
                     onClick={e => e.stopPropagation()} // Prevent closing when clicking inside
                 >
                     <div className="modal-content">
@@ -43,7 +60,7 @@ const Modal = ({ isOpen, title, onClose, children, size = 'lg', isFullWidth = fa
                             {children}
                         </div>
                         
-                        {/* Optional Modal Footer (Can be added here if needed for consistent buttons) */}
+                        {/* Optional Modal Footer */}
                     </div>
                 </div>
             </div>

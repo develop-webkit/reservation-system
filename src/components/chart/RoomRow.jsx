@@ -1,13 +1,13 @@
 // src/components/chart/RoomRow.jsx
 import React from 'react';
 
-const RoomRow = ({ room, chartDays, ROOM_COL_WIDTH }) => {
+// Accept the new onContextMenu handler
+const RoomRow = ({ room, chartDays, ROOM_COL_WIDTH, onMouseEnter, onMouseLeave, onContextMenu }) => {
+    
+    // ... existing CSS variables definition ...
 
     const reservationBars = room.reservations.map(res => {
-        // Calculate the starting column (start - 1 to be 1-indexed for CSS Grid)
-        // Span is calculated by end - start + 1
-        const startColumn = res.start + 1;
-        const span = res.end - res.start + 1;
+        // ... calculation logic ...
 
         return (
             <div 
@@ -16,6 +16,10 @@ const RoomRow = ({ room, chartDays, ROOM_COL_WIDTH }) => {
                 style={{ 
                     gridColumn: `${startColumn} / span ${span}`,
                 }}
+                onMouseEnter={(e) => onMouseEnter(e, res, room)} 
+                onMouseLeave={onMouseLeave}
+                // CRITICAL: Reservation-specific context menu
+                onContextMenu={(e) => onContextMenu(e, 'reservation', res)} 
             >
                 {res.client}
             </div>
@@ -24,17 +28,20 @@ const RoomRow = ({ room, chartDays, ROOM_COL_WIDTH }) => {
 
     return (
         <div 
-            className="chart-row room-data-row border-bottom"
-            style={{ 
-                gridTemplateColumns: `${ROOM_COL_WIDTH} repeat(${chartDays}, 1fr)` 
-            }}
+            className="chart-row-grid"
+            // CRITICAL: Room-specific context menu (if right-clicking empty space)
+            onContextMenu={(e) => onContextMenu(e, 'room', room)} 
+            style={{ gridTemplateColumns: `...` }} 
         >
-            <div className="room-name-cell fw-bold small p-2 text-dark">
-                {room.name}
+            {/* 1. Room Label Column */}
+            <div className="room-label" style={{ width: ROOM_COL_WIDTH }}>
+                <span className="fw-bold">{room.name}</span>
             </div>
             
-            {reservationBars}
-            {/* Context menu trigger (for right-click menu) would be here */}
+            {/* 2. Reservation Bars Column */}
+            <div className="reservation-track">
+                {reservationBars}
+            </div>
         </div>
     );
 };

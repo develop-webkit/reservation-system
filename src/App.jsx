@@ -11,31 +11,32 @@ import Reservations from './pages/Reservations';
 import BookingChart from './pages/BookingChart';
 
 
-const MainLayout = ({ children }) => (
-    <div className="d-flex" id="wrapper">
-      <Sidebar />
-      <div id="content-wrapper">
-        <TopBar />
-        <div className="container-fluid p-4">
-          {children}
-        </div>
-      </div>
-    </div>
-);
-
-
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // <-- Login state
+
+  const handleLogout = () => {
+      setIsAuthenticated(false);
+  }
 
   // Function to handle login success
   const handleLogin = (status) => {
       setIsAuthenticated(status);
   }
 
+  const MainLayout = ({ children }) => (
+    <div className="d-flex" id="wrapper">
+      <Sidebar />
+      <div id="content-wrapper">
+        <TopBar onLogout={handleLogout} /> {/* <-- Pass handleLogout here */}
+        <div className="container-fluid p-4">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+
   // Function to handle logout (optional, but good practice)
-  const handleLogout = () => {
-      setIsAuthenticated(false);
-  }
+
 
   return (
     <Routes>
