@@ -1,5 +1,27 @@
 /* src/index.css */
-@import 'bootstrap-icons/font/bootstrap-icons.css';
+/* src/index.css */
+
+/* Simple CSS Reset for consistent cross-browser display */
+html, body, #root {
+  height: 100%; /* Important for full-height AntD layout */
+  margin: 0;    /* Removes default browser margins */
+  padding: 0;   /* Removes default browser padding */
+}
+
+/* Ensure all elements inherit box-sizing for predictable layout */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Optional: Set the default Ant Design font */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  line-height: 1.5;
+  background-color: #f0f2f5; /* Matches AntD default background */
+}
+
 
 :root {
   --sidebar-width: 250px;

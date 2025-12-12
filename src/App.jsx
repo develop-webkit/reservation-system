@@ -1,64 +1,64 @@
-// src/App.jsx
-import React, { useState } from 'react'; // <-- Import useState
-import { Routes, Route } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import TopBar from './components/TopBar';
+// src/App.jsx 
+import React from 'react'; 
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Layout } from 'antd'; 
+import AntdSidebar from './components/AntdSidebar';
+import AntdTopBar from './components/AntdTopBar';
+import useAuthStore from './store/authStore'; 
 
 // Import all pages
-import Login from './pages/Login'; // <-- Import Login
+import Login from './pages/Login'; 
 import Dashboard from './pages/Dashboard';
 import Reservations from './pages/Reservations'; 
 import BookingChart from './pages/BookingChart';
 
+const { Header, Sider, Content } = Layout; 
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // <-- Login state
-
-  const handleLogout = () => {
-      setIsAuthenticated(false);
-  }
-
-  // Function to handle login success
-  const handleLogin = (status) => {
-      setIsAuthenticated(status);
-  }
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const handleLogout = useAuthStore(state => state.logout);
 
   const MainLayout = ({ children }) => (
-    <div className="d-flex" id="wrapper">
-      <Sidebar />
-      <div id="content-wrapper">
-        <TopBar onLogout={handleLogout} /> {/* <-- Pass handleLogout here */}
-        <div className="container-fluid p-4">
-          {children}
-        </div>
-      </div>
-    </div>
+    <Layout style={{ minHeight: '100vh' }}>
+      <Sider width={250} theme="dark">
+        <AntdSidebar /> 
+      </Sider>
+      
+      <Layout>
+        <Header style={{ padding: 0, background: '#fff', height: 50, lineHeight: '50px' }}>
+          <AntdTopBar onLogout={handleLogout} /> 
+        </Header>
+        
+        {/* FIX APPLIED HERE: Margin is set to '0' */}
+        <Content style={{ margin: '0', overflow: 'initial', background: '#f0f2f5' }}>
+          {/* We may need to adjust padding in the inner div if desired, but 
+              setting margin: 0 removes the gap around the content area. */}
+          <div style={{ padding: 10, minHeight: 'calc(100vh - 50px)', background: '#fff' }}>
+            {children}
+          </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
-
-  // Function to handle logout (optional, but good practice)
-
 
   return (
     <Routes>
-      <Route path="/login" element={<Login onLogin={handleLogin} />} />
+      <Route path="/login" element={<Login />} /> 
       
-      {/* Protected Routes - Render MainLayout only if authenticated */}
       <Route 
         path="*" 
         element={
           isAuthenticated ? (
             <MainLayout>
               <Routes>
-                {/* Nested Routes for the main application */}
                 <Route path="/" element={<Dashboard />} /> 
                 <Route path="/reservations" element={<Reservations />} />
-                <Route path="/charts/bookingchart" element={<BookingChart />} /> {/* <-- Add this route */}
-                <Route path="*" element={<h1 className="text-center mt-5">404 - Page Not Found</h1>} />
+                <Route path="/charts/bookingchart" element={<BookingChart />} /> 
+                <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Page Not Found</h1>} />
               </Routes>
             </MainLayout>
           ) : (
-            // Redirect unauthenticated users to login page
-            <Login onLogin={handleLogin} />
+            <Navigate to="/login" replace />
           )
         }
       />

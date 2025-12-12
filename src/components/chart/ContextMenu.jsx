@@ -1,48 +1,61 @@
 // src/components/chart/ContextMenu.jsx
 import React from 'react';
+import { Menu, Dropdown } from 'antd'; // Ant Design components
+import { PlusOutlined, EditOutlined, RetweetOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
-// ContextMenu takes coordinates (x, y) for positioning and the list of actions.
+// Mapping icons for clarity, assuming actions have a 'label' property
+const getIcon = (label) => {
+    if (label.includes('Add')) return <PlusOutlined />;
+    if (label.includes('Edit')) return <EditOutlined />;
+    if (label.includes('Change Status') || label.includes('Unpack')) return <RetweetOutlined />;
+    if (label.includes('Out of')) return <CloseCircleOutlined />;
+    return null;
+};
+
 const ContextMenu = ({ x, y, actions, onClose }) => {
-    
-    // We use inline styles for positioning the menu absolutely in the viewport.
-    const menuStyle = {
-        position: 'fixed', // Key: Fixes the menu relative to the viewport.
-        top: `${y}px`,      // Places the menu vertically at the cursor position.
-        left: `${x}px`,     // Places the menu horizontally at the cursor position.
-        zIndex: 5500,       // Ensures the menu appears above everything else (Modals are 5000/5100).
-    };
 
+    // --- Prepare Ant Design Menu Items ---
+    const menuItems = actions.map((action, index) => ({
+        key: action.label,
+        label: action.label,
+        icon: getIcon(action.label),
+        onClick: (info) => {
+            // Execute the action's handler and then close the menu
+            action.handler(); 
+            onClose();
+        },
+        // We can use a custom className if we need to style this menu item uniquely
+        className: action.label.includes('Add Reservation') ? 'context-menu-primary' : '', 
+    }));
+    
+    // We need a wrapper to anchor the AntD Dropdown at the specific (x, y) coordinates.
+    // AntD Dropdown uses a popover model, which is easier to position than custom HTML.
+    
     return (
-        // The main container with fixed position.
-        // We use onBlur and onMouseLeave for redundancy to ensure the menu closes easily.
-        <div 
-            className="context-menu dropdown-menu show shadow" 
-            style={menuStyle} 
-            onBlur={onClose}
-            onMouseLeave={onClose}
-            tabIndex="-1" // Makes the div focusable so onBlur works.
+        <Dropdown 
+            // The overlay is the Ant Design Menu structure
+            menu={{ items: menuItems }}
+            // We use custom visible control since we control it via parent state (x, y)
+            open={true} 
+            // The AntD Dropdown will automatically position itself relative to the wrapper
+            placement="bottomLeft" 
+            trigger={['contextMenu']} // Use contextMenu trigger
         >
-            {/* Map through the array of actions (e.g., 'Add Reservation', 'Quick Quote') */}
-            {actions.map((action, index) => (
-                <button 
-                    key={index}
-                    className="dropdown-item" 
-                    type="button" 
-                    onClick={() => {
-                        action.handler(); // Execute the specific function for this action.
-                        onClose();        // Immediately close the menu after the click.
-                    }}
-                >
-                    {action.label}
-                </button>
-            ))}
-            
-            {/* Separate the 'Close Menu' option with a divider if needed */}
-            <hr className="dropdown-divider" />
-            <button className="dropdown-item" type="button" onClick={onClose}>
-                Close Menu
-            </button>
-        </div>
+            {/* This invisible div acts as the anchor point for the dropdown. 
+                Its position is fixed to the click coordinates (x, y). 
+            */}
+            <div 
+                style={{
+                    position: 'fixed',
+                    left: x,
+                    top: y,
+                    zIndex: 1000, // Ensure it's above the chart
+                    width: 1, // Minimal size for the anchor
+                    height: 1, 
+                    pointerEvents: 'none', // Allow clicks to pass through the anchor
+                }}
+            />
+        </Dropdown>
     );
 };
 

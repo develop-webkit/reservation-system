@@ -1,98 +1,125 @@
-// src/pages/Login.jsx
-import React, { useState } from 'react';
+// src/pages/Login.jsx (UPDATED for Ant Design and React Hook Form)
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Form, Input, Button, Card, Typography, Space, message } from 'antd'; 
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { useForm, Controller } from 'react-hook-form'; 
+import useAuthStore from '../store/authStore'; // <-- NEW IMPORT: Zustand Store
 
-// Assuming the logo is available for use
-import RmsLogo from '../assets/logo.png'; 
+const { Title, Text } = Typography;
 
-const Login = ({ onLogin }) => {
-  const [username, setUsername] = useState('HGManager');
-  const [password, setPassword] = useState('password');
-  const navigate = useNavigate();
+// We no longer need the 'onLogin' prop, as state is managed globally by Zustand.
+const Login = () => { 
+    const navigate = useNavigate();
+    // Get the login action from the store
+    const login = useAuthStore(state => state.login); // <-- NEW: Use Zustand action
+    
+    // --- React Hook Form Setup ---
+    const { 
+        control, 
+        handleSubmit, 
+        formState: { errors, isSubmitting } 
+    } = useForm({
+        defaultValues: {
+            username: 'HGManager',
+            password: '1234',
+        }
+    });
+    // ----------------------------
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Simple mock authentication for now
-    if (username === 'HGManager' && password === 'password') {
-      // In a real app, you would verify credentials and get an auth token
-      onLogin(true); 
-      navigate('/'); // Redirect to Dashboard on success
-    } else {
-      alert('Invalid credentials. Use HGManager/password.');
-    }
-  };
+    const onSubmit = async (data) => {
+        // Mock authentication delay
+        await new Promise(resolve => setTimeout(resolve, 1000)); 
 
-  return (
-    <div className="login-wrapper">
-      <div className="login-card shadow p-4">
-        <div className="text-center mb-4">
-          <img src={RmsLogo} alt="RMS Logo" className="login-logo mb-3" />
-          <h2 className="h4 text-primary">RMS</h2>
+        if (data.username === 'HGManager' && data.password === '1234') {
+            message.success('Login Successful!');
+            login({ username: data.username }); // <-- NEW: Call the Zustand login action
+            navigate('/'); // Redirect to Dashboard
+        } else {
+            message.error('Invalid Credentials.');
+            // We don't need to explicitly call onLogin(false) anymore, 
+            // the state remains logged out.
+        }
+    };
+
+    return (
+        // ... (rest of the component is the same) ...
+        <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            minHeight: '100vh', 
+            backgroundColor: '#f0f2f5' 
+        }}>
+            <Card 
+                title={<Title level={3} style={{ textAlign: 'center' }}>RMS System Login</Title>}
+                bordered={false}
+                style={{ width: 400, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
+            >
+                <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 24 }}>
+                    Enter your credentials to access the Booking Chart.
+                </Text>
+
+                <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
+                    {/* ... (Username Controller) ... */}
+                    <Controller
+                        name="username"
+                        control={control}
+                        rules={{ required: 'Username is required' }}
+                        render={({ field }) => (
+                            <Form.Item
+                                label="Username"
+                                validateStatus={errors.username ? 'error' : ''}
+                                help={errors.username?.message}
+                            >
+                                <Input 
+                                    {...field}
+                                    prefix={<UserOutlined />}
+                                    placeholder="Username (e.g., HGManager)"
+                                    size="large"
+                                />
+                            </Form.Item>
+                        )}
+                    />
+                    
+                    {/* ... (Password Controller) ... */}
+                    <Controller
+                        name="password"
+                        control={control}
+                        rules={{ required: 'Password is required' }}
+                        render={({ field }) => (
+                            <Form.Item
+                                label="Password"
+                                validateStatus={errors.password ? 'error' : ''}
+                                help={errors.password?.message}
+                            >
+                                <Input.Password 
+                                    {...field}
+                                    prefix={<LockOutlined />}
+                                    placeholder="Password (e.g., 1234)"
+                                    size="large"
+                                />
+                            </Form.Item>
+                        )}
+                    />
+
+                    {/* Submit Button */}
+                    <Form.Item>
+                        <Button 
+                            type="primary" 
+                            htmlType="submit" 
+                            loading={isSubmitting}
+                            size="large"
+                            style={{ width: '100%', marginTop: 16 }}
+                        >
+                            Log in
+                        </Button>
+                    </Form.Item>
+                </Form>
+                
+            </Card>
         </div>
-        
-        <form onSubmit={handleSubmit}>
-          {/* Client No Input */}
-          <div className="input-group mb-3">
-            <span className="input-group-text"><i className="bi bi-pencil-square"></i></span>
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder="Client No" 
-              value="1" // Pre-filled based on image
-              readOnly 
-            />
-          </div>
-
-          {/* Username Input */}
-          <div className="input-group mb-3">
-            <span className="input-group-text"><i className="bi bi-person-fill"></i></span>
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder="HGManager" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-
-          {/* Password Input */}
-          <div className="input-group mb-2">
-            <span className="input-group-text"><i className="bi bi-lock-fill"></i></span>
-            <input 
-              type="password" 
-              className="form-control" 
-              placeholder="Password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          
-          <div className="d-flex justify-content-end mb-3">
-            <small><a href="#">Forgot your password?</a></small>
-          </div>
-
-          {/* Checkboxes */}
-          <div className="d-flex justify-content-between mb-4 small">
-            <div className="form-check">
-              <input className="form-check-input" type="checkbox" id="keepLoggedIn" />
-              <label className="form-check-label" htmlFor="keepLoggedIn">Keep me logged in</label>
-            </div>
-            <div className="form-check">
-              <input className="form-check-input" type="checkbox" id="showMobile" />
-              <label className="form-check-label" htmlFor="showMobile">Show Mobile Version</label>
-            </div>
-          </div>
-
-          {/* Login Button */}
-          <button type="submit" className="btn btn-primary w-100">Login</button>
-          
-          <div className="text-center mt-3">
-            <small><a href="#" className="text-muted">Login To Training</a></small>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Login;
