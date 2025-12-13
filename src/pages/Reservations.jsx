@@ -1,39 +1,180 @@
 // src/pages/Reservations.jsx
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query'; // <-- NEW IMPORT
+import { fetchReservations } from '../api/reservationApi'; // <-- NEW IMPORT
+import { 
+    Table, 
+    Card, 
+    Tag, 
+    Space, 
+    Input, 
+    Button, 
+    Spin, 
+    Alert,
+    Typography
+} from 'antd';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+
+const { Title, Text } = Typography;
+
+// --- Helper to style status tags ---
+const getStatusTag = (status) => {
+    let color;
+    switch (status) {
+        case 'Confirmed':
+            color = 'blue';
+            break;
+        case 'Checked In':
+            color = 'green';
+            break;
+        case 'Canceled':
+            color = 'red';
+            break;
+        case 'Tentative':
+            color = 'orange';
+            break;
+        default:
+            color = 'default';
+    }
+    return <Tag color={color}>{status.toUpperCase()}</Tag>;
+};
+
 
 const Reservations = () => {
-  return (
-    <div className="mt-4">
-      <h2>All Reservations</h2>
-      <button className="btn btn-success mb-3">
-        + New Reservation
-      </button>
-      {/* Reservation Table/List component will go here */}
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* Placeholder Row */}
-          <tr>
-            <td>R1001</td>
-            <td>John Doe</td>
-            <td>2025-12-15</td>
-            <td>7:00 PM</td>
-            <td><span className="badge text-bg-success">Confirmed</span></td>
-            <td><button className="btn btn-sm btn-info me-2">View</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
+    // --- State for Table Parameters (Drives TanStack Query Key) ---
+    const [pagination, setPagination] = useState({
+        current: 1,
+        pageSize: 10,
+    });
+    const [sorter, setSorter] = useState({});
+    const [filters, setFilters] = useState({});
+    
+    // Convert sorter state for the API function call
+    const queryParams = useMemo(() => ({
+        pageIndex: pagination.current,
+        pageSize: pagination.pageSize,
+        sortBy: sorter.field || 'id',
+        sortOrder: sorter.order || 'ascend',
+        filters: filters,
+    }), [pagination, sorter, filters]);
+    
+    // --- TanStack Query Hook for Fetching Data ---
+    const { 
+        data: response, 
+        isLoading, 
+        isFetching,
+        isError,
+        error,
+        refetch
+    } = useQuery({
+        queryKey: ['reservations', queryParams], // Query key changes when params change
+        queryFn: () => fetchReservations(queryParams),
+        staleTime: 60000, // Data is considered fresh for 1 minute
+        keepPreviousData: true, // Keep old data visible during refetches
+    });
+    
+    // --- Table Change Handler (Updates State -> Reruns Query) ---
+    const handleTableChange = (newPagination, newFilters, newSorter) => {
+        // Update pagination
+        setPagination(newPagination);
+        
+        // Update sorter state
+        setSorter({
+            field: newSorter.field,
+            order: newSorter.order, // 'ascend' or 'descend'
+        });
+        
+        // Update filters state
+        setFilters(newFilters);
+    };
+
+    // --- Table Column Definitions ---
+    const columns = [
+        { title: 'ID', dataIndex: 'id', key: 'id', sorter: true, width: 80 },
+        { title: 'Guest Name', dataIndex: 'guestName', key: 'guestName', sorter: true },
+        { title: 'Room', dataIndex: 'roomNumber', key: 'roomNumber', sorter: true, width: 100 },
+        { 
+            title: 'Status', 
+            dataIndex: 'status', 
+            key: 'status', 
+            render: getStatusTag, 
+            filters: [ // Mock filters for AntD Table
+                { text: 'Confirmed', value: 'Confirmed' },
+                { text: 'Checked In', value: 'Checked In' },
+                { text: 'Canceled', value: 'Canceled' },
+            ],
+            filterMultiple: false,
+            width: 130
+        },
+        { title: 'Check In', dataIndex: 'checkIn', key: 'checkIn', sorter: true, width: 120 },
+        { title: 'Check Out', dataIndex: 'checkOut', key: 'checkOut', sorter: true, width: 120 },
+        { title: 'Rate', dataIndex: 'rate', key: 'rate', sorter: true, render: (rate) => `$${rate.toFixed(2)}`, width: 100 },
+        { title: 'Source', dataIndex: 'source', key: 'source', sorter: true },
+        { 
+            title: 'Action', 
+            key: 'action', 
+            render: () => (
+                <Button size="small" type="link">View</Button>
+            ),
+            width: 80
+        },
+    ];
+
+    return (
+        <Space direction="vertical" style={{ width: '100%', display: 'flex' }}>
+            <Title level={3}>Reservation List</Title>
+            
+            <Card 
+                title={
+                    <Space>
+                        <Input 
+                            placeholder="Search reservations..." 
+                            prefix={<SearchOutlined />} 
+                            style={{ width: 250 }}
+                        />
+                        <Button icon={<ReloadOutlined />} onClick={refetch}>
+                            {isFetching ? 'Refreshing...' : 'Refresh'}
+                        </Button>
+                    </Space>
+                }
+                styles={{ body: { padding: 0 } }} // Remove body padding for table borderless look
+                variant="borderless" // Use borderless variant
+                
+            >
+                {/* Display error message if query failed */}
+                {isError && (
+                    <Alert 
+                        message="Error Fetching Data" 
+                        description={`Could not load reservations: ${error.message}`} 
+                        type="error" 
+                        showIcon 
+                        style={{ margin: 16 }}
+                    />
+                )}
+
+                {/* Main Data Table */}
+                <Table
+                    columns={columns}
+                    dataSource={response?.reservations || []} // Use fetched data or empty array
+                    rowKey="id"
+                    loading={isLoading} // AntD table displays loading spinner automatically
+                    pagination={{
+                        ...pagination,
+                        total: response?.totalCount || 0,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '25', '50']
+                    }}
+                    onChange={handleTableChange}
+                    scroll={{ x: 'max-content' }} // Ensure horizontal scroll if table exceeds container width
+                    size="middle"
+                />
+            </Card>
+            <Text type="secondary">
+                This table demonstrates fetching a large dataset with pagination, 
+                sorting, and filtering managed by TanStack Query.
+            </Text>
+        </Space>
+    );
 };
 
 export default Reservations;

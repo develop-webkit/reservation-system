@@ -68,13 +68,10 @@ const BookingChart = () => {
     const handleContextMenu = (e, contextType, data) => {
         e.preventDefault(); 
         
-        // We close the menu first to force AntD Dropdown to re-render 
-        // and reposition the anchor if the coordinates change rapidly.
         if (contextMenu.isVisible) {
             handleCloseContextMenu();
         }
 
-        // Delay setting the new position allows for a cleaner closure animation (if any)
         setTimeout(() => {
              setContextMenu({
                 isVisible: true,
@@ -104,8 +101,10 @@ const BookingChart = () => {
         // Replaced custom div with Ant Design Card for styling
         <Card 
             title="Booking Chart" 
-            bordered={false} 
-            bodyStyle={{ padding: 0 }} // Remove default AntD card padding for the chart layout
+            // FIX 1: Replaced deprecated bordered={false} with variant="borderless"
+            variant="borderless" 
+            // FIX 2: Replaced deprecated bodyStyle with styles.body
+            styles={{ body: { padding: 0 } }} 
             style={{ 
                 height: '100%', 
                 display: 'flex', 

@@ -200,10 +200,7 @@ const AntdSidebar = () => {
             {/* 4. Footer */}
             <div style={{ padding: '16px', color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.7rem' }}>
                 <p style={{ margin: 0, fontWeight: 'bold' }}>RMS Billing</p>
-                Mount Morgan Space Solutions<br/>
-                RMS Client No: 22063<br/>
                 User: HGManager<br/>
-                <span style={{ color: '#52c41a' }}>Live</span>
             </div>
         </div>
     );

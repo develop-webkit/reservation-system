@@ -1,67 +1,138 @@
 // src/components/chart/RoomRow.jsx
-import React from 'react';
+import React, { useCallback } from 'react';
+import { Space, Typography, theme } from 'antd'; 
+import { HomeOutlined, SettingOutlined } from '@ant-design/icons'; // <-- FIX APPLIED: Changed BedOutlined to HomeOutlined
+import { getReservationGridStyles } from '../../utils/chartUtils'; 
 
-// Accept the new onContextMenu handler
+const { Text } = Typography;
+const { useToken } = theme;
+
+// Utility function to determine the color for the reservation status
+const getStatusColor = (status) => {
+    switch (status) {
+        case 'Checked In':
+            return '#52c41a'; // AntD Success Green
+        case 'Confirmed':
+            return '#1890ff'; // AntD Primary Blue
+        case 'Tentative':
+            return '#faad14'; // AntD Warning Yellow
+        case 'Out of Order':
+            return '#ff4d4f'; // AntD Error Red
+        default:
+            return '#999999'; // Gray
+    }
+};
+
 const RoomRow = ({ room, chartDays, ROOM_COL_WIDTH, onMouseEnter, onMouseLeave, onContextMenu }) => {
-    
-    // NOTE: For the purpose of this mock, we assume the chart always starts at Day 1.
-    // In a real application, you would pass the chart's starting date down as a prop
-    // and use a date library (like date-fns or moment) to calculate the diff in days.
+    const { token } = useToken();
+    const dateGridColumns = `repeat(${chartDays}, 1fr)`;
 
-    const reservationBars = room.reservations.map(res => {
-        
-        // --- CRITICAL FIX: RESTORING CALCULATION LOGIC ---
-        
-        // 1. Calculate Start Column (startDay is a mock property from mockChartData)
-        // If the chart always starts at day 1, the reservation's startDay is the grid column.
-        const startColumn = res.startDay; 
-        
-        // 2. Calculate Span (duration)
-        // Duration property holds the number of days the reservation spans.
-        const span = res.duration;
-        
-        // 3. Optional: Calculate overlap if a reservation starts before Day 1 or ends after the chart view.
-        // We skip complex overlap logic for now, relying on the mock data being clean.
-        
-        // -------------------------------------------------
-
-        return (
-            <div 
-                key={res.id}
-                className={`reservation-bar ${res.color} text-white small text-truncate px-1`}
-                style={{ 
-                    // FIX: startColumn and span are now defined. 
-                    // gridColumn sets the reservation's position and width on the CSS grid.
-                    gridColumn: `${startColumn} / span ${span}`,
-                }}
-                onMouseEnter={(e) => onMouseEnter(e, res, room)} 
-                onMouseLeave={onMouseLeave}
-                // CRITICAL: Reservation-specific context menu
-                onContextMenu={(e) => onContextMenu(e, 'reservation', res)} 
-            >
-                {res.client}
-            </div>
-        );
-    });
+    const handleCellContextMenu = useCallback((e, reservation = null) => {
+        const contextType = reservation ? 'reservation' : 'cell'; 
+        onContextMenu(e, contextType, { room, reservation });
+    }, [room, onContextMenu]);
 
     return (
         <div 
             className="chart-row-grid"
-            // CRITICAL: Room-specific context menu (if right-clicking empty space)
-            onContextMenu={(e) => onContextMenu(e, 'room', room)} 
-            // FIX: Restore the gridTemplateColumns style. Assuming this component is for a 7-day chart view + Room Column
-            style={{ 
-                gridTemplateColumns: `${ROOM_COL_WIDTH} repeat(${chartDays}, 1fr)` 
+            style={{
+                display: 'grid',
+                gridTemplateColumns: `${ROOM_COL_WIDTH} ${dateGridColumns}`,
+                borderBottom: `1px dashed ${token.colorBorderSecondary}`, 
+                minHeight: '40px', 
+                lineHeight: '40px', 
             }}
         >
-            {/* 1. Room Label Column */}
-            <div className="room-label" style={{ width: ROOM_COL_WIDTH }}>
-                <span className="fw-bold">{room.name}</span>
-            </div>
             
-            {/* 2. Reservation Bars Column */}
-            <div className="reservation-track">
-                {reservationBars}
+            {/* 1. Room Label Column (Static Width) */}
+            <div 
+                className="room-label-col" 
+                style={{ 
+                    padding: `0 ${token.paddingSM}px`,
+                    borderRight: `1px solid ${token.colorBorderSecondary}`,
+                    backgroundColor: token.colorBgLayout, 
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                }}
+            >
+                <Space size="small">
+                    {/* Updated icon used here */}
+                    <HomeOutlined style={{ color: token.colorTextSecondary }} /> 
+                    
+                    <Text strong>{room.name}</Text>
+                    <SettingOutlined style={{ fontSize: '10px', color: token.colorTextTertiary }} />
+                </Space>
+            </div>
+
+            {/* 2. Reservation Grid (Dynamic Columns) */}
+            {/* ... (rest of the component remains the same) ... */}
+            <div 
+                className="reservation-grid-area" 
+                style={{ 
+                    display: 'grid',
+                    gridTemplateColumns: dateGridColumns, 
+                    position: 'relative', 
+                    height: '100%',
+                    width: '100%',
+                }}
+                onContextMenu={handleCellContextMenu} 
+            >
+                {/* 2a. Visual Grid Lines */}
+                {Array.from({ length: chartDays }).map((_, index) => (
+                    <div 
+                        key={`grid-line-${index}`}
+                        className="day-grid-line"
+                        style={{ 
+                            borderRight: `1px solid ${token.colorBorderSecondary}`,
+                            height: '100%',
+                            opacity: 0.5,
+                            pointerEvents: 'none', 
+                        }}
+                    />
+                ))}
+
+                {/* 2b. Reservation Blocks */}
+                {room.reservations.map(reservation => {
+                    const gridStyles = getReservationGridStyles(reservation, chartDays); 
+                    const statusColor = getStatusColor(reservation.status);
+
+                    return (
+                        <div
+                            key={reservation.id}
+                            className={`reservation-block reservation-${reservation.id}`}
+                            style={{
+                                ...gridStyles,
+                                position: 'absolute',
+                                zIndex: 1,
+                                height: '80%',
+                                top: '10%',
+                                borderRadius: token.borderRadiusSM,
+                                
+                                backgroundColor: statusColor,
+                                border: `1px solid ${statusColor}`, 
+                                opacity: 0.9, 
+                                
+                                color: token.colorTextLightSolid, 
+                                textAlign: 'center',
+                                fontSize: '0.75rem',
+                                padding: '0 4px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                
+                                cursor: 'grab', 
+                            }}
+                            onMouseEnter={(e) => onMouseEnter(e, reservation, room)}
+                            onMouseLeave={onMouseLeave}
+                            onContextMenu={(e) => handleCellContextMenu(e, reservation)}
+                        >
+                            {reservation.guestName}
+                        </div>
+                    );
+                })}
+
             </div>
         </div>
     );

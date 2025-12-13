@@ -393,3 +393,38 @@ body {
 .cursor-pointer {
     cursor: pointer;
 }
+
+
+/* src/index.css (Add these definitions) */
+
+/* ... (previous CSS reset) ... */
+
+/* --- CORE CHART STYLES (REQUIRED FOR CSS GRID) --- */
+
+/* This container must be a grid to align RoomRow and ChartHeader */
+.chart-grid-wrapper {
+    /* Set the chart wrapper to be a vertical flex container to stack header and body */
+    display: flex;
+    flex-direction: column; 
+    /* The overflowY: auto is already on the inline style in BookingChart.jsx */
+}
+
+/* This is the container that holds all the RoomRows and the Room Type Headers. */
+.chart-body {
+    /* Crucial: We use display: contents to let the children (RoomRow grids) 
+       be direct children of the chart-grid-wrapper in terms of grid flow, 
+       even though they are conceptually stacked here.
+       Alternatively, just a simple div if the rows manage their own grid flow.
+       We will stick to stacking rows for simplicity:
+    */
+    display: flex; 
+    flex-direction: column; /* Stack Room Rows vertically */
+}
+
+/* The RoomRow grid and the ChartHeader grid rows must use the same grid-template-columns. 
+   This is set inline in ChartHeader.jsx and RoomRow.jsx using ROOM_COL_WIDTH and dateGridColumns.
+   The CSS Grid is defined directly on the elements themselves: 
+   .chart-date-header and .chart-row-grid.
+*/
+
+/* --- END CORE CHART STYLES --- */

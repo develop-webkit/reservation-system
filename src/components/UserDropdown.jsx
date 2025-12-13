@@ -111,7 +111,6 @@ const UserDropdown = ({ onLogout }) => {
     // Mock User Data 
     const mockUser = {
         username: 'HGManager',
-        ip: '39.37.144.207',
         client: 'Mount Morgan Space Solutions',
         clientNo: 22063,
         property: 'Mount Morgan Space Solutions',
