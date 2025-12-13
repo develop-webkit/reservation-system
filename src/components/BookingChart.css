@@ -1,0 +1,115 @@
+/* src/components/BookingChart.css */
+
+/* Define the Booking Chart Container */
+.booking-chart-container {
+    display: flex;
+    flex-direction: column;
+    /* This width ensures the date columns don't wrap and enables horizontal scroll */
+    min-width: calc(150px + var(--chart-columns) * var(--cell-width)); 
+}
+
+/* Define CSS Variables for easy maintenance and calculation */
+.booking-chart-container {
+    /* 30 visible days + 1 room label column = 31 total columns */
+    --chart-columns: 31; 
+    --cell-width: 40px; /* Width of each day column */
+    --room-label-width: 150px; /* Fixed width for the room name column */
+}
+
+/* --- Header & Rows Layout --- */
+
+/* Base style for the chart header and individual rows */
+.chart-header,
+.chart-row {
+    display: grid;
+    /* Define 31 columns: 1 for room label, 30 for dates */
+    grid-template-columns: var(--room-label-width) repeat(30, var(--cell-width));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Separator line */
+    background-color: #141414; /* Dark background */
+}
+
+/* --- Header Styling (Dates) --- */
+
+.chart-header {
+    position: sticky; /* Keep header visible when scrolling vertically */
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-cell {
+    padding: 8px 4px;
+    text-align: center;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chart-header .room-label {
+    position: sticky; /* Keep the room label fixed when scrolling horizontally */
+    left: 0;
+    z-index: 11; /* Higher z-index to overlap date cells */
+    background-color: #141414;
+    border-right: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.is-today {
+    /* Highlight today's date column */
+    background-color: #002766 !important; /* Dark blue background */
+}
+
+/* --- Room Row Styling --- */
+
+.chart-row {
+    min-height: 50px; /* Height of each room row */
+}
+
+.chart-row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.room-label {
+    position: sticky;
+    left: 0;
+    z-index: 5; /* Lower than header sticky element */
+    padding: 8px 12px;
+    background-color: #141414;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- Booking Grid Area --- */
+
+.booking-grid {
+    /* The core area for placing bookings */
+    /* Must have the same column definition as the header (30 date columns) */
+    display: grid;
+    grid-template-columns: repeat(30, var(--cell-width));
+    position: relative; /* Essential for positioning the booking-item absolutely */
+    width: 100%;
+}
+
+.daily-cell {
+    /* The clickable background cell for each day */
+    border-left: 1px dotted rgba(255, 255, 255, 0.05);
+    height: 100%; /* Fill the height of the room row */
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.daily-cell:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Highlight on hover for new booking */
+}
+
+/* --- Individual Booking Item Styling --- */
+
+.booking-item {
+    position: absolute; /* Allows it to span across multiple grid columns */
+    height: 80%;
+    margin: 5% 0; /* Vertical spacing within the row */
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: grab; /* Indicates drag-and-drop capability */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    /* Span and Start/End is set dynamically by gridColumnStart/gridColumnEnd in JS */
+}

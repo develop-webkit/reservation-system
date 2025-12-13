@@ -1,10 +1,10 @@
-// src/App.jsx 
-import React from 'react'; 
+// src/App.jsx (UPDATED)
+import React from 'react'; // Removed useState
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from 'antd'; 
 import AntdSidebar from './components/AntdSidebar';
 import AntdTopBar from './components/AntdTopBar';
-import useAuthStore from './store/authStore'; 
+import useAuthStore from './store/authStore'; // <-- NEW IMPORT: Zustand Store
 
 // Import all pages
 import Login from './pages/Login'; 
@@ -15,8 +15,13 @@ import BookingChart from './pages/BookingChart';
 const { Header, Sider, Content } = Layout; 
 
 function App() {
+  // --- NEW: Use Zustand for persistent auth state and actions ---
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const handleLogout = useAuthStore(state => state.logout);
+  const logout = useAuthStore(state => state.logout);
+  // We no longer need the local `isAuthenticated` state or `handleLogin`/`handleLogout` functions here.
+  // We rename the logout function for clarity in the TopBar prop.
+  const handleLogout = logout; 
+  // -----------------------------------------------------------
 
   const MainLayout = ({ children }) => (
     <Layout style={{ minHeight: '100vh' }}>
@@ -26,14 +31,12 @@ function App() {
       
       <Layout>
         <Header style={{ padding: 0, background: '#fff', height: 50, lineHeight: '50px' }}>
+          {/* Pass the Zustand logout action */}
           <AntdTopBar onLogout={handleLogout} /> 
         </Header>
         
-        {/* FIX APPLIED HERE: Margin is set to '0' */}
-        <Content style={{ margin: '0', overflow: 'initial', background: '#f0f2f5' }}>
-          {/* We may need to adjust padding in the inner div if desired, but 
-              setting margin: 0 removes the gap around the content area. */}
-          <div style={{ padding: 10, minHeight: 'calc(100vh - 50px)', background: '#fff' }}>
+        <Content style={{ margin: '16px', overflow: 'initial', background: '#f0f2f5' }}>
+          <div style={{ padding: 10, minHeight: 'calc(100vh - 82px)', background: '#fff' }}>
             {children}
           </div>
         </Content>
@@ -43,8 +46,10 @@ function App() {
 
   return (
     <Routes>
+      {/* Login component no longer needs the onLogin prop */}
       <Route path="/login" element={<Login />} /> 
       
+      {/* Protected Routes */}
       <Route 
         path="*" 
         element={
@@ -58,6 +63,7 @@ function App() {
               </Routes>
             </MainLayout>
           ) : (
+            // Redirect unauthenticated users to login page
             <Navigate to="/login" replace />
           )
         }
