@@ -1,6 +1,7 @@
 /* src/index.css */
 /* src/index.css */
 
+
 /* Simple CSS Reset for consistent cross-browser display */
 html, body, #root {
   height: 100%; /* Important for full-height AntD layout */
@@ -188,6 +189,14 @@ body {
     flex-direction: column;
     justify-content: center;
     background-color: white;
+    border:1px solid #cecece;
+    border-bottom:0;
+    border-left:0px;
+    text-align: center;
+}
+
+.date-cell:first-child{
+    border-left:1px solid #cecece;
 }
 
 .date-cell.weekend {
@@ -428,3 +437,122 @@ body {
 */
 
 /* --- END CORE CHART STYLES --- */
+
+.modal-dialog.modal-xl{
+    background-color:#fff;
+}
+
+
+/* ADD THIS CONTENT TO YOUR GLOBAL CSS FILE (e.g., src/index.css) */
+
+/* --- Main Chart Container (Card Body) --- */
+.booking-chart-container {
+    overflow-x: auto; 
+    min-width: 1000px;
+    padding-bottom: 20px; 
+}
+
+/* --- Header Row Structure --- */
+.chart-header {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    position: sticky; 
+    top: 0;
+    z-index: 20;
+    background-color: #fff; 
+
+}
+
+.chart-header > .room-label {
+    padding: 8px;
+    font-weight: bold;
+    min-width: 150px;
+    color: #141414;
+    border-left:1px solid #cecece;
+}
+
+.date-cell-container {
+    display: grid;
+    /* --- CRITICAL: FIXED PIXEL WIDTH FOR DATES --- */
+    grid-template-columns: repeat(30, 40px); 
+    width: 1200px; 
+    border-bottom:1px solid #cecece;
+}
+
+/* --- Room Row Structure (NEW STRUCTURE) --- */
+.chart-row-grid {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    position: relative;
+    height: 50px; 
+    border-bottom: 1px solid #cecece;
+}
+
+.chart-row-grid:hover {
+    background-color: #f8f8f8;
+}
+
+.room-label-col {
+    grid-column: 1;
+    padding-left: 8px;
+    background-color: #fff;
+    color: #141414;
+    min-width: 150px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border:1px solid #cecece;
+    border-bottom:0;
+    border-top:0;
+}
+
+
+/* --- Booking Grid Area (The Grid that holds the blocks) --- */
+.reservation-grid-area {
+    grid-column: 2;
+    display: grid;
+    /* --- CRITICAL: FIXED PIXEL WIDTH FOR BOOKINGS --- */
+    grid-template-columns: repeat(30, 40px); 
+    position: relative; 
+    width: 1200px; 
+}
+
+.daily-cell {
+    border-right: 1px solid #cecece;
+    height: 100%;
+}
+
+/* --- Booking Item (The Blocks) --- */
+.booking-item {
+    position: relative;
+    height: 80%;
+    margin: 5% 0; 
+    border-radius: 4px;
+    padding: 2px 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: grab; 
+    transition: box-shadow 0.2s;
+    grid-row: 1; 
+    z-index: 5;
+}
+
+.booking-item:active {
+    cursor: grabbing;
+}
+
+/* --- Resizing Handle Style --- */
+.booking-item .resizer-handle {
+    position: absolute;
+    top: 0;
+    right: 0; 
+    width: 8px; 
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3); 
+    cursor: ew-resize; 
+    z-index: 10;
+}
+
+.booking-item:hover .resizer-handle {
+    background: rgba(255, 255, 255, 0.5);
+}

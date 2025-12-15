@@ -6,10 +6,12 @@
     flex-direction: column;
     /* This width ensures the date columns don't wrap and enables horizontal scroll */
     min-width: calc(150px + var(--chart-columns) * var(--cell-width)); 
+    overflow-x: auto; 
+    min-width: 1000px;
+    padding-bottom: 20px;
 }
 
 /* Define CSS Variables for easy maintenance and calculation */
-.booking-chart-container {
     /* 30 visible days + 1 room label column = 31 total columns */
     --chart-columns: 31; 
     --cell-width: 40px; /* Width of each day column */
@@ -17,6 +19,8 @@
 }
 
 /* --- Header & Rows Layout --- */
+
+
 
 /* Base style for the chart header and individual rows */
 .chart-header,
@@ -26,6 +30,11 @@
     grid-template-columns: var(--room-label-width) repeat(30, var(--cell-width));
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Separator line */
     background-color: #141414; /* Dark background */
+    grid-template-columns: 150px 1fr;
+    position: sticky; /* Keep it at the top when scrolling down */
+    top: 0;
+    z-index: 20;
+    background-color: #141414;
 }
 
 /* --- Header Styling (Dates) --- */
@@ -49,6 +58,9 @@
     z-index: 11; /* Higher z-index to overlap date cells */
     background-color: #141414;
     border-right: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    font-weight: bold;
+    min-width: 150px;
 }
 
 .is-today {
@@ -78,12 +90,11 @@
 /* --- Booking Grid Area --- */
 
 .booking-grid {
-    /* The core area for placing bookings */
-    /* Must have the same column definition as the header (30 date columns) */
+    grid-column: 2;
     display: grid;
-    grid-template-columns: repeat(30, var(--cell-width));
-    position: relative; /* Essential for positioning the booking-item absolutely */
-    width: 100%;
+    grid-template-columns: repeat(30, 40px); /* MUST be 30 columns of 40px */
+    position: relative; 
+    width: calc(30 * 40px); /* Total width of 1200px */
 }
 
 .daily-cell {
@@ -111,5 +122,89 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    grid-row: 1;
     /* Span and Start/End is set dynamically by gridColumnStart/gridColumnEnd in JS */
+}
+
+.booking-item .resizer-handle {
+    position: absolute;
+    top: 0;
+    right: 0; /* Positioned at the end of the booking block */
+    width: 8px; /* The width of the clickable/draggable area */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3); /* Subtle white line for visibility */
+    cursor: ew-resize; /* Standard horizontal resize cursor */
+    z-index: 10; /* Ensure it's clickable above the booking text */
+}
+
+/* Optional: Darken on hover */
+.booking-item:hover .resizer-handle {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+
+.chart-header > .date-cell-container {
+    grid-column: 2; /* Ensures it's positioned next to the room label */
+    display: grid;
+    grid-template-columns: repeat(30, 40px); /* MUST be 30 columns of 40px */
+    width: max-content; 
+    grid-template-columns: repeat(30, 40px); 
+    width: 1200px; /* 30 * 40px = 1200px */
+}
+
+.chart-row-grid {
+    display: grid;
+    /* Define two columns: fixed Room Label width, and the flexible chart area */
+    grid-template-columns: 150px 1fr;
+    position: relative;
+    height: 50px; 
+    border-bottom: 1px solid #303030;
+}
+
+.chart-row-grid:hover {
+    background-color: #1f1f1f;
+}
+
+.room-label-col {
+    grid-column: 1;
+    padding: 8px;
+    background-color: #141414;
+    color: #fff;
+    min-width: 150px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+
+/* --- Booking Grid Area (The Grid that holds the blocks) --- */
+
+.daily-cell {
+    /* Clickable cell for new bookings, serves as a track */
+    border-left: 1px dashed rgba(255, 255, 255, 0.05);
+    height: 100%;
+}
+
+/* --- Booking Item (The Blocks) --- */
+.booking-item {
+    position: relative;
+    height: 80%;
+    margin: 5% 0; 
+    border-radius: 4px;
+    padding: 2px 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: grab; 
+    transition: box-shadow 0.2s;
+    grid-row: 1; 
+    z-index: 5;
+}
+
+.reservation-grid-area {
+    grid-column: 2;
+    display: grid;
+    /* --- CRITICAL FIX: FIXED PIXEL WIDTH FOR BOOKINGS --- */
+    grid-template-columns: repeat(30, 40px); 
+    position: relative; 
+    width: 1200px; /* 30 * 40px = 1200px */
 }
