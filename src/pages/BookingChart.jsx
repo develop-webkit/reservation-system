@@ -1,28 +1,26 @@
-// src/pages/BookingChart.jsx (FINAL PAGE STRUCTURE)
-
-import React from 'react';
+// src/pages/BookingChart.jsx
+import React, { useState } from 'react';
 import CoreBookingChart from '../components/BookingChart';
-import BookingChartHeader from '../components/BookingChartHeader'; // <-- IMPORT NEW HEADER
-import { ConfigProvider, theme } from 'antd';
+import BookingChartHeader from '../components/BookingChartHeader';
+import moment from 'moment';
 
-// This page component applies the light theme and sets up the layout.
 const BookingChartPage = () => {
-    // Note: Removed ConfigProvider/darkAlgorithm since the chart is now white/light
-    return (
-        <div style={{ 
-            // The padding/margin values here are to ensure the component 
-            // fits correctly within the AntD Content area defined in App.jsx
-            padding: 0, 
-            margin: -10, 
-            width: 'calc(100% + 20px)', 
-            minHeight: 'calc(100vh - 82px)',
-            backgroundColor: '#f0f2f5' // Matches AntD default background
-        }}>
-            {/* 1. The Interactive Controls Header */}
-            <BookingChartHeader /> 
+    const [startDate, setStartDate] = useState('2025-12-13'); 
+    const [visibleDays, setVisibleDays] = useState(30);
 
-            {/* 2. The Core Booking Chart Component (The Grid) */}
-            <CoreBookingChart />
+    return (
+        <div>
+            <BookingChartHeader 
+                currentStart={startDate}
+                visibleDays={visibleDays}
+                onDateChange={(d) => setStartDate(d.format('YYYY-MM-DD'))}
+                onDaysSelect={(v) => setVisibleDays(v)}
+                onTodayClick={() => setStartDate(moment().format('YYYY-MM-DD'))}
+            />
+            <CoreBookingChart 
+                startDate={startDate} 
+                visibleDays={visibleDays} 
+            />
         </div>
     );
 };

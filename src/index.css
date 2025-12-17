@@ -156,8 +156,8 @@ body {
    6. Booking Chart Styling
    ------------------------------------ */
 .booking-chart-container {
-    background-color: white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    overflow-x: hidden; /* Prevent scrolling */
+    width: 100%;
 }
 
 .chart-grid-wrapper {
@@ -193,10 +193,6 @@ body {
     border-bottom:0;
     border-left:0px;
     text-align: center;
-}
-
-.date-cell:first-child{
-    border-left:1px solid #cecece;
 }
 
 .date-cell.weekend {
@@ -448,7 +444,7 @@ body {
 /* --- Main Chart Container (Card Body) --- */
 .booking-chart-container {
     overflow-x: auto; 
-    min-width: 1000px;
+    min-width: 1350px;
     padding-bottom: 20px; 
 }
 
@@ -468,21 +464,22 @@ body {
     font-weight: bold;
     min-width: 150px;
     color: #141414;
-    border-left:1px solid #cecece;
+    border:1px solid #cecece;
 }
 
 .date-cell-container {
-    display: grid;
-    /* --- CRITICAL: FIXED PIXEL WIDTH FOR DATES --- */
-    grid-template-columns: repeat(30, 40px); 
-    width: 1200px; 
-    border-bottom:1px solid #cecece;
+display: grid;
+    /* Use dynamic columns and flexible width */
+    grid-template-columns: repeat(var(--visible-days, 30), var(--cell-width, 40px)); 
+    width: 100%; /* Fill the available space */
+    border-bottom: 1px solid #cecece;
 }
 
 /* --- Room Row Structure (NEW STRUCTURE) --- */
 .chart-row-grid {
     display: grid;
-    grid-template-columns: 150px 1fr;
+    grid-template-columns: 150px 1fr; /* Label is fixed, grid is flexible */
+    width: 100%;
     position: relative;
     height: 50px; 
     border-bottom: 1px solid #cecece;
@@ -512,10 +509,10 @@ body {
 .reservation-grid-area {
     grid-column: 2;
     display: grid;
-    /* --- CRITICAL: FIXED PIXEL WIDTH FOR BOOKINGS --- */
-    grid-template-columns: repeat(30, 40px); 
+    /* Use dynamic columns and flexible width */
+    grid-template-columns: repeat(var(--visible-days), 1fr);
     position: relative; 
-    width: 1200px; 
+    width: 100%; /* Fill the available space */
 }
 
 .daily-cell {
@@ -526,15 +523,18 @@ body {
 /* --- Booking Item (The Blocks) --- */
 .booking-item {
     position: relative;
-    height: 80%;
-    margin: 5% 0; 
+    height: 30px;
+    margin-top:10px; 
     border-radius: 4px;
-    padding: 2px 4px;
+    padding:0  10px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: grab; 
     transition: box-shadow 0.2s;
     grid-row: 1; 
     z-index: 5;
+    align-items: center;
+    display: flex;
+
 }
 
 .booking-item:active {

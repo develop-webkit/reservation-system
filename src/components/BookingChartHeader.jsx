@@ -2,78 +2,114 @@
 
 import React from 'react';
 import { Button, Select, Space, DatePicker, Typography } from 'antd';
-import { LeftOutlined, RightOutlined, SettingOutlined, RedoOutlined } from '@ant-design/icons';
+import { 
+    LeftOutlined, 
+    RightOutlined, 
+    SettingOutlined, 
+    RedoOutlined,
+    CalendarOutlined 
+} from '@ant-design/icons';
 import moment from 'moment';
 
 const { Text } = Typography;
-const { RangePicker } = DatePicker;
 
-// Mock the initial date range for display purposes
-const CURRENT_DATE_RANGE = 'Dec 13 - Jan 11 (2025)';
+/**
+ * @param {string} currentStart - The current start date (YYYY-MM-DD)
+ * @param {number} visibleDays - The current zoom level (7, 30, 60)
+ * @param {function} onDateChange - Function to update the start date
+ * @param {function} onDaysSelect - Function to update the number of columns
+ * @param {function} onTodayClick - Function to reset to today's date
+ */
+const BookingChartHeader = ({ 
+    currentStart, 
+    visibleDays, 
+    onDateChange, 
+    onDaysSelect, 
+    onTodayClick 
+}) => {
 
-const BookingChartHeader = ({ onDateRangeChange, onDaysSelect, onTodayClick, dateRangeText }) => {
-    
-    // Handler for the "Today" button
-    const handleTodayClick = () => {
-        // In a real app, this would update the parent state to show today's date
-        console.log('Navigating to Today...');
-        if (onTodayClick) onTodayClick();
+    // Helper to shift the date by the current "zoom" amount
+    const handlePrev = () => {
+        const newDate = moment(currentStart).subtract(visibleDays, 'days');
+        onDateChange(newDate);
     };
 
-    // Handler for the 7/30/60/90 day selection
-    const handleDaysSelect = (value) => {
-        // In a real app, this would update the chart's visible range
-        console.log(`Setting view to ${value} days`);
-        if (onDaysSelect) onDaysSelect(value);
+    const handleNext = () => {
+        const newDate = moment(currentStart).add(visibleDays, 'days');
+        onDateChange(newDate);
     };
 
     return (
-        <div style={{ padding: '16px', borderBottom: '1px solid #cecece', backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ 
+            padding: '12px 20px', 
+            borderBottom: '1px solid #cecece', 
+            backgroundColor: '#fff', 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            position: 'sticky',
+            top: 0,
+            zIndex: 100
+        }}>
             
-            {/* --- Left Side: Navigation Controls --- */}
-            <Space size="small">
-                {/* Arrow Buttons */}
+            {/* --- Left Side: Navigation & Timeline Controls --- */}
+            <Space size="middle">
                 <Button.Group>
-                    <Button icon={<LeftOutlined />} />
-                    <Button icon={<RightOutlined />} />
+                    <Button 
+                        icon={<LeftOutlined />} 
+                        onClick={handlePrev}
+                        title={`Prev ${visibleDays} Days`}
+                    />
+                    <Button 
+                        icon={<RightOutlined />} 
+                        onClick={handleNext}
+                        title={`Next ${visibleDays} Days`}
+                    />
                 </Button.Group>
 
-                {/* Today Button */}
                 <Button 
                     type="primary" 
-                    onClick={handleTodayClick}
-                    style={{ fontWeight: 'bold' }}
+                    onClick={onTodayClick}
+                    style={{ fontWeight: '600' }}
                 >
                     Today
                 </Button>
 
-                {/* Day Selection Dropdown */}
+                {/* The Date Picker: Updates the chart instantly when changed */}
+                <DatePicker 
+                    value={moment(currentStart)} 
+                    onChange={(date) => onDateChange(date)}
+                    format="MMM DD, YYYY"
+                    allowClear={false}
+                    suffixIcon={<CalendarOutlined />}
+                    style={{ width: 160 }}
+                />
+
+                {/* Column Count (Zoom Level) */}
                 <Select
-                    defaultValue="30 Days"
-                    style={{ width: 100 }}
-                    onChange={handleDaysSelect}
+                    value={String(visibleDays)}
+                    style={{ width: 110 }}
+                    onChange={(value) => onDaysSelect(Number(value))}
                     options={[
                         { value: '7', label: '7 Days' },
+                        { value: '14', label: '14 Days' },
                         { value: '30', label: '30 Days' },
                         { value: '60', label: '60 Days' },
-                        { value: '90', label: '90 Days' },
                     ]}
                 />
                 
-                {/* Date Range Display (We'll use a placeholder for now) */}
-                <Text strong style={{ fontSize: '16px' }}>
-                    {dateRangeText || CURRENT_DATE_RANGE}
+                {/* Calculated Display Range */}
+                <Text strong style={{ marginLeft: 8, color: '#595959' }}>
+                    {moment(currentStart).format('MMM D')} - {moment(currentStart).add(visibleDays, 'days').format('MMM D, YYYY')}
                 </Text>
             </Space>
 
-            {/* --- Right Side: Actions --- */}
+            {/* --- Right Side: System Actions --- */}
             <Space size="middle">
-                <Button icon={<RedoOutlined />}>
+                <Button icon={<RedoOutlined />} onClick={() => window.location.reload()}>
                     Refresh
                 </Button>
-                <Button icon={<SettingOutlined />}>
-                    Settings
-                </Button>
+                <Button icon={<SettingOutlined />} />
             </Space>
         </div>
     );
