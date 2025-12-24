@@ -6,7 +6,9 @@ import {
     RightOutlined,
     SettingOutlined,
     RedoOutlined,
-    CalendarOutlined
+    CalendarOutlined,
+    MinusOutlined,
+    PlusOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -16,7 +18,9 @@ const BookingChartHeader = ({
     currentStart,
     visibleDays,
     onDateChange,
-    onDaysSelect
+    onDaysSelect,
+    onExpandAll,
+    onCollapseAll
 }) => {
 
     // dayjs is immutable - these operations create NEW date strings safely
@@ -39,6 +43,13 @@ const BookingChartHeader = ({
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
             <Space size="middle">
+                {/* Expand/Collapse Group */}
+                <Button.Group>
+                    <Button icon={<PlusOutlined />} onClick={onExpandAll} title="Expand All" />
+                    <Button icon={<MinusOutlined />} onClick={onCollapseAll} title="Collapse All" />
+                </Button.Group>
+
+                {/* Navigation Group */}
                 <Button.Group>
                     <Button icon={<LeftOutlined />} onClick={handlePrev} />
                     <Button onClick={() => onDateChange(dayjs().format('YYYY-MM-DD'))}>Today</Button>

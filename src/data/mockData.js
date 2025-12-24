@@ -1,65 +1,51 @@
-// src/data/mockData.js (EXTENDED DATA SET)
+// src/data/mockData.js (UPDATED LAYOUT)
 
-// Room definitions (Extended for more visual interest)
+// Room definitions
 export const roomsData = [
-    { id: 'R001', name: 'Deluxe King', type: 'KING' },
-    { id: 'R002', name: 'Deluxe Queen', type: 'QUEEN' },
-    { id: 'R003', name: 'Standard Twin', type: 'TWIN' },
-    { id: 'R004', name: 'Executive Suite', type: 'SUITE' },
-    { id: 'R005', name: 'Standard King A', type: 'KING' },
-    { id: 'R006', name: 'Deluxe King B', type: 'KING' },
-    { id: 'R007', name: 'Standard Twin C', type: 'TWIN' },
-    { id: 'R008', name: 'Executive Suite D', type: 'SUITE' },
-    { id: 'R009', name: 'Family Room 1', type: 'FAMILY' },
-    { id: 'R010', name: 'Family Room 2', type: 'FAMILY' },
-    { id: 'R011', name: 'Deluxe King C', type: 'KING' },
-    { id: 'R012', name: 'Deluxe Queen B', type: 'QUEEN' },
-    { id: 'R013', name: 'Standard Twin D', type: 'TWIN' },
-    { id: 'R014', name: 'Executive Suite E', type: 'SUITE' },
-    { id: 'R015', name: 'Standard King F', type: 'KING' },
+    // Top-level "Special" rows (No category)
+    { id: 'SP01', name: 'Special Events', type: 'EVENT', category: null },
+    { id: 'PK01', name: 'Parked Reservation', type: 'PARKED', category: null },
+
+    // Staff Accommodation
+    { id: 'S01', name: '01 Manager', type: 'STAFF', category: 'Staff Accommodation' },
+    { id: 'S02', name: '02 Other Staff', type: 'STAFF', category: 'Staff Accommodation' },
+
+    // Standard Ensuite Benjamin
+    { id: 'B01', name: 'B01', type: 'ENSUITE', category: 'Standard Ensuite Benjamin' },
+    { id: 'B02', name: 'B02', type: 'ENSUITE', category: 'Standard Ensuite Benjamin' },
+    { id: 'B03', name: 'B03', type: 'ENSUITE', category: 'Standard Ensuite Benjamin' },
+    { id: 'B04', name: 'B04', type: 'ENSUITE', category: 'Standard Ensuite Benjamin' },
+    { id: 'B05', name: 'B05', type: 'ENSUITE', category: 'Standard Ensuite Benjamin' },
+
+    // Standard Ensuite Shiel
+    { id: 'SH01', name: 'S01', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
+    { id: 'SH02', name: 'S02', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
+    { id: 'SH03', name: 'S03', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
+
+    // Standard Ensuite Wallace
+    { id: 'W01', name: 'S08', type: 'ENSUITE', category: 'Standard Ensuite Wallace' },
 ];
 
-// Booking definitions (Populated for high occupancy around the chart start date)
-// Note: Dates are centered around 2025-12-13, which is the current view date.
+// Booking definitions
+// Note: Dates are centered around 2025-12-13
 export const bookingsData = [
-    // --- Room R001 (Deluxe King) ---
-    { id: 'B101', roomId: 'R001', guestName: 'J. Smith (Web)', checkIn: '2025-12-14', checkOut: '2025-12-18', status: 'CONFIRMED' },
-    { id: 'B102', roomId: 'R001', guestName: 'A. Bell (Walk-in)', checkIn: '2025-12-19', checkOut: '2025-12-25', status: 'CHECKED_IN' },
+    // Special Events
+    // ... none for now
+
+    // Parked
+    { id: 'BPK1', roomId: 'PK01', guestName: 'Yas (Parked)', checkIn: '2025-11-28', checkOut: '2025-12-19', status: 'PENDING' },
     
-    // --- Room R002 (Deluxe Queen) ---
-    { id: 'B201', roomId: 'R002', guestName: 'C. Doe (Expedia)', checkIn: '2025-12-10', checkOut: '2025-12-15', status: 'PENDING' },
-    { id: 'B202', roomId: 'R002', guestName: 'D. Ray (Web)', checkIn: '2025-12-16', checkOut: '2025-12-21', status: 'CONFIRMED' },
-    { id: 'B203', roomId: 'R002', guestName: 'E. Fox (B.com)', checkIn: '2025-12-22', checkOut: '2025-12-28', status: 'CHECKED_OUT' },
+    // Staff
+    { id: 'BS01', roomId: 'S01', guestName: 'Manager On Duty', checkIn: '2025-11-23', checkOut: '2025-12-10', status: 'CHECKED_IN' },
+    { id: 'BS02', roomId: 'S01', guestName: 'Wells', checkIn: '2025-12-16', checkOut: '2025-12-20', status: 'PENDING' },
 
-    // --- Room R003 (Standard Twin) ---
-    { id: 'B301', roomId: 'R003', guestName: 'F. Hall (Corp)', checkIn: '2025-12-12', checkOut: '2025-12-19', status: 'CHECKED_IN' },
-    
-    // --- Room R004 (Executive Suite) ---
-    { id: 'B401', roomId: 'R004', guestName: 'G. King (VIP)', checkIn: '2025-12-15', checkOut: '2025-12-22', status: 'CONFIRMED' },
-    
-    // --- Room R005 (Standard King A) ---
-    { id: 'B501', roomId: 'R005', guestName: 'H. Lane (Expedia)', checkIn: '2025-12-23', checkOut: '2025-12-29', status: 'PENDING' },
-    
-    // --- Room R006 (Deluxe King B) ---
-    { id: 'B601', roomId: 'R006', guestName: 'I. Moore (Web)', checkIn: '2025-12-10', checkOut: '2025-12-14', status: 'CHECKED_IN' },
-    { id: 'B602', roomId: 'R006', guestName: 'J. Neil (B.com)', checkIn: '2025-12-17', checkOut: '2025-12-23', status: 'CONFIRMED' },
+    // Benjamin
+    { id: 'BB01', roomId: 'B01', guestName: 'Brady', checkIn: '2025-12-05', checkOut: '2025-12-15', status: 'CONFIRMED' },
+    { id: 'BB02', roomId: 'B02', guestName: 'Lewis T', checkIn: '2025-11-24', checkOut: '2025-11-28', status: 'CHECKED_OUT' },
+    { id: 'BB03', roomId: 'B02', guestName: 'Ingram', checkIn: '2025-12-01', checkOut: '2025-12-08', status: 'CONFIRMED' },
+    { id: 'BB04', roomId: 'B02', guestName: 'Reid', checkIn: '2025-12-12', checkOut: '2025-12-20', status: 'CONFIRMED' },
 
-    // --- Room R007 (Standard Twin C) ---
-    { id: 'B701', roomId: 'R007', guestName: 'K. Oliver (Walk-in)', checkIn: '2025-12-14', checkOut: '2025-12-25', status: 'CONFIRMED' },
-
-    // --- Room R008 (Executive Suite D) ---
-    { id: 'B801', roomId: 'R008', guestName: 'L. Paul (Corp)', checkIn: '2025-12-18', checkOut: '2025-12-27', status: 'PENDING' },
-
-    // --- Room R009 (Family Room 1) ---
-    { id: 'B901', roomId: 'R009', guestName: 'M. Quinn', checkIn: '2025-12-13', checkOut: '2025-12-20', status: 'CONFIRMED' },
-
-    // --- Room R010 (Family Room 2) ---
-    { id: 'B010', roomId: 'R010', guestName: 'N. Riley', checkIn: '2025-12-15', checkOut: '2025-12-19', status: 'CHECKED_IN' },
-    { id: 'B011', roomId: 'R010', guestName: 'O. Stone', checkIn: '2025-12-20', checkOut: '2025-12-24', status: 'CONFIRMED' },
-
-    // --- Room R012 (Deluxe Queen B) ---
-    { id: 'B012', roomId: 'R012', guestName: 'P. Tate', checkIn: '2025-12-13', checkOut: '2025-12-17', status: 'PENDING' },
-    { id: 'B013', roomId: 'R012', guestName: 'Q. Vance', checkIn: '2025-12-18', checkOut: '2025-12-22', status: 'CONFIRMED' },
-    { id: 'B014', roomId: 'R012', guestName: 'R. West', checkIn: '2025-12-23', checkOut: '2025-12-27', status: 'CHECKED_IN' },
-
+    // Shiel
+    { id: 'BSH1', roomId: 'SH01', guestName: 'Hillier', checkIn: '2025-11-25', checkOut: '2025-12-03', status: 'CHECKED_IN' },
+    { id: 'BSH2', roomId: 'SH02', guestName: 'Geoghegan', checkIn: '2025-12-08', checkOut: '2025-12-14', status: 'CONFIRMED' },
 ];
