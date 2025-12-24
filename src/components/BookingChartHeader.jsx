@@ -1,32 +1,32 @@
 // src/components/BookingChartHeader.jsx
 import React from 'react';
 import { Button, Select, Space, DatePicker, Typography } from 'antd';
-import { 
-    LeftOutlined, 
-    RightOutlined, 
-    SettingOutlined, 
+import {
+    LeftOutlined,
+    RightOutlined,
+    SettingOutlined,
     RedoOutlined,
-    CalendarOutlined 
+    CalendarOutlined
 } from '@ant-design/icons';
-import dayjs from 'dayjs'; 
+import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
-const BookingChartHeader = ({ 
-    currentStart, 
-    visibleDays, 
-    onDateChange, 
-    onDaysSelect 
+const BookingChartHeader = ({
+    currentStart,
+    visibleDays,
+    onDateChange,
+    onDaysSelect
 }) => {
 
     // dayjs is immutable - these operations create NEW date strings safely
     const handlePrev = () => {
-        const newDate = dayjs(currentStart).subtract(visibleDays, 'days').format('YYYY-MM-DD');
+        const newDate = dayjs(currentStart).subtract(1, 'days').format('YYYY-MM-DD');
         onDateChange(newDate);
     };
 
     const handleNext = () => {
-        const newDate = dayjs(currentStart).add(visibleDays, 'days').format('YYYY-MM-DD');
+        const newDate = dayjs(currentStart).add(1, 'days').format('YYYY-MM-DD');
         onDateChange(newDate);
     };
 
@@ -34,9 +34,9 @@ const BookingChartHeader = ({
     const endStr = dayjs(currentStart).add(visibleDays - 1, 'days').format('MMM D, YYYY');
 
     return (
-        <div style={{ 
-            padding: '16px', borderBottom: '1px solid #cecece', backgroundColor: '#fff', 
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center' 
+        <div style={{
+            padding: '16px', borderBottom: '1px solid #cecece', backgroundColor: '#fff',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
             <Space size="middle">
                 <Button.Group>
@@ -45,7 +45,7 @@ const BookingChartHeader = ({
                     <Button icon={<RightOutlined />} onClick={handleNext} />
                 </Button.Group>
 
-                <DatePicker 
+                <DatePicker
                     // Convert string back to object for the UI only
                     value={dayjs(currentStart)}
                     onChange={(date) => {
@@ -68,10 +68,10 @@ const BookingChartHeader = ({
                         { value: '7', label: '7 Days' },
                         { value: '14', label: '14 Days' },
                         { value: '30', label: '30 Days' },
-                        { value: '90', label: '90 Days' },
+                        { value: '60', label: '60 Days' },
                     ]}
                 />
-                
+
                 <Text strong style={{ marginLeft: 8, color: '#141414', fontSize: '15px' }}>
                     {startStr} — {endStr}
                 </Text>
