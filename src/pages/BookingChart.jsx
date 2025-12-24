@@ -5,21 +5,20 @@ import BookingChartHeader from '../components/BookingChartHeader';
 import moment from 'moment';
 
 const BookingChartPage = () => {
-    const [startDate, setStartDate] = useState('2025-12-13'); 
+    const [startDate, setStartDate] = useState('2025-12-13');
     const [visibleDays, setVisibleDays] = useState(30);
 
     return (
         <div>
-            <BookingChartHeader 
+            <BookingChartHeader
                 currentStart={startDate}
                 visibleDays={visibleDays}
-                onDateChange={(d) => setStartDate(d.format('YYYY-MM-DD'))}
+                onDateChange={(d) => setStartDate(d)}
                 onDaysSelect={(v) => setVisibleDays(v)}
-                onTodayClick={() => setStartDate(moment().format('YYYY-MM-DD'))}
             />
-            <CoreBookingChart 
-                startDate={startDate} 
-                visibleDays={visibleDays} 
+            <CoreBookingChart
+                startDate={startDate}
+                visibleDays={visibleDays}
             />
         </div>
     );
