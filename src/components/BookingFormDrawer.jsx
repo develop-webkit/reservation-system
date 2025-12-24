@@ -18,7 +18,7 @@ const sourceOptions = ['Website', 'Walk-in', 'Booking.com', 'Expedia'];
 
 const BookingFormDrawer = ({ visible, onClose, initialData = {} }) => {
     const [form] = Form.useForm();
-    
+
     // Set initial form values based on the cell clicked in the chart
     React.useEffect(() => {
         if (visible) {
@@ -38,7 +38,7 @@ const BookingFormDrawer = ({ visible, onClose, initialData = {} }) => {
             checkOut: values.checkOut ? values.checkOut.format('YYYY-MM-DD') : null,
         });
         // Logic to save the booking and refresh the chart would go here
-        onClose(); 
+        onClose();
     };
 
     return (
@@ -47,7 +47,7 @@ const BookingFormDrawer = ({ visible, onClose, initialData = {} }) => {
             width={720}
             onClose={onClose}
             open={visible}
-            bodyStyle={{ paddingBottom: 80, backgroundColor: '#000' }}
+            styles={{ body: { paddingBottom: 80, backgroundColor: '#000' } }}
             headerStyle={{ backgroundColor: '#141414', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}
             // Footer with action buttons
             footer={
@@ -87,7 +87,7 @@ const BookingFormDrawer = ({ visible, onClose, initialData = {} }) => {
                         </Form.Item>
                     </Col>
                 </Row>
-                
+
                 {/* --- BOOKING DETAILS --- */}
                 <Divider orientation="left" style={{ color: '#ccc' }}>Reservation Details</Divider>
                 <Row gutter={16}>
@@ -113,7 +113,7 @@ const BookingFormDrawer = ({ visible, onClose, initialData = {} }) => {
                         </Form.Item>
                     </Col>
                 </Row>
-                
+
                 {/* --- DATES AND STATUS --- */}
                 <Row gutter={16}>
                     <Col span={8}>
@@ -145,7 +145,7 @@ const BookingFormDrawer = ({ visible, onClose, initialData = {} }) => {
                         </Form.Item>
                     </Col>
                 </Row>
-                
+
                 {/* --- RATE AND GUESTS --- */}
                 <Row gutter={16}>
                     <Col span={8}>

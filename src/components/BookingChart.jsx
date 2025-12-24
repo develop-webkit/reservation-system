@@ -27,6 +27,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const [bookingsData] = useState(initialBookingsData);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [formInitialData, setFormInitialData] = useState({});
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
 
     // 1. Generate column dates (Immutable)
     const dateRange = useMemo(() => {
@@ -195,10 +196,36 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         );
     };
 
+
+
+    const handleContextMenu = (e) => {
+        e.preventDefault();
+        setContextMenu({
+            visible: true,
+            x: e.pageX,
+            y: e.pageY
+        });
+    };
+
+    const handleCloseContextMenu = () => {
+        setContextMenu({ ...contextMenu, visible: false });
+    };
+
+    const handleMenuItemClick = (action) => {
+        console.log(`Context menu action: ${action}`);
+        handleCloseContextMenu();
+    };
+
+    // ... (rest of your existing logic)
+
     return (
-        <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ width: '100%', overflowX: 'hidden' }}>
+        <Card bordered={false} styles={{ body: { padding: 0 } }} style={{ borderRadius: '8px', overflow: 'hidden' }} onClick={handleCloseContextMenu}>
+            <div
+                style={{ width: '100%', overflowX: 'hidden' }}
+                onContextMenu={handleContextMenu}
+            >
                 {/* Header Row */}
+                {/* ... existing header code ... */}
                 <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', backgroundColor: '#fff', borderBottom: '2px solid #f0f0f0' }}>
                     <div style={{ padding: '12px', fontWeight: 'bold', borderRight: '1px solid #f0f0f0' }}>Room</div>
                     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)` }}>
@@ -237,6 +264,45 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     </React.Fragment>
                 ))}
             </div>
+
+            {/* Context Menu */}
+            {contextMenu.visible && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: contextMenu.y - 120, // Adjust for offset relative to viewport vs localized container if needed, but pageX/Y usually needs portal. For simplicity inside relative container we might need adjustment.
+                        left: contextMenu.x - 300,
+                        // Using fixed position for overlay is safer to avoid clipping
+                    }}
+                >
+                    {/* Actually, best to put it in a fixed overlay or portal. Or use fixed positioning. */}
+                </div>
+            )}
+            {contextMenu.visible && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                        backgroundColor: '#fff',
+                        border: '1px solid #f0f0f0',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        zIndex: 1000,
+                        borderRadius: '4px',
+                        minWidth: '160px',
+                        padding: '4px 0'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
+                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('quick_quote')}>Quick Quote</div>
+                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_order')}>Add Out of Order</div>
+                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_service')}>Add Out Of Service</div>
+                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
+                </div>
+            )}
+
             <BookingFormDrawer visible={isDrawerVisible} onClose={() => setIsDrawerVisible(false)} initialData={formInitialData} />
         </Card>
     );

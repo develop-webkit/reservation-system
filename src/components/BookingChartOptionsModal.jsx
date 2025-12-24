@@ -85,7 +85,7 @@ const BookingChartOptionsModal = ({ visible, onClose }) => {
             footer={null}
             closable={false}
             width={1200}
-            bodyStyle={{ padding: 0, borderRadius: '4px' }}
+            styles={{ body: { padding: 0, borderRadius: '4px' } }}
             centered
         >
             {customHeader}
