@@ -61,7 +61,7 @@ const ChartHeader = ({ chartDays, ROOM_COL_WIDTH }) => {
                         {/* Go to Current Date */}
                         <Button type="primary" icon={<CalendarOutlined />}>Today</Button>
                         {/* Go to Next Period */}
-                        <Button icon={<RightOutlined />} />
+                  
                         
                         {/* View Selector (e.g., 7 Days) */}
                         <Select

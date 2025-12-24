@@ -156,8 +156,9 @@ body {
    6. Booking Chart Styling
    ------------------------------------ */
 .booking-chart-container {
-    overflow-x: hidden; /* Prevent scrolling */
     width: 100%;
+    overflow-x: hidden; /* Fixes the "Items all over the place" scroll issue */
+    background-color: #fff;
 }
 
 .chart-grid-wrapper {
@@ -508,16 +509,17 @@ display: grid;
 /* --- Booking Grid Area (The Grid that holds the blocks) --- */
 .reservation-grid-area {
     grid-column: 2;
-    display: grid;
     /* Use dynamic columns and flexible width */
     grid-template-columns: repeat(var(--visible-days), 1fr);
-    position: relative; 
-    width: 100%; /* Fill the available space */
+    display: grid;
+    width: 100%; /* Must be 100% to fill the parent container */
+    position: relative;
 }
 
 .daily-cell {
-    border-right: 1px solid #cecece;
+    border-right: 1px solid #f0f0f0;
     height: 100%;
+    box-sizing: border-box;
 }
 
 /* --- Booking Item (The Blocks) --- */
@@ -529,7 +531,7 @@ display: grid;
     padding:0  10px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: grab; 
-    transition: box-shadow 0.2s;
+    transition: opacity 0.2s;
     grid-row: 1; 
     z-index: 5;
     align-items: center;
@@ -553,6 +555,12 @@ display: grid;
     z-index: 10;
 }
 
+.booking-item:hover {
+    opacity: 0.9;
+    z-index: 10;
+}
+
 .booking-item:hover .resizer-handle {
     background: rgba(255, 255, 255, 0.5);
 }
+

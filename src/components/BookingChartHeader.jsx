@@ -1,5 +1,4 @@
 // src/components/BookingChartHeader.jsx
-
 import React from 'react';
 import { Button, Select, Space, DatePicker, Typography } from 'antd';
 import { 
@@ -9,106 +8,77 @@ import {
     RedoOutlined,
     CalendarOutlined 
 } from '@ant-design/icons';
-import moment from 'moment';
+import dayjs from 'dayjs'; 
 
 const { Text } = Typography;
 
-/**
- * @param {string} currentStart - The current start date (YYYY-MM-DD)
- * @param {number} visibleDays - The current zoom level (7, 30, 60)
- * @param {function} onDateChange - Function to update the start date
- * @param {function} onDaysSelect - Function to update the number of columns
- * @param {function} onTodayClick - Function to reset to today's date
- */
 const BookingChartHeader = ({ 
     currentStart, 
     visibleDays, 
     onDateChange, 
-    onDaysSelect, 
-    onTodayClick 
+    onDaysSelect 
 }) => {
 
-    // Helper to shift the date by the current "zoom" amount
+    // dayjs is immutable - these operations create NEW date strings safely
     const handlePrev = () => {
-        const newDate = moment(currentStart).subtract(visibleDays, 'days');
+        const newDate = dayjs(currentStart).subtract(visibleDays, 'days').format('YYYY-MM-DD');
         onDateChange(newDate);
     };
 
     const handleNext = () => {
-        const newDate = moment(currentStart).add(visibleDays, 'days');
+        const newDate = dayjs(currentStart).add(visibleDays, 'days').format('YYYY-MM-DD');
         onDateChange(newDate);
     };
 
+    const startStr = dayjs(currentStart).format('MMM D');
+    const endStr = dayjs(currentStart).add(visibleDays - 1, 'days').format('MMM D, YYYY');
+
     return (
         <div style={{ 
-            padding: '12px 20px', 
-            borderBottom: '1px solid #cecece', 
-            backgroundColor: '#fff', 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            position: 'sticky',
-            top: 0,
-            zIndex: 100
+            padding: '16px', borderBottom: '1px solid #cecece', backgroundColor: '#fff', 
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center' 
         }}>
-            
-            {/* --- Left Side: Navigation & Timeline Controls --- */}
             <Space size="middle">
                 <Button.Group>
-                    <Button 
-                        icon={<LeftOutlined />} 
-                        onClick={handlePrev}
-                        title={`Prev ${visibleDays} Days`}
-                    />
-                    <Button 
-                        icon={<RightOutlined />} 
-                        onClick={handleNext}
-                        title={`Next ${visibleDays} Days`}
-                    />
+                    <Button icon={<LeftOutlined />} onClick={handlePrev} />
+                    <Button onClick={() => onDateChange(dayjs().format('YYYY-MM-DD'))}>Today</Button>
+                    <Button icon={<RightOutlined />} onClick={handleNext} />
                 </Button.Group>
 
-                <Button 
-                    type="primary" 
-                    onClick={onTodayClick}
-                    style={{ fontWeight: '600' }}
-                >
-                    Today
-                </Button>
-
-                {/* The Date Picker: Updates the chart instantly when changed */}
                 <DatePicker 
-                    value={moment(currentStart)} 
-                    onChange={(date) => onDateChange(date)}
+                    // Convert string back to object for the UI only
+                    value={dayjs(currentStart)}
+                    onChange={(date) => {
+                        // Send only the string to the parent to prevent the .format() error
+                        if (date && date.isValid()) {
+                            onDateChange(date.format('YYYY-MM-DD'));
+                        }
+                    }}
                     format="MMM DD, YYYY"
                     allowClear={false}
                     suffixIcon={<CalendarOutlined />}
                     style={{ width: 160 }}
                 />
 
-                {/* Column Count (Zoom Level) */}
                 <Select
                     value={String(visibleDays)}
                     style={{ width: 110 }}
-                    onChange={(value) => onDaysSelect(Number(value))}
+                    onChange={(val) => onDaysSelect(Number(val))}
                     options={[
                         { value: '7', label: '7 Days' },
                         { value: '14', label: '14 Days' },
                         { value: '30', label: '30 Days' },
-                        { value: '60', label: '60 Days' },
+                        { value: '90', label: '90 Days' },
                     ]}
                 />
                 
-                {/* Calculated Display Range */}
-                <Text strong style={{ marginLeft: 8, color: '#595959' }}>
-                    {moment(currentStart).format('MMM D')} - {moment(currentStart).add(visibleDays, 'days').format('MMM D, YYYY')}
+                <Text strong style={{ marginLeft: 8, color: '#141414', fontSize: '15px' }}>
+                    {startStr} — {endStr}
                 </Text>
             </Space>
 
-            {/* --- Right Side: System Actions --- */}
             <Space size="middle">
-                <Button icon={<RedoOutlined />} onClick={() => window.location.reload()}>
-                    Refresh
-                </Button>
+                <Button icon={<RedoOutlined />} onClick={() => window.location.reload()}>Refresh</Button>
                 <Button icon={<SettingOutlined />} />
             </Space>
         </div>

@@ -1,9 +1,8 @@
 // src/components/BookingChart.jsx
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { roomsData, bookingsData as initialBookingsData } from '../data/mockData';
-import { generateDateRange } from '../utils/dateUtils';
 import { Card, Typography, Tooltip } from 'antd';
-import moment from 'moment';
+import dayjs from 'dayjs'; 
 import BookingFormDrawer from './BookingFormDrawer';
 
 const { Text } = Typography;
@@ -16,182 +15,90 @@ const STATUS_COLORS = {
 };
 
 const CoreBookingChart = ({ startDate, visibleDays = 30 }) => {
-    const [bookingsData, setBookingsData] = useState(initialBookingsData);
+    const [bookingsData] = useState(initialBookingsData);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [formInitialData, setFormInitialData] = useState({});
-    
-    // Resizing State
-    const [isResizing, setIsResizing] = useState(false);
-    const [resizingBookingId, setResizingBookingId] = useState(null);
-    const [initialMouseX, setInitialMouseX] = useState(0);
-    const [initialDuration, setInitialDuration] = useState(0);
-    
-    // Ref to measure actual width for resizing math
-    const gridRef = useRef(null);
 
+    // 1. Generate column dates (Immutable)
     const dateRange = useMemo(() => {
-        return generateDateRange(startDate, visibleDays);
+        const dates = [];
+        const start = dayjs(startDate).startOf('day');
+        for (let i = 0; i < visibleDays; i++) {
+            dates.push(start.add(i, 'days').format('YYYY-MM-DD'));
+        }
+        return dates;
     }, [startDate, visibleDays]);
 
-    // --- Dynamic Math for Resizing ---
-    const getPixelsPerDay = () => {
-        if (!gridRef.current) return 40; 
-        // Calculate width of 1 day based on actual screen size
-        return gridRef.current.offsetWidth / visibleDays;
-    };
-
-    const getBookingDuration = useCallback((checkIn, checkOut) => {
-        return moment(checkOut).diff(moment(checkIn), 'days');
-    }, []);
-
-    const getBookingOffset = useCallback((checkIn) => {
-        const chartStart = moment(dateRange[0]);
-        const bookingStart = moment(checkIn);
-        return bookingStart.diff(chartStart, 'days');
-    }, [dateRange]);
-
-    // --- Handlers ---
-    const handleResizeMouseDown = (e, bookingId) => {
-        e.stopPropagation();
-        setIsResizing(true);
-        setResizingBookingId(bookingId);
-        setInitialMouseX(e.clientX);
-        const booking = bookingsData.find(b => b.id === bookingId);
-        if (booking) setInitialDuration(getBookingDuration(booking.checkIn, booking.checkOut));
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e) => {
-            if (!isResizing) return;
-            const pixelsPerDay = getPixelsPerDay();
-            const deltaX = e.clientX - initialMouseX;
-            const dayChange = Math.round(deltaX / pixelsPerDay);
-            const newDuration = Math.max(1, initialDuration + dayChange);
-
-            setBookingsData(prev => prev.map(b => {
-                if (b.id === resizingBookingId) {
-                    return { ...b, checkOut: moment(b.checkIn).add(newDuration, 'days').format('YYYY-MM-DD') };
-                }
-                return b;
-            }));
+    const getGridPosition = useCallback((checkIn, checkOut) => {
+        const chartStart = dayjs(dateRange[0]);
+        const bStart = dayjs(checkIn);
+        const bEnd = dayjs(checkOut);
+        const startCol = bStart.diff(chartStart, 'days') + 1;
+        const duration = bEnd.diff(bStart, 'days');
+        return {
+            start: startCol,
+            end: startCol + duration,
+            isVisible: !((startCol + duration) <= 1 || startCol > visibleDays)
         };
+    }, [dateRange, visibleDays]);
 
-        const handleMouseUp = () => {
-            setIsResizing(false);
-            setResizingBookingId(null);
-        };
-
-        if (isResizing) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isResizing, initialMouseX, initialDuration, resizingBookingId]);
-
-    // --- Renderers ---
-    const renderDateHeader = () => (
-        <div className="chart-header" style={{ 
-            display: 'grid', 
-            gridTemplateColumns: `150px 1fr`, 
-            width: '100%' 
-        }}>
-            <div className="room-label header-cell" style={{ border: '1px solid #cecece', padding: '8px', fontWeight: 'bold' }}>Room</div>
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: `repeat(${visibleDays}, 1fr)`,
-                width: '100%'
-            }}>
-                {dateRange.map(date => (
-                    <div key={date} className="date-cell header-cell" style={{ border: '1px solid #cecece', textAlign: 'center', borderLeft: 'none' }}>
-                        <Text strong style={{ fontSize: '10px', display: 'block' }}>{moment(date).format('ddd').toUpperCase()}</Text>
-                        <Text strong style={{ fontSize: visibleDays > 60 ? '10px' : '14px' }}>{moment(date).format('D')}</Text>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    const renderRoomRow = (room) => {
-        const roomBookings = bookingsData.filter(b => b.roomId === room.id);
-        return (
-            <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: '50px', borderBottom: '1px solid #cecece' }}>
-                <div className="room-label-col" style={{ padding: '5px 10px', borderRight: '1px solid #cecece', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
-                    <Text type="secondary" style={{ fontSize: '10px' }}>{room.type}</Text>
-                </div>
-                
-                <div 
-                    ref={gridRef}
-                    className="reservation-grid-area" 
-                    style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, 
-                        position: 'relative',
-                        width: '100%'
-                    }}
-                >
-                    {dateRange.map(date => (
-                        <div key={date} className="daily-cell" style={{ borderRight: '1px solid #f0f0f0', height: '100%' }} />
-                    ))}
-                    
-                    {roomBookings.map(booking => {
-                        const duration = getBookingDuration(booking.checkIn, booking.checkOut);
-                        const offset = getBookingOffset(booking.checkIn);
-                        
-                        if (offset + duration > 0 && offset < visibleDays) {
-                            return (
-                                <Tooltip key={booking.id} title={`${booking.guestName}`}>
-                                    <div
-                                        className="booking-item"
-                                        style={{
-                                            position: 'absolute',
-                                            left: `${(offset / visibleDays) * 100}%`,
-                                            width: `${(duration / visibleDays) * 100}%`,
-                                            height: '30px',
-                                            backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
-                                            borderRadius: '4px',
-                                            zIndex: 5,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            padding: '0 8px',
-                                            cursor: 'pointer',
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                        }}
-                                    >
-                                        <Text ellipsis style={{ color: '#fff', fontSize: '11px', fontWeight: 500 }}>
-                                            {visibleDays > 60 ? '' : booking.guestName}
-                                        </Text>
-                                        <div 
-                                            className="resizer-handle" 
-                                            onMouseDown={(e) => handleResizeMouseDown(e, booking.id)} 
-                                            style={{ position: 'absolute', right: 0, width: '8px', height: '100%', cursor: 'ew-resize' }}
-                                        />
-                                    </div>
-                                </Tooltip>
-                            );
-                        }
-                        return null;
-                    })}
-                </div>
-            </div>
-        );
+    const handleCellClick = (room, date) => {
+        setFormInitialData({
+            roomId: room.id,
+            roomName: room.name,
+            checkIn: date,
+            checkOut: dayjs(date).add(1, 'days').format('YYYY-MM-DD'),
+        });
+        setIsDrawerVisible(true);
     };
 
     return (
-        <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ borderRadius: 0, overflow: 'hidden' }}>
+        <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ borderRadius: '8px', overflow: 'hidden' }}>
             <div style={{ width: '100%', overflowX: 'hidden' }}>
-                {renderDateHeader()}
-                {roomsData.map(room => renderRoomRow(room))}
-            </div>
+                {/* Header Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', backgroundColor: '#fff', borderBottom: '2px solid #f0f0f0' }}>
+                    <div style={{ padding: '12px', fontWeight: 'bold', borderRight: '1px solid #f0f0f0' }}>Room</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)` }}>
+                        {dateRange.map(date => (
+                            <div key={date} style={{ borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '6px 0' }}>
+                                <Text strong style={{ display: 'block', color: '#8c8c8c', fontSize: '10px' }}>{dayjs(date).format('ddd').toUpperCase()}</Text>
+                                <Text strong>{dayjs(date).format('D')}</Text>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-            <BookingFormDrawer
-                visible={isDrawerVisible}
-                onClose={() => setIsDrawerVisible(false)}
-                initialData={formInitialData}
-            />
+                {/* Room Rows */}
+                {roomsData.map(room => (
+                    <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: '52px', borderBottom: '1px solid #f0f0f0' }}>
+                        <div style={{ padding: '5px 12px', borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#fff' }}>
+                            <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
+                            {dateRange.map((date, idx) => (
+                                <div key={date} onClick={() => handleCellClick(room, date)} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, cursor: 'pointer' }} />
+                            ))}
+                            {bookingsData.filter(b => b.roomId === room.id).map(booking => {
+                                const pos = getGridPosition(booking.checkIn, booking.checkOut);
+                                if (!pos.isVisible) return null;
+                                return (
+                                    <Tooltip key={booking.id} title={booking.guestName}>
+                                        <div style={{
+                                            gridColumnStart: Math.max(1, pos.start),
+                                            gridColumnEnd: Math.min(visibleDays + 1, pos.end),
+                                            gridRow: 1, zIndex: 2, alignSelf: 'center', height: '34px', backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
+                                            borderRadius: '4px', margin: '0 2px', display: 'flex', alignItems: 'center', color: '#fff', padding: '0 8px', overflow: 'hidden'
+                                        }}>
+                                            <Text ellipsis style={{ color: '#fff', fontSize: '11px' }}>{booking.guestName}</Text>
+                                        </div>
+                                    </Tooltip>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <BookingFormDrawer visible={isDrawerVisible} onClose={() => setIsDrawerVisible(false)} initialData={formInitialData} />
         </Card>
     );
 };
