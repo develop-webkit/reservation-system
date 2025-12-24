@@ -1,5 +1,5 @@
 // src/components/BookingChartHeader.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Select, Space, DatePicker, Typography, Popover, Badge, Divider } from 'antd';
 import {
     LeftOutlined,
@@ -13,6 +13,7 @@ import {
     SwapOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import BookingChartOptionsModal from './BookingChartOptionsModal';
 
 const { Text } = Typography;
 
@@ -102,7 +103,8 @@ const BookingChartHeader = ({
     onExpandAll,
     onCollapseAll
 }) => {
-    // ... rest of component
+    const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+
     // dayjs is immutable - these operations create NEW date strings safely
     const handlePrev = () => {
         const newDate = dayjs(currentStart).subtract(1, 'days').format('YYYY-MM-DD');
@@ -182,8 +184,10 @@ const BookingChartHeader = ({
                     />
                 </Popover>
                 <Button icon={<RedoOutlined />} onClick={() => window.location.reload()}>Refresh</Button>
-                <Button icon={<SettingOutlined />} />
+                <Button icon={<SettingOutlined />} onClick={() => setIsOptionsVisible(true)} />
             </Space>
+
+            <BookingChartOptionsModal visible={isOptionsVisible} onClose={() => setIsOptionsVisible(false)} />
         </div>
     );
 };

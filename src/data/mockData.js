@@ -45,158 +45,117 @@ export const roomsData = [
 // Booking definitions
 // Note: Dates are centered around 2025-12-13
 export const bookingsData = [
-    // Special Events
-    // ... none for now
-
-    // Parked
-    { id: 'BPK1', roomId: 'PK01', guestName: 'Yas (Parked)', checkIn: '2025-11-28', checkOut: '2025-12-19', status: 'PENDING' },
+    // Pre-existing manually defined important ones
+    { 
+        id: '1', roomId: '1', guestName: 'Lewis T', checkIn: '2025-12-14', checkOut: '2025-12-18', status: 'CHECKED_IN',
+        masterResNo: '2', reservationNo: '455', groupName: 'Heritage Minerals', clientName: 'Lewis T',
+        arriveTime: '02:00 PM', departTime: '10:00 AM', people: '1A 0C 0I', bkgSource: 'Contracted', tariffType: 'Occupied', balance: 'XXXX', isFixed: false
+    },
+    // Randomly generated data below
+    // Staff Rooms
+    { id: 'RND1', roomId: 'S01', guestName: 'Manager Permanent', checkIn: '2025-12-01', checkOut: '2026-01-10', status: 'CHECKED_IN', isFixed: true, reservationNo: '900', color: 'gray' },
+    { id: 'RND2', roomId: 'S02', guestName: 'Staff Rotate A', checkIn: '2025-12-09', checkOut: '2025-12-15', status: 'CHECKED_OUT', reservationNo: '901' },
+    { id: 'RND3', roomId: 'S02', guestName: 'Staff Rotate B', checkIn: '2025-12-16', checkOut: '2025-12-28', status: 'CHECKED_IN', reservationNo: '902' },
     
-    // Staff
-    { 
-        id: '1', 
-        roomId: '1', 
-        guestName: 'Lewis T', 
-        checkIn: '2025-12-14', 
-        checkOut: '2025-12-18', 
-        status: 'CHECKED_IN',
-        masterResNo: '2',
-        reservationNo: '455',
-        groupName: 'Heritage Minerals',
-        clientName: 'Lewis T',
-        arriveTime: '02:00 PM',
-        departTime: '10:00 AM',
-        people: '1A 0C 0I',
-        bkgSource: 'Contracted with Meals',
-        tariffType: 'Occupied Room Rate PRPN',
-        balance: 'XXXX',
-        caravanSalesSlide: 'None',
-        company: 'Heritage Minerals',
-        isFixed: false
-    },
-    { 
-        id: '2', 
-        roomId: '3', 
-        guestName: 'Chan', 
-        checkIn: '2025-12-14', 
-        checkOut: '2025-12-16', 
-        status: 'BLOCKED',
-        masterResNo: '3',
-        reservationNo: '456',
-        groupName: 'Mining Corp',
-        clientName: 'Chan',
-        arriveTime: '01:00 PM',
-        departTime: '10:00 AM',
-        people: '1A 0C 0I',
-        bkgSource: 'Direct',
-        tariffType: 'Standard Rate',
-        balance: '0.00',
-        caravanSalesSlide: 'None',
-        company: 'Mining Corp',
-        isFixed: true
-    },
-    { 
-        id: '3', 
-        roomId: '5', 
-        guestName: 'Williams M', 
-        checkIn: '2025-12-14', 
-        checkOut: '2025-12-19', 
-        status: 'PENDING',
-        masterResNo: '4',
-        reservationNo: '457',
-        groupName: 'Construction Ltd',
-        clientName: 'Williams M',
-        arriveTime: '03:00 PM',
-        departTime: '11:00 AM',
-        people: '2A 0C 0I',
-        bkgSource: 'Online',
-        tariffType: 'Corporate Rate',
-        balance: '150.00',
-        caravanSalesSlide: 'None',
-        company: 'Construction Ltd',
-        isFixed: false
-    },
-    { 
-        id: '4', 
-        roomId: '10', 
-        guestName: 'Dos Santos', 
-        checkIn: '2025-12-15', 
-        checkOut: '2025-12-25', 
-        status: 'CONFIRMED',
-        masterResNo: '5',
-        reservationNo: '458',
-        groupName: 'Engineering Co',
-        clientName: 'Dos Santos',
-        arriveTime: '12:00 PM',
-        departTime: '10:00 AM',
-        people: '1A 0C 0I',
-        bkgSource: 'Email',
-        tariffType: 'Long Stay',
-        balance: '0.00',
-        caravanSalesSlide: 'None',
-        company: 'Engineering Co',
-        isFixed: true
-    },
-    { 
-        id: '5', 
-        roomId: '11', 
-        guestName: 'HILLIER', 
-        checkIn: '2025-12-15', 
-        checkOut: '2025-12-23', 
-        status: 'CONFIRMED',
-        masterResNo: '6',
-        reservationNo: '459',
-        groupName: 'Logistics Inc',
-        clientName: 'HILLIER',
-        arriveTime: '02:00 PM',
-        departTime: '10:00 AM',
-        people: '1A 0C 0I',
-        bkgSource: 'Phone',
-        tariffType: 'Standard Rate',
-        balance: '0.00',
-        caravanSalesSlide: 'None',
-        company: 'Logistics Inc',
-        isFixed: false
-    },
-    { 
-        id: '6', 
-        roomId: '6', 
-        guestName: 'Burns', 
-        checkIn: '2025-12-16', 
-        checkOut: '2025-12-20', 
-        status: 'PENDING',
-        masterResNo: '7',
-        reservationNo: '460',
-        groupName: 'Energy Solutions',
-        clientName: 'Burns',
-        arriveTime: '04:00 PM',
-        departTime: '10:00 AM',
-        people: '1A 0C 0I',
-        bkgSource: 'Contracted',
-        tariffType: 'Corporate Rate',
-        balance: '50.00',
-        caravanSalesSlide: 'None',
-        company: 'Energy Solutions',
-        isFixed: false
-    },
-    { 
-        id: '7', 
-        roomId: '8', 
-        guestName: 'Wells', 
-        checkIn: '2025-12-18', 
-        checkOut: '2025-12-22', 
-        status: 'CONFIRMED',
-        masterResNo: '8',
-        reservationNo: '461',
-        groupName: 'Tech Systems',
-        clientName: 'Wells',
-        arriveTime: '02:00 PM',
-        departTime: '10:00 AM',
-        people: '1A 0C 0I',
-        bkgSource: 'Direct',
-        tariffType: 'Standard Rate',
-        balance: '0.00',
-        caravanSalesSlide: 'None',
-        company: 'Tech Systems',
-        isFixed: false
-    }
-];
+    // Benjamin Rooms (B01-B09)
+    { id: 'RND4', roomId: 'B01', guestName: 'Smith J', checkIn: '2025-12-09', checkOut: '2025-12-13', status: 'CHECKED_OUT', reservationNo: '501' },
+    { id: 'RND5', roomId: 'B01', guestName: 'Doe A', checkIn: '2025-12-20', checkOut: '2025-12-26', status: 'CONFIRMED', reservationNo: '502' },
+    { id: 'RND6', roomId: 'B01', guestName: 'Late Stay', checkIn: '2025-12-28', checkOut: '2026-01-02', status: 'PENDING', reservationNo: '503' },
+
+    { id: 'RND7', roomId: 'B02', guestName: 'Johnson', checkIn: '2025-12-10', checkOut: '2025-12-15', status: 'CHECKED_OUT', reservationNo: '504' },
+    { id: 'RND8', roomId: 'B02', guestName: 'Merry Xmas', checkIn: '2025-12-23', checkOut: '2025-12-27', status: 'CONFIRMED', reservationNo: '505', groupName: 'Holiday' },
+
+    { id: 'RND9', roomId: 'B03', guestName: 'Miner Corp A', checkIn: '2025-12-09', checkOut: '2025-12-30', status: 'CHECKED_IN', reservationNo: '506', groupName: 'Miner Corp' },
+    { id: 'RND10', roomId: 'B03', guestName: 'New Year', checkIn: '2025-12-31', checkOut: '2026-01-05', status: 'PENDING', reservationNo: '507' },
+
+    { id: 'RND11', roomId: 'B04', guestName: 'Maintenance', checkIn: '2025-12-09', checkOut: '2025-12-12', status: 'BLOCKED', reservationNo: '508' },
+    { id: 'RND12', roomId: 'B04', guestName: 'Short Stay', checkIn: '2025-12-13', checkOut: '2025-12-14', status: 'CONFIRMED', reservationNo: '509' },
+    { id: 'RND13', roomId: 'B04', guestName: 'Long Term', checkIn: '2025-12-15', checkOut: '2026-01-05', status: 'CONFIRMED', reservationNo: '510' },
+
+    { id: 'RND14', roomId: 'B05', guestName: 'Guest 1', checkIn: '2025-12-10', checkOut: '2025-12-12', status: 'CHECKED_OUT', reservationNo: '511' },
+    { id: 'RND15', roomId: 'B05', guestName: 'Guest 2', checkIn: '2025-12-13', checkOut: '2025-12-18', status: 'CHECKED_IN', reservationNo: '512' },
+    { id: 'RND16', roomId: 'B05', guestName: 'Guest 3', checkIn: '2025-12-20', checkOut: '2025-12-28', status: 'CONFIRMED', reservationNo: '513' },
+
+    { id: 'RND17', roomId: 'B06', guestName: 'Empty Gap', checkIn: '2025-12-09', checkOut: '2025-12-11', status: 'CHECKED_OUT', reservationNo: '514' },
+    { id: 'RND18', roomId: 'B06', guestName: 'Block Booking', checkIn: '2025-12-18', checkOut: '2025-12-28', status: 'PENDING', reservationNo: '515' },
+
+    { id: 'RND19', roomId: 'B07', guestName: 'Early Bird', checkIn: '2025-12-08', checkOut: '2025-12-14', status: 'CHECKED_OUT', reservationNo: '516' },
+    { id: 'RND20', roomId: 'B07', guestName: 'Mid Month', checkIn: '2025-12-15', checkOut: '2025-12-22', status: 'CONFIRMED', reservationNo: '517' },
+    { id: 'RND21', roomId: 'B07', guestName: 'Year End', checkIn: '2025-12-26', checkOut: '2026-01-02', status: 'CONFIRMED', reservationNo: '518' },
+
+    { id: 'RND22', roomId: 'B08', guestName: 'Specific', checkIn: '2025-12-11', checkOut: '2025-12-13', status: 'CHECKED_OUT', reservationNo: '519' },
+    { id: 'RND23', roomId: 'B08', guestName: 'Request', checkIn: '2025-12-15', checkOut: '2025-12-19', status: 'CONFIRMED', reservationNo: '520' },
+    { id: 'RND24', roomId: 'B08', guestName: 'Locked', checkIn: '2025-12-22', checkOut: '2025-12-30', status: 'CONFIRMED', isFixed: true, reservationNo: '521' },
+
+    { id: 'RND25', roomId: 'B09', guestName: 'Overflow', checkIn: '2025-12-09', checkOut: '2025-12-20', status: 'CHECKED_IN', reservationNo: '522' },
+    { id: 'RND26', roomId: 'B09', guestName: 'Cleanup', checkIn: '2025-12-22', checkOut: '2025-12-23', status: 'BLOCKED', reservationNo: '523' },
+
+    // Shiel Rooms (S01_SH - S08_SH)
+    { id: 'RND27', roomId: 'S01_SH', guestName: 'Delta Team', checkIn: '2025-12-09', checkOut: '2025-12-15', status: 'CHECKED_OUT', groupName: 'Delta' },
+    { id: 'RND28', roomId: 'S01_SH', guestName: 'Delta Team', checkIn: '2025-12-16', checkOut: '2025-12-22', status: 'CHECKED_IN', groupName: 'Delta' },
+    { id: 'RND29', roomId: 'S01_SH', guestName: 'Delta Team', checkIn: '2025-12-23', checkOut: '2025-12-30', status: 'CONFIRMED', groupName: 'Delta' },
+
+    { id: 'RND30', roomId: 'S02_SH', guestName: 'Echo 1', checkIn: '2025-12-10', checkOut: '2025-12-18', status: 'PENDING', groupName: 'Echo' },
+    { id: 'RND31', roomId: 'S02_SH', guestName: 'Echo 2', checkIn: '2025-12-20', checkOut: '2025-12-28', status: 'CONFIRMED', groupName: 'Echo' },
+
+    { id: 'RND32', roomId: 'S03_SH', guestName: 'Solo Traveler', checkIn: '2025-12-12', checkOut: '2025-12-14', status: 'CHECKED_OUT' },
+    { id: 'RND33', roomId: 'S03_SH', guestName: 'Couple', checkIn: '2025-12-15', checkOut: '2025-12-25', status: 'CONFIRMED' },
+
+    { id: 'RND34', roomId: 'S04_SH', guestName: 'Repair Work', checkIn: '2025-12-09', checkOut: '2025-12-11', status: 'BLOCKED' },
+    { id: 'RND35', roomId: 'S04_SH', guestName: 'Worker A', checkIn: '2025-12-12', checkOut: '2025-12-20', status: 'CHECKED_IN' },
+
+    { id: 'RND36', roomId: 'S05_SH', guestName: 'Worker B', checkIn: '2025-12-09', checkOut: '2025-12-20', status: 'CHECKED_IN' },
+    { id: 'RND37', roomId: 'S05_SH', guestName: 'Xmas Break', checkIn: '2025-12-24', checkOut: '2025-12-27', status: 'PENDING' },
+
+    { id: 'RND38', roomId: 'S06_SH', guestName: 'Contractor', checkIn: '2025-12-14', checkOut: '2026-01-04', status: 'CONFIRMED', reservationNo: '601' },
+
+    { id: 'RND39', roomId: 'S07_SH', guestName: 'TBA', checkIn: '2025-12-15', checkOut: '2025-12-17', status: 'PENDING' },
+    { id: 'RND40', roomId: 'S07_SH', guestName: 'Confirmed', checkIn: '2025-12-18', checkOut: '2025-12-22', status: 'CONFIRMED' },
+
+    { id: 'RND41', roomId: 'S08_SH', guestName: 'VIP', checkIn: '2025-12-10', checkOut: '2025-12-15', status: 'CHECKED_OUT' },
+    { id: 'RND42', roomId: 'S08_SH', guestName: 'VIP Return', checkIn: '2025-12-20', checkOut: '2025-12-26', status: 'CONFIRMED' },
+
+    // Wallace Rooms (W01-W08)
+    { id: 'RND43', roomId: 'W01', guestName: 'Group Alpha', checkIn: '2025-12-09', checkOut: '2025-12-12', status: 'CHECKED_OUT', groupName: 'Alpha' },
+    { id: 'RND44', roomId: 'W01', guestName: 'Group Alpha', checkIn: '2025-12-13', checkOut: '2025-12-18', status: 'CHECKED_IN', groupName: 'Alpha' },
+    { id: 'RND45', roomId: 'W01', guestName: 'Group Alpha', checkIn: '2025-12-20', checkOut: '2025-12-24', status: 'CONFIRMED', groupName: 'Alpha' },
+
+    { id: 'RND46', roomId: 'W02', guestName: 'Group Beta', checkIn: '2025-12-10', checkOut: '2025-12-15', status: 'CHECKED_OUT', groupName: 'Beta' },
+    { id: 'RND47', roomId: 'W02', guestName: 'Group Beta', checkIn: '2025-12-16', checkOut: '2025-12-21', status: 'CONFIRMED', groupName: 'Beta' },
+
+    { id: 'RND48', roomId: 'W03', guestName: 'Site Insp', checkIn: '2025-12-11', checkOut: '2025-12-12', status: 'CHECKED_OUT' },
+    { id: 'RND49', roomId: 'W03', guestName: 'Audit Team', checkIn: '2025-12-14', checkOut: '2025-12-19', status: 'CHECKED_IN' },
+
+    { id: 'RND50', roomId: 'W04', guestName: 'Manager', checkIn: '2025-12-09', checkOut: '2025-12-25', status: 'CONFIRMED', reservationNo: '701' },
+    
+    { id: 'RND51', roomId: 'W05', guestName: 'Eng 1', checkIn: '2025-12-12', checkOut: '2025-12-16', status: 'CHECKED_IN' },
+    { id: 'RND52', roomId: 'W05', guestName: 'Eng 2', checkIn: '2025-12-17', checkOut: '2025-12-22', status: 'CONFIRMED' },
+
+    { id: 'RND53', roomId: 'W06', guestName: 'Cleaning', checkIn: '2025-12-09', checkOut: '2025-12-10', status: 'BLOCKED' },
+    { id: 'RND54', roomId: 'W06', guestName: 'Available', checkIn: '2025-12-12', checkOut: '2025-12-15', status: 'PENDING' },
+
+    { id: 'RND55', roomId: 'W07', guestName: 'Late Arr', checkIn: '2025-12-20', checkOut: '2025-12-25', status: 'PRE_CHECK_IN' },
+    
+    { id: 'RND56', roomId: 'W08', guestName: 'Testing', checkIn: '2025-12-13', checkOut: '2025-12-15', status: 'CONFIRMED' },
+    { id: 'RND57', roomId: 'W08', guestName: 'Dev Team', checkIn: '2025-12-16', checkOut: '2025-12-22', status: 'CONFIRMED' },
+
+    // Parked / Events
+    { id: 'RND58', roomId: 'PK01', guestName: 'Waiting List 1', checkIn: '2025-12-10', checkOut: '2025-12-15', status: 'PENDING' },
+    { id: 'RND59', roomId: 'SP01', guestName: 'Xmas Party', checkIn: '2025-12-25', checkOut: '2025-12-26', status: 'BLOCKED', groupName: 'Staff' }
+].map(b => ({
+    ...b,
+    // Add default dummy data for the popover fields if not present
+    masterResNo: b.masterResNo || Math.floor(Math.random() * 1000).toString(),
+    reservationNo: b.reservationNo || Math.floor(Math.random() * 10000).toString(),
+    groupName: b.groupName || 'General Public',
+    clientName: b.clientName || b.guestName,
+    arriveTime: '02:00 PM',
+    departTime: '10:00 AM',
+    people: '1A 0C 0I',
+    bkgSource: 'Direct',
+    tariffType: 'Standard',
+    balance: '0.00',
+    caravanSalesSlide: 'None',
+    company: b.company || 'N/A',
+    isFixed: b.isFixed || false
+}));
