@@ -68,6 +68,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
     // Helper to render a single room row
     const renderRoomRow = (room) => {
+        const isParkedRow = room.id === 'PK01';
+        const rowHeight = isParkedRow ? '60px' : '30px';
+
         const RoomInfoContent = (
             <div style={{ width: '300px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                 <div style={{
@@ -100,8 +103,43 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
             </div>
         );
 
+        // Pre-process bookings for this room to determine vertical stacking for 'Parked' row
+        let roomBookings = bookingsData.filter(b => b.roomId === room.id);
+
+        // Map to store visual properties (like vertical track) for each booking
+        const bookingLayout = {};
+
+        if (isParkedRow) {
+            // Sort by check-in time to greedy assign tracks
+            roomBookings.sort((a, b) => dayjs(a.checkIn).valueOf() - dayjs(b.checkIn).valueOf());
+
+            const tracks = []; // Array of end times for each track
+
+            roomBookings.forEach(booking => {
+                const startVal = dayjs(booking.checkIn).valueOf();
+                let assignedTrack = -1;
+
+                // Find the first track where this booking fits
+                for (let i = 0; i < tracks.length; i++) {
+                    if (tracks[i] <= startVal) {
+                        assignedTrack = i;
+                        tracks[i] = dayjs(booking.checkOut).valueOf(); // Update track end time
+                        break;
+                    }
+                }
+
+                // If no track found, create a new one (up to a limit if desired, but flexible here)
+                if (assignedTrack === -1) {
+                    assignedTrack = tracks.length;
+                    tracks.push(dayjs(booking.checkOut).valueOf());
+                }
+
+                bookingLayout[booking.id] = { track: assignedTrack };
+            });
+        }
+
         return (
-            <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: '30px', borderBottom: '1px solid #f0f0f0' }}>
+            <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: rowHeight, borderBottom: '1px solid #f0f0f0' }}>
                 <Popover content={RoomInfoContent} trigger="hover" placement="rightTop" overlayInnerStyle={{ padding: '12px 16px' }}>
                     <div style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
                         <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
@@ -117,9 +155,13 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     </div>
                 </Popover>
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
-                    {dateRange.map((date, idx) => (
-                        <div key={date} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1 }} />
-                    ))}
+                    {dateRange.map((date, idx) => {
+                        const dayOfWeek = dayjs(date).day();
+                        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                        return (
+                            <div key={date} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, backgroundColor: isWeekend ? '#FAFAFA' : 'transparent', height: '100%' }} />
+                        );
+                    })}
                     {bookingsData.filter(b => b.roomId === room.id).map(booking => {
                         const pos = getGridPosition(booking.checkIn, booking.checkOut);
                         if (!pos.isVisible) return null;
@@ -164,13 +206,47 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                             </div>
                         );
 
+                        // Dynamic styling for stacked vs normal
+                        const trackIndex = isParkedRow && bookingLayout[booking.id] ? bookingLayout[booking.id].track : 0;
+                        const topPosition = isParkedRow ? (trackIndex * 26 + 4) : undefined; // 4px padding top, 26px step
+                        const alignProp = isParkedRow ? 'start' : 'center'; // use alignSelf 'center' for normal
+
                         return (
                             <Popover key={booking.id} content={ReservationInfoContent} trigger="hover" placement="rightTop" overlayInnerStyle={{ padding: '12px 16px' }}>
                                 <div style={{
                                     gridColumnStart: Math.max(1, pos.start),
                                     gridColumnEnd: Math.min(visibleDays + 1, pos.end),
-                                    gridRow: 1, zIndex: 2, alignSelf: 'center', height: '22px', backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
-                                    borderRadius: '4px', margin: '0 2px', display: 'flex', alignItems: 'center', color: '#fff', padding: '0 4px', overflow: 'hidden', cursor: 'pointer'
+                                    gridRow: 1,
+                                    zIndex: 2,
+                                    height: '22px',
+                                    backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
+                                    borderRadius: '4px',
+                                    margin: '0 2px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: '#fff',
+                                    padding: '0 4px',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    // Stacking styles
+                                    alignSelf: alignProp,
+                                    marginTop: isParkedRow ? `${topPosition}px` : 0,
+                                    position: isParkedRow ? 'absolute' : 'relative', // Relative in grid usually centers but absolute allows precise stacking if relative container is full height. 
+                                    // Actually within grid cell, 'alignSelf: start' + marginTop is easier than absolute if gridRow is correct.
+                                    // Let's stick to Grid layout. The parent container is absolute relative to row? No, it's defined as:
+                                    // display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative'
+                                    // The bookings are children of this grid.
+                                    // If we use absolute, we rely on the parent being relative and covering the whole row area.
+                                    // The parent div DOES have position: 'relative'.
+                                    // However, the booking divs utilize gridColumnStart/End. 
+                                    // If we use absolute, we might lose the grid column width unless we calculate left/width manually.
+                                    // Better approach: Keep grid column logic, but use marginTop or transforms for vertical offset.
+                                    // If we use position: absolute, we can't easily rely on grid columns.
+                                    // But wait! Grid items CAN be position: absolute, but then they position relative to the nearest positioned ancestor (the grid container), NOT the grid tracks.
+                                    // Exception: If you specify grid-column/row AND position: absolute, it positions within that grid area! (Verified behavior in modern CSS specs).
+                                    // Let's try position: absolute combined with grid properties.
+                                    top: isParkedRow ? `${topPosition}px` : 'auto',
+                                    width: isParkedRow ? 'calc(100% - 4px)' : 'auto' // absolute items need explicit width if not stretched
                                 }}>
                                     <Text ellipsis style={{ color: '#fff', fontSize: '10px' }}>{booking.guestName}</Text>
                                 </div>
@@ -215,12 +291,16 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', backgroundColor: '#fff', borderBottom: '2px solid #f0f0f0' }}>
                     <div style={{ padding: '12px', fontWeight: 'bold', borderRight: '1px solid #f0f0f0' }}>Room</div>
                     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)` }}>
-                        {dateRange.map(date => (
-                            <div key={date} style={{ borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '6px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                <Text strong style={{ fontSize: '14px', lineHeight: 1 }}>{dayjs(date).format('D')}</Text>
-                                <Text strong style={{ display: 'block', color: '#8c8c8c', fontSize: '10px', marginTop: '2px' }}>{dayjs(date).format('ddd').toUpperCase()}</Text>
-                            </div>
-                        ))}
+                        {dateRange.map(date => {
+                            const dayOfWeek = dayjs(date).day();
+                            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                            return (
+                                <div key={date} style={{ borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '6px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: isWeekend ? '#FAFAFA' : 'transparent' }}>
+                                    <Text strong style={{ fontSize: '14px', lineHeight: 1 }}>{dayjs(date).format('D')}</Text>
+                                    <Text strong style={{ display: 'block', color: '#8c8c8c', fontSize: '10px', marginTop: '2px' }}>{dayjs(date).format('ddd').toUpperCase()}</Text>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
