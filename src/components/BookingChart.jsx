@@ -3,7 +3,6 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { roomsData, bookingsData as initialBookingsData } from '../data/mockData';
 import { Typography, Tooltip, Popover, Card } from 'antd';
 import dayjs from 'dayjs';
-import BookingFormDrawer from './BookingFormDrawer';
 
 const { Text } = Typography;
 
@@ -25,8 +24,6 @@ const ROOM_STATUS_COLORS = {
 
 const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions" }) => {
     const [bookingsData] = useState(initialBookingsData);
-    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-    const [formInitialData, setFormInitialData] = useState({});
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
 
     // 1. Generate column dates (Immutable)
@@ -51,17 +48,6 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
             isVisible: !((startCol + duration) <= 1 || startCol > visibleDays)
         };
     }, [dateRange, visibleDays]);
-
-    const handleCellClick = (room, date) => {
-        setFormInitialData({
-            roomId: room.id,
-            roomName: room.name,
-            checkIn: date,
-            checkOut: dayjs(date).add(1, 'days').format('YYYY-MM-DD'),
-        });
-        setIsDrawerVisible(true);
-    };
-
 
 
     // Group rooms by category
@@ -132,7 +118,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 </Popover>
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
                     {dateRange.map((date, idx) => (
-                        <div key={date} onClick={() => handleCellClick(room, date)} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, cursor: 'pointer' }} />
+                        <div key={date} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1 }} />
                     ))}
                     {bookingsData.filter(b => b.roomId === room.id).map(booking => {
                         const pos = getGridPosition(booking.checkIn, booking.checkOut);
@@ -302,8 +288,6 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
                 </div>
             )}
-
-            <BookingFormDrawer visible={isDrawerVisible} onClose={() => setIsDrawerVisible(false)} initialData={formInitialData} />
         </Card>
     );
 };
