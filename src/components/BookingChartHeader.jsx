@@ -1,6 +1,6 @@
 // src/components/BookingChartHeader.jsx
 import React from 'react';
-import { Button, Select, Space, DatePicker, Typography } from 'antd';
+import { Button, Select, Space, DatePicker, Typography, Popover, Badge, Divider } from 'antd';
 import {
     LeftOutlined,
     RightOutlined,
@@ -8,7 +8,9 @@ import {
     RedoOutlined,
     CalendarOutlined,
     MinusOutlined,
-    PlusOutlined
+    PlusOutlined,
+    InfoCircleOutlined,
+    SwapOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -36,6 +38,84 @@ const BookingChartHeader = ({
 
     const startStr = dayjs(currentStart).format('MMM D');
     const endStr = dayjs(currentStart).add(visibleDays - 1, 'days').format('MMM D, YYYY');
+
+    const LegendContent = () => (
+        <div style={{ width: '220px' }}>
+            {/* Top Items */}
+            <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ width: 20, display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ width: 6, height: 6, backgroundColor: '#000' }} />
+                    </div>
+                    <Text style={{ fontSize: '12px', marginLeft: 8 }}>Fixed Reservation</Text>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ width: 20, display: 'flex', justifyContent: 'center' }}>
+                        <SwapOutlined style={{ fontSize: '12px', color: '#000' }} />
+                    </div>
+                    <Text style={{ fontSize: '12px', marginLeft: 8 }}>Moveable Reservation</Text>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: 20, display: 'flex', justifyContent: 'center' }}>
+                        <Text strong style={{ fontStyle: 'italic', fontSize: '12px' }}>I</Text>
+                    </div>
+                    <Text style={{ fontSize: '12px', marginLeft: 8 }}>Event Reservation</Text>
+                </div>
+            </div>
+
+            <Divider style={{ margin: '12px 0' }} />
+
+            {/* Gender */}
+            <div style={{ marginBottom: '12px' }}>
+                <Text strong style={{ fontSize: '12px' }}>Gender</Text>
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Badge color="#1890ff" text={<span style={{ fontSize: '12px' }}>Male</span>} />
+                    <Badge color="#eb2f96" text={<span style={{ fontSize: '12px' }}>Female</span>} />
+                    <Badge color="#d9d9d9" text={<span style={{ fontSize: '12px' }}>Not Set</span>} />
+                </div>
+            </div>
+
+            <Divider style={{ margin: '12px 0' }} />
+
+            {/* Reservation Status */}
+            <div style={{ marginBottom: '12px' }}>
+                <Text strong style={{ fontSize: '12px' }}>Reservation Status</Text>
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Badge color="#faad14" text={<span style={{ fontSize: '12px' }}>Unconfirmed</span>} />
+                    <Badge color="#52c41a" text={<span style={{ fontSize: '12px' }}>Confirmed</span>} />
+                    <Badge color="#1890ff" text={<span style={{ fontSize: '12px' }}>Arrived</span>} />
+                    <Badge color="#13c2c2" text={<span style={{ fontSize: '12px' }}>Pre Check In</span>} />
+                    <Badge color="#eb2f96" text={<span style={{ fontSize: '12px' }}>Departed</span>} />
+                    <Badge color="#722ed1" text={<span style={{ fontSize: '12px' }}>Out of Order</span>} />
+                </div>
+            </div>
+
+            <Divider style={{ margin: '12px 0' }} />
+
+            {/* Credit Status */}
+            <div style={{ marginBottom: '12px' }}>
+                <Text strong style={{ fontSize: '12px' }}>Credit Status</Text>
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Badge color="#faad14" text={<span style={{ fontSize: '12px' }}>Account In Debit</span>} />
+                    <Badge color="#52c41a" text={<span style={{ fontSize: '12px' }}>Account In Credit</span>} />
+                    <Badge color="#d9d9d9" text={<span style={{ fontSize: '12px' }}>Zero Balance</span>} />
+                </div>
+            </div>
+
+            <Divider style={{ margin: '12px 0' }} />
+
+            {/* Area Status */}
+            <div>
+                <Text strong style={{ fontSize: '12px' }}>Area Status</Text>
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Badge color="#52c41a" text={<span style={{ fontSize: '12px' }}>Clean</span>} />
+                    <Badge color="#f5222d" text={<span style={{ fontSize: '12px' }}>Dirty</span>} />
+                    <Badge color="#722ed1" text={<span style={{ fontSize: '12px' }}>Out of Order</span>} />
+                    <Badge color="#faad14" text={<span style={{ fontSize: '12px' }}>Occupied</span>} />
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div style={{
@@ -89,6 +169,18 @@ const BookingChartHeader = ({
             </Space>
 
             <Space size="middle">
+                <Popover
+                    content={<LegendContent />}
+                    title={<Text strong>Legend</Text>}
+                    trigger="click"
+                    placement="bottomRight"
+                >
+                    <Button
+                        icon={<InfoCircleOutlined style={{ fontSize: '18px', color: '#13c2c2' }} />}
+                        type="text"
+                        style={{ padding: 4 }}
+                    />
+                </Popover>
                 <Button icon={<RedoOutlined />} onClick={() => window.location.reload()}>Refresh</Button>
                 <Button icon={<SettingOutlined />} />
             </Space>

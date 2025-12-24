@@ -8,10 +8,19 @@ import BookingFormDrawer from './BookingFormDrawer';
 const { Text } = Typography;
 
 const STATUS_COLORS = {
-    'CONFIRMED': '#1890ff',
-    'CHECKED_IN': '#52c41a',
-    'PENDING': '#faad14',
-    'CHECKED_OUT': '#bfbfbf',
+    'PENDING': '#faad14',      // Unconfirmed (Orange)
+    'CONFIRMED': '#52c41a',    // Confirmed (Green)
+    'CHECKED_IN': '#1890ff',   // Arrived (Blue)
+    'PRE_CHECK_IN': '#13c2c2', // Pre Check In (Cyan)
+    'CHECKED_OUT': '#eb2f96',  // Departed (Pink)
+    'BLOCKED': '#722ed1',      // Out of Order (Purple)
+};
+
+const ROOM_STATUS_COLORS = {
+    'CLEAN': '#52c41a', // Green
+    'DIRTY': '#f5222d', // Red
+    'INSPECT': '#faad14', // Occupied/Inspect (Orange)
+    'OOO': '#722ed1',   // Out of Order (Purple)
 };
 
 const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory }) => {
@@ -72,9 +81,18 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
     // Helper to render a single room row
     const renderRoomRow = (room) => (
-        <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: '52px', borderBottom: '1px solid #f0f0f0' }}>
-            <div style={{ padding: '5px 12px', borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#fff' }}>
+        <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: '40px', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
                 <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
+                {room.status && (
+                    <Tooltip title={room.status}>
+                        <div style={{
+                            width: '10px', height: '10px', borderRadius: '50%',
+                            backgroundColor: ROOM_STATUS_COLORS[room.status] || '#d9d9d9',
+                            flexShrink: 0
+                        }} />
+                    </Tooltip>
+                )}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
                 {dateRange.map((date, idx) => (
@@ -88,7 +106,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                             <div style={{
                                 gridColumnStart: Math.max(1, pos.start),
                                 gridColumnEnd: Math.min(visibleDays + 1, pos.end),
-                                gridRow: 1, zIndex: 2, alignSelf: 'center', height: '34px', backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
+                                gridRow: 1, zIndex: 2, alignSelf: 'center', height: '28px', backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
                                 borderRadius: '4px', margin: '0 2px', display: 'flex', alignItems: 'center', color: '#fff', padding: '0 8px', overflow: 'hidden'
                             }}>
                                 <Text ellipsis style={{ color: '#fff', fontSize: '11px' }}>{booking.guestName}</Text>
@@ -108,9 +126,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     <div style={{ padding: '12px', fontWeight: 'bold', borderRight: '1px solid #f0f0f0' }}>Room</div>
                     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)` }}>
                         {dateRange.map(date => (
-                            <div key={date} style={{ borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '6px 0' }}>
-                                <Text strong style={{ display: 'block', color: '#8c8c8c', fontSize: '10px' }}>{dayjs(date).format('ddd').toUpperCase()}</Text>
-                                <Text strong>{dayjs(date).format('D')}</Text>
+                            <div key={date} style={{ borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '6px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <Text strong style={{ fontSize: '14px', lineHeight: 1 }}>{dayjs(date).format('D')}</Text>
+                                <Text strong style={{ display: 'block', color: '#8c8c8c', fontSize: '10px', marginTop: '2px' }}>{dayjs(date).format('ddd').toUpperCase()}</Text>
                             </div>
                         ))}
                     </div>
@@ -124,24 +142,17 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     <React.Fragment key={category}>
                         {/* Category Header */}
                         <div
+                            onClick={() => onToggleCategory(category)}
                             style={{
-                                display: 'grid', gridTemplateColumns: '150px 1fr',
-                                backgroundColor: '#e6f7ff', borderBottom: '1px solid #d9d9d9', height: '32px', alignItems: 'center'
+                                display: 'flex', alignItems: 'center',
+                                backgroundColor: '#f0f0f0', borderBottom: '1px solid #d9d9d9', height: '32px',
+                                padding: '0 12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', userSelect: 'none'
                             }}
                         >
-                            <div
-                                onClick={() => onToggleCategory(category)}
-                                style={{
-                                    padding: '0 12px', borderRight: '1px solid #d9d9d9', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px',
-                                    display: 'flex', alignItems: 'center', userSelect: 'none'
-                                }}
-                            >
-                                <span style={{ marginRight: 6 }}>
-                                    {collapsedCategories.has(category) ? '+' : '-'}
-                                </span>
-                                {category}
-                            </div>
-                            <div style={{ backgroundColor: '#e6f7ff' }}></div>
+                            <span style={{ marginRight: 6 }}>
+                                {collapsedCategories.has(category) ? '+' : '-'}
+                            </span>
+                            {category}
                         </div>
 
                         {/* Room Rows - Render only if NOT collapsed */}
