@@ -1,7 +1,7 @@
 // src/components/BookingChart.jsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { roomsData, bookingsData as initialBookingsData } from '../data/mockData';
-import { Card, Typography, Tooltip } from 'antd';
+import { Typography, Tooltip, Popover, Card } from 'antd';
 import dayjs from 'dayjs';
 import BookingFormDrawer from './BookingFormDrawer';
 
@@ -23,7 +23,7 @@ const ROOM_STATUS_COLORS = {
     'OOO': '#722ed1',   // Out of Order (Purple)
 };
 
-const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory }) => {
+const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions" }) => {
     const [bookingsData] = useState(initialBookingsData);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [formInitialData, setFormInitialData] = useState({});
@@ -80,43 +80,120 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     }, []);
 
     // Helper to render a single room row
-    const renderRoomRow = (room) => (
-        <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: '40px', borderBottom: '1px solid #f0f0f0' }}>
-            <div style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
-                <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
-                {room.status && (
-                    <Tooltip title={room.status}>
-                        <div style={{
-                            width: '10px', height: '10px', borderRadius: '50%',
-                            backgroundColor: ROOM_STATUS_COLORS[room.status] || '#d9d9d9',
-                            flexShrink: 0
-                        }} />
-                    </Tooltip>
-                )}
+    const renderRoomRow = (room) => {
+        const RoomInfoContent = (
+            <div style={{ width: '300px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+                <div style={{
+                    backgroundColor: '#2c3e50',
+                    color: '#fff',
+                    padding: '12px 16px',
+                    margin: '-12px -16px 12px -16px',
+                    borderRadius: '4px 4px 0 0'
+                }}>
+                    <Text strong style={{ color: '#fff', fontSize: '16px' }}>Area Information</Text>
+                </div>
+                <div style={{ padding: '0 8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginBottom: '8px' }}>
+                        <Text strong style={{ textAlign: 'right' }}>Property Name:</Text>
+                        <Text>{propertyName}</Text>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginBottom: '8px' }}>
+                        <Text strong style={{ textAlign: 'right' }}>Room Type:</Text>
+                        <Text>{room.category || 'N/A'}</Text>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginBottom: '8px' }}>
+                        <Text strong style={{ textAlign: 'right' }}>Area:</Text>
+                        <Text>{room.name}</Text>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline' }}>
+                        <Text strong style={{ textAlign: 'right' }}>Clean Status:</Text>
+                        <Text>{room.status ? room.status.charAt(0) + room.status.slice(1).toLowerCase() : 'Unknown'}</Text>
+                    </div>
+                </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
-                {dateRange.map((date, idx) => (
-                    <div key={date} onClick={() => handleCellClick(room, date)} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, cursor: 'pointer' }} />
-                ))}
-                {bookingsData.filter(b => b.roomId === room.id).map(booking => {
-                    const pos = getGridPosition(booking.checkIn, booking.checkOut);
-                    if (!pos.isVisible) return null;
-                    return (
-                        <Tooltip key={booking.id} title={booking.guestName}>
-                            <div style={{
-                                gridColumnStart: Math.max(1, pos.start),
-                                gridColumnEnd: Math.min(visibleDays + 1, pos.end),
-                                gridRow: 1, zIndex: 2, alignSelf: 'center', height: '28px', backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
-                                borderRadius: '4px', margin: '0 2px', display: 'flex', alignItems: 'center', color: '#fff', padding: '0 8px', overflow: 'hidden'
-                            }}>
-                                <Text ellipsis style={{ color: '#fff', fontSize: '11px' }}>{booking.guestName}</Text>
+        );
+
+        return (
+            <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: '30px', borderBottom: '1px solid #f0f0f0' }}>
+                <Popover content={RoomInfoContent} trigger="hover" placement="rightTop" overlayInnerStyle={{ padding: '12px 16px' }}>
+                    <div style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
+                        <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
+                        {room.status && (
+                            <Tooltip title={room.status}>
+                                <div style={{
+                                    width: '11px', height: '11px', borderRadius: '50%',
+                                    backgroundColor: ROOM_STATUS_COLORS[room.status] || '#d9d9d9',
+                                    flexShrink: 0
+                                }} />
+                            </Tooltip>
+                        )}
+                    </div>
+                </Popover>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
+                    {dateRange.map((date, idx) => (
+                        <div key={date} onClick={() => handleCellClick(room, date)} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, cursor: 'pointer' }} />
+                    ))}
+                    {bookingsData.filter(b => b.roomId === room.id).map(booking => {
+                        const pos = getGridPosition(booking.checkIn, booking.checkOut);
+                        if (!pos.isVisible) return null;
+
+                        const ReservationInfoContent = (
+                            <div style={{ width: '350px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+                                <div style={{
+                                    backgroundColor: '#2c3e50',
+                                    color: '#fff',
+                                    padding: '12px 16px',
+                                    margin: '-12px -16px 12px -16px',
+                                    borderRadius: '4px 4px 0 0'
+                                }}>
+                                    <Text strong style={{ color: '#fff', fontSize: '16px' }}>Reservation No: {booking.reservationNo || 'N/A'}</Text>
+                                </div>
+                                <div style={{ padding: '0 8px' }}>
+                                    {[
+                                        { label: 'Master Res No', value: booking.masterResNo },
+                                        { label: 'Reservation No', value: booking.reservationNo },
+                                        { label: 'Groupname', value: booking.groupName },
+                                        { label: 'Client Name', value: booking.clientName },
+                                        { label: 'Arrive', value: `${dayjs(booking.checkIn).format('ddd DD MMM YYYY')} ${booking.arriveTime || ''}` },
+                                        { label: 'Depart', value: `${dayjs(booking.checkOut).format('ddd DD MMM YYYY')} ${booking.departTime || ''}` },
+                                        { label: 'Property', value: propertyName },
+                                        { label: 'Room Type', value: room.category },
+                                        { label: 'Area', value: room.name },
+                                        { label: 'Status', value: booking.status ? booking.status.charAt(0) + booking.status.slice(1).toLowerCase() : 'Unknown' },
+                                        { label: 'People', value: booking.people },
+                                        { label: 'Bkg Source', value: booking.bkgSource },
+                                        { label: 'Tariff Type', value: booking.tariffType },
+                                        { label: 'Balance Owing', value: booking.balance },
+                                        { label: 'Caravan Sales Slide', value: booking.caravanSalesSlide },
+                                        { label: 'Company', value: booking.company },
+                                        { label: 'Fixed', value: booking.isFixed ? 'Yes' : 'No' }
+                                    ].map((item, index) => (
+                                        <div key={index} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px', alignItems: 'baseline', marginBottom: '4px' }}>
+                                            <Text strong style={{ textAlign: 'right', fontSize: '12px' }}>{item.label}</Text>
+                                            <Text style={{ fontSize: '12px' }}>{item.value || '-'}</Text>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </Tooltip>
-                    );
-                })}
+                        );
+
+                        return (
+                            <Popover key={booking.id} content={ReservationInfoContent} trigger="hover" placement="rightTop" overlayInnerStyle={{ padding: '12px 16px' }}>
+                                <div style={{
+                                    gridColumnStart: Math.max(1, pos.start),
+                                    gridColumnEnd: Math.min(visibleDays + 1, pos.end),
+                                    gridRow: 1, zIndex: 2, alignSelf: 'center', height: '22px', backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
+                                    borderRadius: '4px', margin: '0 2px', display: 'flex', alignItems: 'center', color: '#fff', padding: '0 4px', overflow: 'hidden', cursor: 'pointer'
+                                }}>
+                                    <Text ellipsis style={{ color: '#fff', fontSize: '10px' }}>{booking.guestName}</Text>
+                                </div>
+                            </Popover>
+                        );
+                    })}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ borderRadius: '8px', overflow: 'hidden' }}>

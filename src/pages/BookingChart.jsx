@@ -38,6 +38,7 @@ const BookingChartPage = () => {
                 onDaysSelect={(v) => setVisibleDays(v)}
                 onExpandAll={handleExpandAll}
                 onCollapseAll={handleCollapseAll}
+                propertyName="Mount Morgan Space Solutions"
             />
             <CoreBookingChart
                 startDate={startDate}
