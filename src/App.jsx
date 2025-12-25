@@ -1,10 +1,12 @@
 // src/App.jsx (UPDATED)
-import React from 'react'; // Removed useState
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from 'antd';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import AntdSidebar from './components/AntdSidebar';
 import AntdTopBar from './components/AntdTopBar';
-import useAuthStore from './store/authStore'; // <-- NEW IMPORT: Zustand Store
+import useAuthStore from './store/authStore';
 
 // Import all pages
 import Login from './pages/Login';
@@ -14,6 +16,17 @@ import BookingChart from './pages/BookingChart';
 import ReservationsListPage from './pages/ReservationsListPage';
 
 const { Header, Sider, Content } = Layout;
+
+// Create a client for TanStack Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // Disable refetch on window focus
+      retry: 1, // Retry failed requests once
+      staleTime: 1000 * 60 * 5, // 5 minutes default stale time
+    },
+  },
+});
 
 function App() {
   // --- NEW: Use Zustand for persistent auth state and actions ---
@@ -46,31 +59,36 @@ function App() {
   );
 
   return (
-    <Routes>
-      {/* Login component no longer needs the onLogin prop */}
-      <Route path="/login" element={<Login />} />
+    <QueryClientProvider client={queryClient}>
+      <Routes>
+        {/* Login component no longer needs the onLogin prop */}
+        <Route path="/login" element={<Login />} />
 
-      {/* Protected Routes */}
-      <Route
-        path="*"
-        element={
-          isAuthenticated ? (
-            <MainLayout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/reservations" element={<Reservations />} />
-                <Route path="/reservations/list" element={<ReservationsListPage />} />
-                <Route path="/charts/bookingchart" element={<BookingChart />} />
-                <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Page Not Found</h1>} />
-              </Routes>
-            </MainLayout>
-          ) : (
-            // Redirect unauthenticated users to login page
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-    </Routes>
+        {/* Protected Routes */}
+        <Route
+          path="*"
+          element={
+            isAuthenticated ? (
+              <MainLayout>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/reservations" element={<Reservations />} />
+                  <Route path="/reservations/list" element={<ReservationsListPage />} />
+                  <Route path="/charts/bookingchart" element={<BookingChart />} />
+                  <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Page Not Found</h1>} />
+                </Routes>
+              </MainLayout>
+            ) : (
+              // Redirect unauthenticated users to login page
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
+
+      {/* React Query Devtools - only in development */}
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
   );
 }
 

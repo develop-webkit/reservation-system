@@ -1,8 +1,10 @@
 // src/components/BookingChart.jsx
 import React, { useState, useCallback, useMemo } from 'react';
-import { roomsData, bookingsData as initialBookingsData } from '../data/mockData';
-import { Typography, Tooltip, Popover, Card } from 'antd';
+import { Typography, Tooltip, Popover, Card, Spin, Alert } from 'antd';
 import dayjs from 'dayjs';
+import { useBookings } from '../hooks/useBookings';
+import { useRooms } from '../hooks/useRooms';
+import { roomsData } from '../data/mockData'; // Fallback for rooms until we fetch them
 
 const { Text } = Typography;
 
@@ -23,8 +25,15 @@ const ROOM_STATUS_COLORS = {
 };
 
 const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions" }) => {
-    const [bookingsData] = useState(initialBookingsData);
+    // Fetch bookings and rooms using TanStack Query hooks
+    const { data: bookingsResponse, isLoading: bookingsLoading, error: bookingsError } = useBookings();
+    const { data: roomsResponse, isLoading: roomsLoading, error: roomsError } = useRooms();
+
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+
+    // Extract data from API response
+    const bookingsData = bookingsResponse?.data || [];
+    const rooms = roomsResponse?.data || roomsData; // Fallback to mockData if API fails
 
     // 1. Generate column dates (Immutable)
     const dateRange = useMemo(() => {
@@ -55,7 +64,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         const top = [];
         const groups = {};
 
-        roomsData.forEach(room => {
+        rooms.forEach(room => {
             if (!room.category) {
                 top.push(room);
             } else {
@@ -64,7 +73,30 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
             }
         });
         return { topLevelRooms: top, groupedRooms: groups };
-    }, []);
+    }, [rooms]);
+
+    // Loading state
+    if (bookingsLoading || roomsLoading) {
+        return (
+            <Card style={{ textAlign: 'center', padding: '50px' }}>
+                <Spin size="large" tip="Loading booking data..." />
+            </Card>
+        );
+    }
+
+    // Error state
+    if (bookingsError || roomsError) {
+        return (
+            <Card>
+                <Alert
+                    message="Error Loading Data"
+                    description={`Failed to load ${bookingsError ? 'bookings' : 'rooms'}. Please try again.`}
+                    type="error"
+                    showIcon
+                />
+            </Card>
+        );
+    }
 
     // Helper to render a single room row
     const renderRoomRow = (room) => {
