@@ -1,32 +1,58 @@
 // src/store/authStore.js
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware'; // <-- New Import
+import { persist } from 'zustand/middleware';
+import { getPermissionsForRole } from '../constants/roles';
 
 // Define the structure of the store
 const useAuthStore = create(
-    // 1. Wrap the state definition with the persist middleware
     persist(
-        // 2. Define the initial state and actions
-        (set) => ({
+        (set, get) => ({
             isAuthenticated: false,
-            user: null, // We can store user details here later
+            user: null,
+            role: null,
+            permissions: [],
 
             // Action to handle successful login
-            login: (userData = { username: 'HGManager' }) => set({ 
-                isAuthenticated: true, 
-                user: userData 
-            }),
+            login: (userData) => {
+                const permissions = getPermissionsForRole(userData.role);
+                set({ 
+                    isAuthenticated: true, 
+                    user: userData,
+                    role: userData.role,
+                    permissions,
+                });
+            },
 
             // Action to handle logout
             logout: () => set({ 
                 isAuthenticated: false, 
-                user: null 
+                user: null,
+                role: null,
+                permissions: [],
             }),
+            
+            // Check if user has a specific permission
+            hasPermission: (permission) => {
+                const { permissions } = get();
+                return permissions.includes(permission);
+            },
+            
+            // Check if user has a specific role
+            hasRole: (role) => {
+                const { role: userRole } = get();
+                return userRole === role;
+            },
+            
+            // Check if user can access a route
+            canAccessRoute: (requiredPermission) => {
+                if (!requiredPermission) return true;
+                const { permissions } = get();
+                return permissions.includes(requiredPermission);
+            },
         }),
-        // 3. Define the persist configuration
         {
-            name: 'rms-auth-storage', // Key used in localStorage
-            getStorage: () => localStorage, // Specify localStorage as the storage medium
+            name: 'rms-auth-storage',
+            getStorage: () => localStorage,
         }
     )
 );
