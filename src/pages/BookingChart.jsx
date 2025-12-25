@@ -1,12 +1,13 @@
 // src/pages/BookingChart.jsx
 import React, { useState } from 'react';
+import dayjs from 'dayjs';
 import CoreBookingChart from '../components/BookingChart';
 import BookingChartHeader from '../components/BookingChartHeader';
 import { roomsData } from '../data/mockData';
 
 
 const BookingChartPage = () => {
-    const [startDate, setStartDate] = useState('2025-12-13');
+    const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DD'));
     const [visibleDays, setVisibleDays] = useState(30);
     const [collapsedCategories, setCollapsedCategories] = useState(new Set());
 

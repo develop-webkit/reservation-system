@@ -1,28 +1,28 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
 import { useQuery } from '@tanstack/react-query'; // <-- NEW IMPORT
-import { 
-    fetchQuickCounts, 
-    fetchActivityFeed, 
-    fetchOccupancyChart 
+import {
+    fetchQuickCounts,
+    fetchActivityFeed,
+    fetchOccupancyChart
 } from '../api/dashboardApi'; // <-- NEW IMPORT
-import { 
-    Card, 
-    Row, 
-    Col, 
-    Statistic, 
-    List, 
-    Typography, 
-    Spin, 
-    Alert, 
+import {
+    Card,
+    Row,
+    Col,
+    Statistic,
+    Typography,
+    Spin,
+    Alert,
     Space,
-    Table 
+    Table,
+    Flex
 } from 'antd'; // Ant Design Components
-import { 
-    ArrowUpOutlined, 
-    ArrowDownOutlined, 
-    UserAddOutlined, 
-    CheckOutlined 
+import {
+    ArrowUpOutlined,
+    ArrowDownOutlined,
+    UserAddOutlined,
+    CheckOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -42,7 +42,7 @@ const QuickCounts = () => {
     return (
         <Row gutter={16}>
             <Col span={6}>
-                <Card bordered={false}>
+                <Card variant="borderless">
                     <Statistic
                         title="Occupied Rooms"
                         value={data.roomsOccupied}
@@ -52,31 +52,31 @@ const QuickCounts = () => {
                 </Card>
             </Col>
             <Col span={6}>
-                <Card bordered={false}>
+                <Card variant="borderless">
                     <Statistic
                         title="Arrivals Today"
                         value={data.arrivalsToday}
-                        valueStyle={{ color: '#3f8600' }}
+                        styles={{ value: { color: '#3f8600' } }}
                         prefix={<ArrowUpOutlined />}
                     />
                 </Card>
             </Col>
             <Col span={6}>
-                <Card bordered={false}>
+                <Card variant="borderless">
                     <Statistic
                         title="Departures Today"
                         value={data.departuresToday}
-                        valueStyle={{ color: '#cf1322' }}
+                        styles={{ value: { color: '#cf1322' } }}
                         prefix={<ArrowDownOutlined />}
                     />
                 </Card>
             </Col>
             <Col span={6}>
-                <Card bordered={false}>
+                <Card variant="borderless">
                     <Statistic
                         title="Rooms Available"
                         value={data.roomsAvailable}
-                        valueStyle={{ color: '#1890ff' }}
+                        styles={{ value: { color: '#1890ff' } }}
                         prefix={<UserAddOutlined />}
                     />
                 </Card>
@@ -98,29 +98,23 @@ const ActivityFeed = () => {
     if (!data || data.length === 0) return <Text type="secondary">No recent activity.</Text>;
 
     return (
-        <Card title="Recent Activity" bordered={false} style={{ height: '100%' }}>
-            <List
-                itemLayout="horizontal"
-                dataSource={data}
-                renderItem={item => (
-                    <List.Item>
-                        <List.Item.Meta
-                            title={
-                                <Space>
-                                    <Text strong>{item.type}</Text> 
-                                    <Text type="secondary" style={{ fontSize: '0.8rem' }}>{item.time}</Text>
-                                </Space>
-                            }
-                            description={
-                                <Text>
-                                    {item.guest} {item.room ? `(${item.room})` : ''}
-                                    {item.notes && <Text type="warning" style={{ marginLeft: 8 }}>- {item.notes}</Text>}
-                                </Text>
-                            }
-                        />
-                    </List.Item>
-                )}
-            />
+        <Card title="Recent Activity" variant="borderless" style={{ height: '100%' }}>
+            <Flex vertical gap="small">
+                {data.map((item, index) => (
+                    <div key={index} style={{ padding: '12px 0', borderBottom: index < data.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                        <Space>
+                            <Text strong>{item.type}</Text>
+                            <Text type="secondary" style={{ fontSize: '0.8rem' }}>{item.time}</Text>
+                        </Space>
+                        <div style={{ marginTop: '4px' }}>
+                            <Text>
+                                {item.guest} {item.room ? `(${item.room})` : ''}
+                                {item.notes && <Text type="warning" style={{ marginLeft: 8 }}>- {item.notes}</Text>}
+                            </Text>
+                        </div>
+                    </div>
+                ))}
+            </Flex>
         </Card>
     );
 };
@@ -137,13 +131,13 @@ const OccupancyChart = () => {
         { title: 'Month', dataIndex: 'month', key: 'month' },
         { title: 'Occupancy (%)', dataIndex: 'occupancy', key: 'occupancy', sorter: (a, b) => a.occupancy - b.occupancy },
     ];
-    
+
     if (isLoading) return <Spin />;
     if (isError) return <Alert message="Error loading chart data" description={error.message} type="error" showIcon />;
     if (!data) return null;
 
     return (
-        <Card title="Monthly Occupancy Trend (Mock Data)" bordered={false} style={{ height: '100%' }}>
+        <Card title="Monthly Occupancy Trend (Mock Data)" variant="borderless" style={{ height: '100%' }}>
             {/* In a real app, this would be a chart library like recharts or Nivo */}
             <Table
                 dataSource={data}
@@ -160,26 +154,26 @@ const OccupancyChart = () => {
 // --- Main Dashboard Component ---
 const Dashboard = () => {
     return (
-        <Space direction="vertical" size="large" style={{ display: 'flex' }}>
-            
+        <Space orientation="vertical" size="large" style={{ display: 'flex' }}>
+
             {/* Row 1: Quick Count Statistics */}
             <QuickCounts />
-            
+
             <Row gutter={16}>
                 {/* Row 2: Recent Activity Feed */}
                 <Col span={12}>
                     <ActivityFeed />
                 </Col>
-                
+
                 {/* Row 3: Occupancy Chart/Table */}
                 <Col span={12}>
                     <OccupancyChart />
                 </Col>
             </Row>
-            
+
             <Title level={4}>Reservation Overview</Title>
             <Text type="secondary">
-                This is the central view summarizing key system metrics. 
+                This is the central view summarizing key system metrics.
                 Data for all widgets is now being fetched and managed by TanStack Query.
             </Text>
         </Space>

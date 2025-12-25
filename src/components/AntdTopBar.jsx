@@ -81,7 +81,7 @@ const AntdTopBar = ({ onLogout }) => {
                 >
                     <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: ROLE_COLORS[role] }} />
-                        <Space direction="vertical" size={0}>
+                        <Space orientation="vertical" size={0}>
                             <Text strong style={{ fontSize: '12px' }}>{user?.name || 'User'}</Text>
                             {role && (
                                 <Tag color={ROLE_COLORS[role]} style={{ fontSize: '10px', padding: '0 4px', margin: 0 }}>

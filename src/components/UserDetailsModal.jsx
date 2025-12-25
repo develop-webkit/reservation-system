@@ -139,7 +139,7 @@ const UserDetailsModal = ({ visible, onClose }) => {
                                 dataSource={filteredData}
                                 pagination={false}
                                 size="small"
-                                bordered={false}
+                                variant="borderless"
                                 rowSelection={{ type: 'checkbox' }}
                                 rowClassName={(record, index) => index === 0 ? 'ant-table-row-selected' : ''} // Mock selection styling
                             />

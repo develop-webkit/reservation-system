@@ -59,7 +59,7 @@ const Login = () => {
         }}>
             <Card
                 title={<Title level={3} style={{ textAlign: 'center' }}>RMS System Login</Title>}
-                bordered={false}
+                variant="borderless"
                 style={{ width: 450, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
             >
                 {showDemoAccounts && (

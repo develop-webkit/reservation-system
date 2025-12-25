@@ -126,17 +126,17 @@ const BookingChartHeader = ({
         }}>
             <Space size="middle">
                 {/* Expand/Collapse Group */}
-                <Button.Group>
+                <Space.Compact>
                     <Button icon={<PlusOutlined />} onClick={onExpandAll} title="Expand All" />
                     <Button icon={<MinusOutlined />} onClick={onCollapseAll} title="Collapse All" />
-                </Button.Group>
+                </Space.Compact>
 
                 {/* Navigation Group */}
-                <Button.Group>
+                <Space.Compact>
                     <Button icon={<LeftOutlined />} onClick={handlePrev} />
                     <Button onClick={() => onDateChange(dayjs().format('YYYY-MM-DD'))}>Today</Button>
                     <Button icon={<RightOutlined />} onClick={handleNext} />
-                </Button.Group>
+                </Space.Compact>
 
                 <DatePicker
                     // Convert string back to object for the UI only

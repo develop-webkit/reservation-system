@@ -79,7 +79,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     if (bookingsLoading || roomsLoading) {
         return (
             <Card style={{ textAlign: 'center', padding: '50px' }}>
-                <Spin size="large" tip="Loading booking data..." />
+                <Spin size="large" spinning={true}>
+                    <div style={{ padding: '50px' }}>Loading booking data...</div>
+                </Spin>
             </Card>
         );
     }
@@ -172,7 +174,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
         return (
             <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: rowHeight, borderBottom: '1px solid #f0f0f0' }}>
-                <Popover content={RoomInfoContent} trigger="hover" placement="rightTop" overlayInnerStyle={{ padding: '12px 16px' }}>
+                <Popover content={RoomInfoContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
                     <div style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
                         <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
                         {room.status && (
@@ -244,7 +246,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                         const alignProp = isParkedRow ? 'start' : 'center'; // use alignSelf 'center' for normal
 
                         return (
-                            <Popover key={booking.id} content={ReservationInfoContent} trigger="hover" placement="rightTop" overlayInnerStyle={{ padding: '12px 16px' }}>
+                            <Popover key={booking.id} content={ReservationInfoContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
                                 <div style={{
                                     gridColumnStart: Math.max(1, pos.start),
                                     gridColumnEnd: Math.min(visibleDays + 1, pos.end),
@@ -313,7 +315,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     // ... (rest of your existing logic)
 
     return (
-        <Card bordered={false} styles={{ body: { padding: 0 } }} style={{ borderRadius: '8px', overflow: 'hidden' }} onClick={handleCloseContextMenu}>
+        <Card variant="borderless" styles={{ body: { padding: 0 } }} style={{ borderRadius: '8px', overflow: 'hidden' }} onClick={handleCloseContextMenu}>
             <div
                 style={{ width: '100%', overflowX: 'hidden' }}
                 onContextMenu={handleContextMenu}
