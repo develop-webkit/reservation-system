@@ -14,7 +14,7 @@ export const ModalProvider = ({ children }) => {
         content: null,
         options: {} // size, isFullWidth, etc.
     });
-
+ 
     const openModal = useCallback((title, content, options = {}) => {
         setModal({
             isOpen: true,
