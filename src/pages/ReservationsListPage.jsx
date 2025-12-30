@@ -324,7 +324,8 @@ const ReservationsListPage = () => {
     };
 
     const handleSelectClient = (client) => {
-        setClientData({
+        setClientData(prev => ({
+            ...prev,
             smartSearch: client.clientName,
             clientNo: client.clientNo,
             groupname: client.groupName,
@@ -340,7 +341,7 @@ const ReservationsListPage = () => {
             company: client.company,
             dateCreated: client.dateCreated || '05 Nov 2025',
             dateModified: client.dateModified || '05 Nov 2025'
-        });
+        }));
         setSmartSearch({ isOpen: false, term: '' });
     };
 
