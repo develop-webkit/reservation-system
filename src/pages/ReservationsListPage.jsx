@@ -32,6 +32,7 @@ const CLIENT_TYPE_OPTIONS = ['Client', 'Contractor', 'Sales Lead', 'Staff'];
 const MOBILE_TYPE_OPTIONS = ['Mobile', 'Home', 'Work'];
 const TARIFF_TYPE_OPTIONS = ["Occupied Room Rate PRPN", "Rack Rate", "Corporate Rate"];
 const ROOM_TYPE_OPTIONS = ["Staff Accommodation", "Standard Ensuite Benjamin", "Standard Ensuite Shiel", "Standard Ensuite Wallace"];
+const STATUS_OPTIONS = ['Unconfirmed', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'];
 const BKG_SOURCE_OPTIONS = ["Contracted Hold Night", "Contracted with Meals", "Non-Contracted", "Room Only - NO MEALS", "WalkIn"];
 const AREA_OPTIONS = [
     { area: 'B01', cleanStatus: 'Dirty', description: '', resCount: 11 },
@@ -66,7 +67,8 @@ const FormField = ({
     addonAfter,
     prefixSelect,
     labelStyle = {},
-    yellowBg = false
+    yellowBg = false,
+    disabled = false
 }) => {
     const displayValue = field ? clientData?.[field] : value;
     const finalBgColor = yellowBg ? '#fffbe6' : bgColor;
@@ -132,6 +134,7 @@ const FormField = ({
                             onChange={(val) => handleFieldChange?.(field, val)}
                             style={{ width: '100%' }}
                             size="small"
+                            disabled={disabled}
                             suffixIcon={suffix || <CaretDownOutlined style={{ fontSize: '10px' }} />}
                             dropdownMatchSelectWidth={['Company', 'Area'].includes(label) ? false : true}
                             optionLabelProp={['Company', 'Area'].includes(label) ? "label" : undefined}
@@ -198,6 +201,7 @@ const FormField = ({
                         <Input
                             value={displayValue}
                             onChange={(e) => handleFieldChange?.(field, e.target.value)}
+                            disabled={disabled}
                             onFocus={() => {
                                 if (field && displayValue && setSmartSearch) {
                                     setSmartSearch(prev => ({ ...prev, isOpen: true, term: displayValue }));
@@ -445,8 +449,8 @@ const ReservationsListPage = () => {
                     <Button size="small" style={{ width: '100%', textAlign: 'center', backgroundColor: '#f0f0f0' }}>No</Button>
                 </div>
 
-                <FormField label="Date Created" field="dateCreated" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
-                <FormField label="Date Modified" field="dateModified" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
+                <FormField label="Date Created" field="dateCreated" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                <FormField label="Date Modified" field="dateModified" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 <FormField label="Client Type" field="clientType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={CLIENT_TYPE_OPTIONS} />
                 <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={COMPANY_OPTIONS} suffix={<SearchOutlined />} />
             </div>
@@ -505,9 +509,9 @@ const ReservationsListPage = () => {
                         </div>
                     </div>
 
-                    <FormField label="Res No" field="resNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
-                    <FormField label="Master Res No" field="masterResNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
-                    <FormField label="Status" field="status" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#ffa940" />
+                    <FormField label="Res No" field="resNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Master Res No" field="masterResNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Status" field="status" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={STATUS_OPTIONS} bgColor="#ffa940" />
                     <FormField label="Stay Dates" field="bookingDates" clientData={clientData} handleFieldChange={handleFieldChange} isRange yellowBg />
                     <FormField label="Nights" field="nights" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Adults" field="adults" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
@@ -518,7 +522,7 @@ const ReservationsListPage = () => {
                     <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
                     <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={COMPANY_OPTIONS} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
                     <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} />
-                    <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
+                    <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 </div>
 
                 {/* Account Panel */}
