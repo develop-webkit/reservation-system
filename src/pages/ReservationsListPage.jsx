@@ -92,6 +92,7 @@ const FormField = ({
                             size="small"
                             suffixIcon={suffix || <CaretDownOutlined style={{ fontSize: '10px' }} />}
                             dropdownMatchSelectWidth={label === 'Company' ? false : true}
+                            optionLabelProp={label === 'Company' ? "label" : undefined}
                             dropdownRender={label === 'Company' ? (menu) => (
                                 <div style={{ minWidth: '600px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', backgroundColor: '#fff', borderRadius: '4px' }}>
                                     <div style={{ display: 'grid', gridTemplateColumns: '200px 150px 100px 150px', padding: '8px', backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: '11px', borderBottom: '1px solid #e8e8e8' }}>
@@ -106,7 +107,11 @@ const FormField = ({
                         >
                             {options.length > 0 ? (
                                 options.map(opt => (
-                                    <Option key={typeof opt === 'string' ? opt : opt.name} value={typeof opt === 'string' ? opt : opt.name}>
+                                    <Option
+                                        key={typeof opt === 'string' ? opt : opt.name}
+                                        value={typeof opt === 'string' ? opt : opt.name}
+                                        label={typeof opt === 'string' ? opt : opt.name}
+                                    >
                                         {typeof opt === 'string' ? opt : (
                                             <div style={{ display: 'grid', gridTemplateColumns: '200px 150px 100px 150px', fontSize: '11px' }}>
                                                 <span>{opt.name}</span>
@@ -118,7 +123,7 @@ const FormField = ({
                                     </Option>
                                 ))
                             ) : (
-                                <Option value={displayValue}>{displayValue}</Option>
+                                <Option value={displayValue} label={displayValue}>{displayValue}</Option>
                             )}
                         </Select>
                     ) : isDate ? (
@@ -283,7 +288,7 @@ const ReservationsListPage = () => {
             </div>
 
             {/* Client Panel */}
-            <div style={{ width: '380px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
+            <div style={{ width: '450px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <Text strong style={{ fontSize: '16px' }}>Client</Text>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -374,7 +379,7 @@ const ReservationsListPage = () => {
                 )}
 
                 {/* Reservation Panel */}
-                <div style={{ width: '420px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
+                <div style={{ width: '520px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <Text strong style={{ fontSize: '16px' }}>Reservation</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -411,7 +416,7 @@ const ReservationsListPage = () => {
                 </div>
 
                 {/* Account Panel */}
-                <div style={{ width: '320px', backgroundColor: '#fff', padding: '16px', overflowY: 'auto' }}>
+                <div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <Text strong style={{ fontSize: '16px' }}>Account</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
