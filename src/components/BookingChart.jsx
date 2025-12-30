@@ -31,7 +31,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const { data: roomsResponse, isLoading: roomsLoading, error: roomsError } = useRooms();
 
     const navigate = useNavigate();
-    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null });
 
     // Extract data from API response
     const bookingsData = bookingsResponse?.data || [];
@@ -195,7 +195,11 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                         const dayOfWeek = dayjs(date).day();
                         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                         return (
-                            <div key={date} style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, backgroundColor: isWeekend ? '#FAFAFA' : 'transparent', height: '100%' }} />
+                            <div
+                                key={date}
+                                style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, backgroundColor: isWeekend ? '#FAFAFA' : 'transparent', height: '100%', cursor: 'pointer' }}
+                                onContextMenu={(e) => handleContextMenu(e, room, date)}
+                            />
                         );
                     })}
                     {bookingsData.filter(b => b.roomId === room.id).map(booking => {
@@ -296,12 +300,17 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
 
 
-    const handleContextMenu = (e) => {
+    const handleContextMenu = (e, room, date) => {
         e.preventDefault();
+        if (room && date) {
+            e.stopPropagation(); // Stop propagation to prevent the parent's generic handler from resetting context
+        }
         setContextMenu({
             visible: true,
             x: e.pageX,
-            y: e.pageY
+            y: e.pageY,
+            room: room || null,
+            date: date || null
         });
     };
 
@@ -312,7 +321,15 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const handleMenuItemClick = (action) => {
         console.log(`Context menu action: ${action}`);
         if (action === 'add_reservation') {
-            navigate('/reservations/list');
+            const params = new URLSearchParams();
+            if (contextMenu.date) {
+                params.set('arrive', contextMenu.date);
+            }
+            if (contextMenu.room) {
+                params.set('area', contextMenu.room.name);
+                params.set('roomType', contextMenu.room.category || '');
+            }
+            navigate(`/reservations/list?${params.toString()}`);
         }
         handleCloseContextMenu();
     };
@@ -323,7 +340,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         <Card variant="borderless" styles={{ body: { padding: 0 } }} style={{ borderRadius: '8px', overflow: 'hidden' }} onClick={handleCloseContextMenu}>
             <div
                 style={{ width: '100%', overflowX: 'hidden' }}
-                onContextMenu={handleContextMenu}
+                onContextMenu={(e) => handleContextMenu(e)}
             >
                 {/* Header Row */}
                 {/* ... existing header code ... */}

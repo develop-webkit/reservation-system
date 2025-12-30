@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Input, Select, DatePicker, Button, Typography, Divider, Table } from 'antd';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Input, Select, DatePicker, Button, Typography, Divider, Table, AutoComplete } from 'antd';
 import {
     HomeOutlined,
     EnvironmentOutlined,
@@ -21,6 +21,7 @@ import {
     EllipsisOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useSearchParams } from 'react-router-dom';
 import { mockClients } from '../data/mockClients';
 
 const { Text } = Typography;
@@ -33,17 +34,43 @@ const MOBILE_TYPE_OPTIONS = ['Mobile', 'Home', 'Work'];
 const TARIFF_TYPE_OPTIONS = ["Occupied Room Rate PRPN", "Rack Rate", "Corporate Rate"];
 const ROOM_TYPE_OPTIONS = ["Staff Accommodation", "Standard Ensuite Benjamin", "Standard Ensuite Shiel", "Standard Ensuite Wallace"];
 const STATUS_OPTIONS = ['Unconfirmed', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'];
-const BKG_SOURCE_OPTIONS = ["Contracted Hold Night", "Contracted with Meals", "Non-Contracted", "Room Only - NO MEALS", "WalkIn"];
+const BKG_SOURCE_OPTIONS = ["Contracted with Meals", "Contracted Hold Night", "Non-Contracted", "Room Only - NO MEALS", "WalkIn"];
+const VOUCHER_OPTIONS = ["V-1001", "V-1002", "V-1003"];
 const AREA_OPTIONS = [
-    { area: 'B01', cleanStatus: 'Dirty', description: '', resCount: 11 },
-    { area: 'B02', cleanStatus: 'Dirty', description: '', resCount: 13 },
-    { area: 'B03', cleanStatus: 'Clean', description: '', resCount: 12 },
-    { area: 'B04', cleanStatus: 'Clean', description: '', resCount: 11 },
-    { area: 'B05', cleanStatus: 'Clean', description: '', resCount: 11 },
-    { area: 'B06', cleanStatus: 'Dirty', description: '', resCount: 12 },
-    { area: 'B07', cleanStatus: 'Clean', description: '', resCount: 8 },
-    { area: 'B08', cleanStatus: 'Clean', description: '', resCount: 13 },
-    { area: 'B09', cleanStatus: 'Clean', description: '', resCount: 13 },
+    // Staff Accommodation
+    { area: '01 Manager', cleanStatus: 'Clean', description: '', resCount: 5, category: 'Staff Accommodation' },
+    { area: '02 Other Staff', cleanStatus: 'Clean', description: '', resCount: 3, category: 'Staff Accommodation' },
+
+    // Standard Ensuite Benjamin
+    { area: 'B01', cleanStatus: 'Dirty', description: '', resCount: 11, category: 'Standard Ensuite Benjamin' },
+    { area: 'B02', cleanStatus: 'Dirty', description: '', resCount: 13, category: 'Standard Ensuite Benjamin' },
+    { area: 'B03', cleanStatus: 'Clean', description: '', resCount: 12, category: 'Standard Ensuite Benjamin' },
+    { area: 'B04', cleanStatus: 'Clean', description: '', resCount: 11, category: 'Standard Ensuite Benjamin' },
+    { area: 'B05', cleanStatus: 'Clean', description: '', resCount: 11, category: 'Standard Ensuite Benjamin' },
+    { area: 'B06', cleanStatus: 'Dirty', description: '', resCount: 12, category: 'Standard Ensuite Benjamin' },
+    { area: 'B07', cleanStatus: 'Clean', description: '', resCount: 8, category: 'Standard Ensuite Benjamin' },
+    { area: 'B08', cleanStatus: 'Clean', description: '', resCount: 13, category: 'Standard Ensuite Benjamin' },
+    { area: 'B09', cleanStatus: 'Clean', description: '', resCount: 13, category: 'Standard Ensuite Benjamin' },
+
+    // Standard Ensuite Shiel
+    { area: 'S01', cleanStatus: 'Clean', description: '', resCount: 6, category: 'Standard Ensuite Shiel' },
+    { area: 'S02', cleanStatus: 'Dirty', description: '', resCount: 4, category: 'Standard Ensuite Shiel' },
+    { area: 'S03', cleanStatus: 'Clean', description: '', resCount: 2, category: 'Standard Ensuite Shiel' },
+    { area: 'S04', cleanStatus: 'Clean', description: '', resCount: 5, category: 'Standard Ensuite Shiel' },
+    { area: 'S05', cleanStatus: 'Clean', description: '', resCount: 7, category: 'Standard Ensuite Shiel' },
+    { area: 'S06', cleanStatus: 'Clean', description: '', resCount: 3, category: 'Standard Ensuite Shiel' },
+    { area: 'S07', cleanStatus: 'Clean', description: '', resCount: 1, category: 'Standard Ensuite Shiel' },
+    { area: 'S08', cleanStatus: 'Clean', description: '', resCount: 0, category: 'Standard Ensuite Shiel' },
+
+    // Standard Ensuite Wallace
+    { area: 'W01', cleanStatus: 'Dirty', description: '', resCount: 9, category: 'Standard Ensuite Wallace' },
+    { area: 'W02', cleanStatus: 'Clean', description: '', resCount: 8, category: 'Standard Ensuite Wallace' },
+    { area: 'W03', cleanStatus: 'Clean', description: '', resCount: 7, category: 'Standard Ensuite Wallace' },
+    { area: 'W04', cleanStatus: 'Clean', description: '', resCount: 10, category: 'Standard Ensuite Wallace' },
+    { area: 'W05', cleanStatus: 'Clean', description: '', resCount: 5, category: 'Standard Ensuite Wallace' },
+    { area: 'W06', cleanStatus: 'Dirty', description: '', resCount: 4, category: 'Standard Ensuite Wallace' },
+    { area: 'W07', cleanStatus: 'Clean', description: '', resCount: 6, category: 'Standard Ensuite Wallace' },
+    { area: 'W08', cleanStatus: 'Clean', description: '', resCount: 3, category: 'Standard Ensuite Wallace' },
 ];
 const COMPANY_OPTIONS = [
     { name: 'Heritage Minerals', address: '123 Mineral Way', creditHold: 'No', tradingAs: 'HM' },
@@ -63,6 +90,7 @@ const FormField = ({
     options = [],
     isDate = false,
     isRange = false,
+    isAutoComplete = false,
     suffix,
     addonAfter,
     prefixSelect,
@@ -127,6 +155,19 @@ const FormField = ({
                             size="small"
                             placeholder={['Arrive', 'Depart']}
                         // Removed disabledDate so you can select previous dates
+                        />
+                    ) : isAutoComplete ? (
+                        <AutoComplete
+                            value={displayValue}
+                            options={options.map(opt => ({ value: opt }))}
+                            onChange={(val) => handleFieldChange?.(field, val)}
+                            style={{ width: '100%' }}
+                            size="small"
+                            disabled={disabled}
+                            placeholder={label}
+                            filterOption={(inputValue, option) =>
+                                option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                            }
                         />
                     ) : isDropdown ? (
                         <Select
@@ -225,6 +266,12 @@ const FormField = ({
 
 const ReservationsListPage = () => {
     const [selectedTab, setSelectedTab] = useState('Reservation');
+    const [searchParams] = useSearchParams();
+
+    // Extract values from query params
+    const arriveParam = searchParams.get('arrive');
+    const areaParam = searchParams.get('area');
+    const roomTypeParam = searchParams.get('roomType');
 
     // --- State for Form Fields ---
     const [clientData, setClientData] = useState({
@@ -247,18 +294,37 @@ const ReservationsListPage = () => {
         resNo: '(New Reservation)',
         masterResNo: '(New Reservation)',
         status: 'Unconfirmed',
-        arrive: dayjs('2026-02-04').hour(14).minute(0).toDate(),
-        depart: dayjs('2026-02-05').hour(10).minute(0).toDate(),
+        arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : dayjs('2026-02-04').hour(14).minute(0).toDate(),
+        depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : dayjs('2026-02-05').hour(10).minute(0).toDate(),
         nights: 1,
         adults: 1,
         tariffType: 'Occupied Room Rate PRPN',
-        roomType: 'Standard Ensuite Benjamin',
-        area: 'B04',
-        bkgSource: '',
+        roomType: roomTypeParam || 'Standard Ensuite Benjamin',
+        area: areaParam || 'B01',
+        bkgSource: 'Contracted with Meals',
         fixed: 'Yes',
         voucherNo: '',
-        madeBy: 'Super Admin'
+        madeBy: 'Super Admin',
+        dateMade: '05 Nov 2025',
+        cancelled: '',
+        cancelledBy: '',
+        confirmed: '',
+        confirmedBy: ''
     });
+
+    // Update state when query params change
+    useEffect(() => {
+        if (arriveParam || areaParam || roomTypeParam) {
+            setClientData(prev => ({
+                ...prev,
+                arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : prev.arrive,
+                depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : prev.depart,
+                area: areaParam || prev.area,
+                roomType: roomTypeParam || prev.roomType,
+                nights: 1
+            }));
+        }
+    }, [arriveParam, areaParam, roomTypeParam]);
 
     // --- State for Smart Search ---
     const [smartSearch, setSmartSearch] = useState({
@@ -276,9 +342,22 @@ const ReservationsListPage = () => {
         );
     }, [smartSearch.term]);
 
+    const filteredAreaOptions = useMemo(() => {
+        return AREA_OPTIONS.filter(opt => opt.category === clientData.roomType);
+    }, [clientData.roomType]);
+
     const handleFieldChange = (field, value) => {
         setClientData(prev => {
             const newData = { ...prev, [field]: value };
+
+            if (field === 'roomType') {
+                const firstAreaMatch = AREA_OPTIONS.find(opt => opt.category === value);
+                if (firstAreaMatch) {
+                    newData.area = firstAreaMatch.area;
+                } else {
+                    newData.area = '';
+                }
+            }
 
             // Trigger Smart Search if the field has a search icon (for client-related fields)
             const clientSearchFields = ['smartSearch', 'clientNo', 'groupname', 'surname', 'given', 'email', 'mobile'];
@@ -517,12 +596,17 @@ const ReservationsListPage = () => {
                     <FormField label="Adults" field="adults" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Tariff Type" field="tariffType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TARIFF_TYPE_OPTIONS} />
                     <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={ROOM_TYPE_OPTIONS} />
-                    <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={AREA_OPTIONS} />
+                    <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={filteredAreaOptions} />
                     <FormField label="Bkg Source" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
                     <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
                     <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={COMPANY_OPTIONS} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
-                    <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} />
+                    <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={VOUCHER_OPTIONS} />
                     <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Date Made" field="dateMade" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Cancelled" field="cancelled" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Cancelled By" field="cancelledBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Confirmed" field="confirmed" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Confirmed By" field="confirmedBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 </div>
 
                 {/* Account Panel */}
