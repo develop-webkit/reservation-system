@@ -309,7 +309,15 @@ const ReservationsListPage = () => {
         cancelled: '',
         cancelledBy: '',
         confirmed: '',
-        confirmedBy: ''
+        confirmedBy: '',
+        accountNo: '(New Account)',
+        baseTariff: '200.00 / 200.00',
+        package: '0.00 / 0.00',
+        totalTariff: '200.00 / 200.00',
+        avgUpgradeTariff: '0.00',
+        accomm: '0.00',
+        ar: '0.00',
+        activeAccounts: '(None)'
     });
 
     // Update state when query params change
@@ -620,10 +628,10 @@ const ReservationsListPage = () => {
                         </div>
                     </div>
 
-                    <FormField label="Account No" value="(New Account)" bgColor="#fffbe6" />
-                    <FormField label="Base Tariff" value="XXXXXXXXXXXX" bgColor="#fffbe6" />
-                    <FormField label="Package" value="XXXXXXXXXX" bgColor="#fffbe6" />
-                    <FormField label="Total Tariff" value="XXXXXXXXXXXX" bgColor="#fffbe6" />
+                    <FormField label="Account No" field="accountNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Base Tariff" field="baseTariff" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Package" field="package" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Total Tariff" field="totalTariff" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Tariff On Master" value="Yes" bgColor="#b7eb8f" />
                     <FormField label="Deposit" value="XXXX" />
                     <FormField label="Dep Req By" value="Sun, 23 Nov 2025" />
@@ -631,10 +639,10 @@ const ReservationsListPage = () => {
                     <FormField label="Bill Room Type" value="" isDropdown />
                     <FormField label="Upgrade Reason" value="" isDropdown />
                     <FormField label="Hide Tariff On Correspondence" value="No" />
-                    <FormField label="Avg Upgrade Tariff" value="0.00" bgColor="#fffbe6" />
-                    <FormField label="Accomm" value="XXXX" bgColor="#fffbe6" />
-                    <FormField label="A/R" value="0.00" bgColor="#fffbe6" />
-                    <FormField label="Active Accounts" value="(None)" bgColor="#fffbe6" />
+                    <FormField label="Avg Upgrade Tariff" field="avgUpgradeTariff" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Accomm" field="accomm" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="A/R" field="ar" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
+                    <FormField label="Active Accounts" field="activeAccounts" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 </div>
             </div>
         </div>
