@@ -23,6 +23,7 @@ import {
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { mockClients } from '../data/mockClients';
+import { COUNTRY_CODES } from '../data/countryCodes';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -30,14 +31,6 @@ const { RangePicker } = DatePicker;
 
 const TITLE_OPTIONS = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr'];
 const CLIENT_TYPE_OPTIONS = ['Client', 'Contractor', 'Sales Lead', 'Staff'];
-const COUNTRY_CODES = [
-    { code: '+61', label: 'Australia (+61)' },
-    { code: '+64', label: 'New Zealand (+64)' },
-    { code: '+44', label: 'UK (+44)' },
-    { code: '+1', label: 'USA (+1)' },
-    { code: '+91', label: 'India (+91)' },
-    { code: '+86', label: 'China (+86)' }
-];
 const TARIFF_TYPE_OPTIONS = ["Occupied Room Rate PRPN", "Rack Rate", "Corporate Rate"];
 const ROOM_TYPE_OPTIONS = ["Staff Accommodation", "Standard Ensuite Benjamin", "Standard Ensuite Shiel", "Standard Ensuite Wallace"];
 const STATUS_OPTIONS = ['Unconfirmed', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'];
@@ -129,20 +122,34 @@ const FormField = ({
             </Text>
             <div style={{ display: 'flex', width: '100%', gap: '4px', alignItems: 'center' }}>
                 {prefixSelect && (
-                    <Select
-                        value={prefixSelect.value}
-                        onChange={prefixSelect.onChange}
-                        style={{ width: prefixSelect.width || '80px' }}
-                        size="small"
-                        suffixIcon={<CaretDownOutlined style={{ fontSize: '10px' }} />}
-                        dropdownMatchSelectWidth={false}
-                    >
-                        {prefixSelect.options.map(opt => (
-                            <Option key={typeof opt === 'string' ? opt : opt.code} value={typeof opt === 'string' ? opt : opt.code}>
-                                {typeof opt === 'string' ? opt : opt.label}
-                            </Option>
-                        ))}
-                    </Select>
+                    prefixSelect.isAutoComplete ? (
+                        <AutoComplete
+                            value={prefixSelect.value}
+                            onChange={prefixSelect.onChange}
+                            options={prefixSelect.options.map(opt => ({ value: opt.code }))}
+                            style={{ width: prefixSelect.width || '80px' }}
+                            size="small"
+                            placeholder="Code"
+                            filterOption={(inputValue, option) =>
+                                option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                            }
+                        />
+                    ) : (
+                        <Select
+                            value={prefixSelect.value}
+                            onChange={prefixSelect.onChange}
+                            style={{ width: prefixSelect.width || '80px' }}
+                            size="small"
+                            suffixIcon={<CaretDownOutlined style={{ fontSize: '10px' }} />}
+                            dropdownMatchSelectWidth={false}
+                        >
+                            {prefixSelect.options.map(opt => (
+                                <Option key={opt.code} value={opt.code}>
+                                    {opt.code}
+                                </Option>
+                            ))}
+                        </Select>
+                    )
                 )}
                 <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
                     {isRange ? (
@@ -296,7 +303,7 @@ const ReservationsListPage = () => {
         title: '',
         email: '',
         phoneAH: '',
-        mobile: '0417123456',
+        mobile: '',
         mobilePrefix: '+61',
         email2: '',
         blackList: '',
@@ -545,7 +552,8 @@ const ReservationsListPage = () => {
                         value: clientData.mobilePrefix,
                         onChange: (val) => handleFieldChange('mobilePrefix', val),
                         options: COUNTRY_CODES,
-                        width: '130px'
+                        width: '85px',
+                        isAutoComplete: true
                     }}
                 />
                 <FormField label="Email 2" field="email2" clientData={clientData} handleFieldChange={handleFieldChange} />
