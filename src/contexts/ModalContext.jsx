@@ -23,7 +23,7 @@ export const ModalProvider = ({ children }) => {
             options: { size: 'lg', isFullWidth: false, ...options }
         });
     }, []);
-
+ 
     const closeModal = useCallback(() => {
         setModal(prev => ({ ...prev, isOpen: false }));
         // Optional: clear content after animation finishes if you use CSS transitions
