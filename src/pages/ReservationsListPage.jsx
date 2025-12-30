@@ -25,14 +25,29 @@ import { mockClients } from '../data/mockClients';
 
 const { Text } = Typography;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
-const TITLE_OPTIONS = ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof', 'Sir', 'Lady'];
+const TITLE_OPTIONS = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr'];
 const CLIENT_TYPE_OPTIONS = ['Client', 'Contractor', 'Sales Lead', 'Staff'];
-const MOBILE_TYPE_OPTIONS = ['Mobile', 'Home', 'Work', 'Other'];
+const MOBILE_TYPE_OPTIONS = ['Mobile', 'Home', 'Work'];
+const TARIFF_TYPE_OPTIONS = ["Occupied Room Rate PRPN", "Rack Rate", "Corporate Rate"];
+const ROOM_TYPE_OPTIONS = ["Staff Accommodation", "Standard Ensuite Benjamin", "Standard Ensuite Shiel", "Standard Ensuite Wallace"];
+const BKG_SOURCE_OPTIONS = ["Contracted Hold Night", "Contracted with Meals", "Non-Contracted", "Room Only - NO MEALS", "WalkIn"];
+const AREA_OPTIONS = [
+    { area: 'B01', cleanStatus: 'Dirty', description: '', resCount: 11 },
+    { area: 'B02', cleanStatus: 'Dirty', description: '', resCount: 13 },
+    { area: 'B03', cleanStatus: 'Clean', description: '', resCount: 12 },
+    { area: 'B04', cleanStatus: 'Clean', description: '', resCount: 11 },
+    { area: 'B05', cleanStatus: 'Clean', description: '', resCount: 11 },
+    { area: 'B06', cleanStatus: 'Dirty', description: '', resCount: 12 },
+    { area: 'B07', cleanStatus: 'Clean', description: '', resCount: 8 },
+    { area: 'B08', cleanStatus: 'Clean', description: '', resCount: 13 },
+    { area: 'B09', cleanStatus: 'Clean', description: '', resCount: 13 },
+];
 const COMPANY_OPTIONS = [
-    { name: 'Heritage Minerals', address: '', creditHold: 'No', tradingAs: '' },
-    { name: 'Mt Morgan Hospital', address: '', creditHold: 'Yes', tradingAs: '' },
-    { name: 'QPS Mount Morgan', address: '', creditHold: 'Yes', tradingAs: '' }
+    { name: 'Heritage Minerals', address: '123 Mineral Way', creditHold: 'No', tradingAs: 'HM' },
+    { name: 'Mt Morgan Hospital', address: '45 Hospital St', creditHold: 'Yes', tradingAs: 'MMH' },
+    { name: 'QPS Mount Morgan', address: '89 Police Rd', creditHold: 'Yes', tradingAs: 'QPS' },
 ];
 
 const FormField = ({
@@ -46,6 +61,7 @@ const FormField = ({
     isDropdown = false,
     options = [],
     isDate = false,
+    isRange = false,
     suffix,
     addonAfter,
     prefixSelect,
@@ -68,11 +84,13 @@ const FormField = ({
                 color: '#262626',
                 paddingRight: '8px',
                 textAlign: 'left',
+                textDecoration: label === 'Company' ? 'underline' : 'none',
+                cursor: label === 'Company' ? 'pointer' : 'default',
                 ...labelStyle
             }}>
                 {label}
             </Text>
-            <div style={{ display: 'flex', width: '100%', gap: '0' }}>
+            <div style={{ display: 'flex', width: '100%', gap: '4px', alignItems: 'center' }}>
                 {prefixSelect && (
                     <Select
                         defaultValue={prefixSelect.options[0]}
@@ -84,15 +102,39 @@ const FormField = ({
                     </Select>
                 )}
                 <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
-                    {isDropdown ? (
+                    {isRange ? (
+                        <RangePicker
+                            value={[
+                                clientData?.arrive ? dayjs(clientData.arrive) : null,
+                                clientData?.depart ? dayjs(clientData.depart) : null
+                            ]}
+                            onChange={(dates) => {
+                                handleFieldChange?.('bookingDates', dates);
+                            }}
+                            format="ddd, D MMM YYYY - h:mm A"
+                            showTime={{
+                                format: 'h:mm A',
+                                use12Hours: true,
+                                // This sets the default position of the clock for Arrive and Depart
+                                defaultValue: [
+                                    dayjs('14:00', 'HH:mm'),
+                                    dayjs('10:00', 'HH:mm')
+                                ]
+                            }}
+                            style={{ width: '100%', backgroundColor: finalBgColor }}
+                            size="small"
+                            placeholder={['Arrive', 'Depart']}
+                        // Removed disabledDate so you can select previous dates
+                        />
+                    ) : isDropdown ? (
                         <Select
                             value={displayValue}
                             onChange={(val) => handleFieldChange?.(field, val)}
                             style={{ width: '100%' }}
                             size="small"
                             suffixIcon={suffix || <CaretDownOutlined style={{ fontSize: '10px' }} />}
-                            dropdownMatchSelectWidth={label === 'Company' ? false : true}
-                            optionLabelProp={label === 'Company' ? "label" : undefined}
+                            dropdownMatchSelectWidth={['Company', 'Area'].includes(label) ? false : true}
+                            optionLabelProp={['Company', 'Area'].includes(label) ? "label" : undefined}
                             dropdownRender={label === 'Company' ? (menu) => (
                                 <div style={{ minWidth: '600px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', backgroundColor: '#fff', borderRadius: '4px' }}>
                                     <div style={{ display: 'grid', gridTemplateColumns: '200px 150px 100px 150px', padding: '8px', backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: '11px', borderBottom: '1px solid #e8e8e8' }}>
@@ -103,23 +145,40 @@ const FormField = ({
                                     </div>
                                     {menu}
                                 </div>
+                            ) : label === 'Area' ? (menu) => (
+                                <div style={{ minWidth: '600px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', backgroundColor: '#fff', borderRadius: '4px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '150px 150px 200px 100px', padding: '8px', backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: '11px', borderBottom: '1px solid #e8e8e8' }}>
+                                        <span>Area</span>
+                                        <span>Clean Status</span>
+                                        <span>AreaDescription</span>
+                                        <span>Res Count</span>
+                                    </div>
+                                    {menu}
+                                </div>
                             ) : undefined}
                         >
                             {options.length > 0 ? (
                                 options.map(opt => (
                                     <Option
-                                        key={typeof opt === 'string' ? opt : opt.name}
-                                        value={typeof opt === 'string' ? opt : opt.name}
-                                        label={typeof opt === 'string' ? opt : opt.name}
+                                        key={typeof opt === 'string' ? opt : (opt.name || opt.area)}
+                                        value={typeof opt === 'string' ? opt : (opt.name || opt.area)}
+                                        label={typeof opt === 'string' ? opt : (opt.name || opt.area)}
                                     >
-                                        {typeof opt === 'string' ? opt : (
+                                        {typeof opt === 'string' ? opt : label === 'Company' ? (
                                             <div style={{ display: 'grid', gridTemplateColumns: '200px 150px 100px 150px', fontSize: '11px' }}>
                                                 <span>{opt.name}</span>
                                                 <span>{opt.address}</span>
                                                 <span>{opt.creditHold}</span>
                                                 <span>{opt.tradingAs}</span>
                                             </div>
-                                        )}
+                                        ) : label === 'Area' ? (
+                                            <div style={{ display: 'grid', gridTemplateColumns: '150px 150px 200px 100px', fontSize: '11px' }}>
+                                                <span>{opt.area}</span>
+                                                <span>{opt.cleanStatus}</span>
+                                                <span>{opt.description}</span>
+                                                <span>{opt.resCount}</span>
+                                            </div>
+                                        ) : (opt.name || opt.area)}
                                     </Option>
                                 ))
                             ) : (
@@ -128,8 +187,10 @@ const FormField = ({
                         </Select>
                     ) : isDate ? (
                         <DatePicker
-                            value={displayValue ? dayjs(displayValue, 'DD MMM YYYY') : null}
-                            format="DD MMM YYYY"
+                            value={displayValue ? dayjs(displayValue) : null}
+                            onChange={(val) => handleFieldChange?.(field, val)}
+                            format="ddd, D MMM YYYY - h:mm A"
+                            showTime={{ format: 'h:mm A', use12Hours: true }}
                             style={{ width: '100%', backgroundColor: finalBgColor }}
                             size="small"
                         />
@@ -168,16 +229,31 @@ const ReservationsListPage = () => {
         groupname: '',
         surname: '',
         given: '',
-        title: 'Mr',
-        email: '',
+        title: 'Dr',
+        email: 'ssferoze@gmail.com',
         phoneAH: '',
-        mobile: '',
+        mobile: '0417123456',
         email2: '',
         blackList: 'No',
         clientType: 'Client',
         company: '',
         dateCreated: '05 Nov 2025',
-        dateModified: '05 Nov 2025'
+        dateModified: '05 Nov 2025',
+        // Reservation fields
+        resNo: '(New Reservation)',
+        masterResNo: '(New Reservation)',
+        status: 'Unconfirmed',
+        arrive: dayjs('2026-02-04').hour(14).minute(0).toDate(),
+        depart: dayjs('2026-02-05').hour(10).minute(0).toDate(),
+        nights: 1,
+        adults: 1,
+        tariffType: 'Occupied Room Rate PRPN',
+        roomType: 'Standard Ensuite Benjamin',
+        area: 'B04',
+        bkgSource: '',
+        fixed: 'Yes',
+        voucherNo: '',
+        madeBy: 'Super Admin'
     });
 
     // --- State for Smart Search ---
@@ -197,15 +273,54 @@ const ReservationsListPage = () => {
     }, [smartSearch.term]);
 
     const handleFieldChange = (field, value) => {
-        setClientData(prev => ({ ...prev, [field]: value }));
+        setClientData(prev => {
+            const newData = { ...prev, [field]: value };
 
-        // Trigger Smart Search if the field has a search icon (based on logic or specific fields)
-        const searchableFields = ['smartSearch', 'clientNo', 'groupname', 'surname', 'given', 'email', 'mobile'];
-        if (searchableFields.includes(field) && value.length > 0) {
-            setSmartSearch({ isOpen: true, term: value });
-        } else if (value.length === 0) {
-            setSmartSearch({ isOpen: false, term: '' });
-        }
+            // Trigger Smart Search if the field has a search icon (for client-related fields)
+            const clientSearchFields = ['smartSearch', 'clientNo', 'groupname', 'surname', 'given', 'email', 'mobile'];
+            if (clientSearchFields.includes(field)) {
+                if (typeof value === 'string' && value.length > 0) {
+                    setSmartSearch({ isOpen: true, term: value });
+                } else if (!value) {
+                    setSmartSearch({ isOpen: false, term: '' });
+                }
+            }
+
+            // Auto-calculation logic for nights and default times
+            if (field === 'bookingDates') {
+                if (value && value[0] && value[1]) {
+                    let arrive = dayjs(value[0]);
+                    let depart = dayjs(value[1]);
+
+                    // 1. Apply Default Times if they haven't been set by the user yet
+                    // Ant Design defaults to 00:00 if only a date is clicked.
+                    if (arrive.hour() === 0 && arrive.minute() === 0) {
+                        arrive = arrive.hour(14).minute(0).second(0);
+                    }
+                    if (depart.hour() === 0 && depart.minute() === 0) {
+                        depart = depart.hour(10).minute(0).second(0);
+                    }
+
+                    // 2. Enforce Minimum 1 Night stay
+                    // If the user selects the same day or a day before, 
+                    // we force the departure to be the next day at 10 AM.
+                    if (depart.isBefore(arrive, 'day') || depart.isSame(arrive, 'day')) {
+                        depart = arrive.add(1, 'day').hour(10).minute(0).second(0);
+                    }
+
+                    newData.arrive = arrive.toDate();
+                    newData.depart = depart.toDate();
+                    newData.nights = depart.startOf('day').diff(arrive.startOf('day'), 'day');
+                } else {
+                    // Handle clear action
+                    newData.arrive = null;
+                    newData.depart = null;
+                    newData.nights = 0;
+                }
+            }
+
+            return newData;
+        });
     };
 
     const handleSelectClient = (client) => {
@@ -389,30 +504,20 @@ const ReservationsListPage = () => {
                         </div>
                     </div>
 
-                    <FormField label="Res No" value="(New Reservation)" yellowBg />
-                    <FormField label="Master Res No" value="(New Reservation)" yellowBg />
-                    <FormField label="Status" value="Unconfirmed" bgColor="#ffa940" />
-                    <FormField label="Arrive" value="Mon, 24 Nov 2025 - 2:00 PM" isDate yellowBg />
-                    <FormField label="Depart" value="Tue, 25 Nov 2025 - 10:00 AM" isDate yellowBg />
-                    <FormField label="Nights" value="1" />
-                    <FormField label="Adults" value="1" />
-                    <FormField label="Total Nights" value="" yellowBg />
-                    <FormField label="Tariff Type" value="Occupied Room Rate PRPN" isDropdown bgColor="#e6f7ff" />
-                    <FormField label="Room Type" value="Staff Accommodation" isDropdown bgColor="#e6f7ff" />
-                    <FormField label="Area" value="01 Manager" isDropdown bgColor="#e6f7ff" />
-                    <FormField label="Bkg Source" value="" isDropdown />
-                    <FormField label="Fixed" value="Yes" bgColor="#b7eb8f" />
-                    <FormField label="Company" value="" isDropdown suffix={<SearchOutlined />} />
-                    <FormField label="Travel Agent" value="" isDropdown suffix={<SearchOutlined />} />
-                    <FormField label="Contact" value="" isDropdown />
-                    <FormField label="Res Type" value="" isDropdown />
-                    <FormField label="Voucher No" value="" />
-                    <FormField label="Booker Contact" value="" isDropdown />
-                    <FormField label="Payment Mode" value="" isDropdown />
-                    <FormField label="Date Made" value="" bgColor="#fffbe6" />
-                    <FormField label="Made By" value="" bgColor="#fffbe6" />
-                    <FormField label="Last Modified" value="" bgColor="#fffbe6" />
-                    <FormField label="Group" value="" isDropdown />
+                    <FormField label="Res No" field="resNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
+                    <FormField label="Master Res No" field="masterResNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
+                    <FormField label="Status" field="status" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#ffa940" />
+                    <FormField label="Stay Dates" field="bookingDates" clientData={clientData} handleFieldChange={handleFieldChange} isRange yellowBg />
+                    <FormField label="Nights" field="nights" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
+                    <FormField label="Adults" field="adults" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
+                    <FormField label="Tariff Type" field="tariffType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TARIFF_TYPE_OPTIONS} />
+                    <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={ROOM_TYPE_OPTIONS} />
+                    <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={AREA_OPTIONS} />
+                    <FormField label="Bkg Source" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
+                    <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
+                    <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={COMPANY_OPTIONS} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
+                    <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} />
+                    <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg />
                 </div>
 
                 {/* Account Panel */}
