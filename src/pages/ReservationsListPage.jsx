@@ -30,7 +30,14 @@ const { RangePicker } = DatePicker;
 
 const TITLE_OPTIONS = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr'];
 const CLIENT_TYPE_OPTIONS = ['Client', 'Contractor', 'Sales Lead', 'Staff'];
-const MOBILE_TYPE_OPTIONS = ['Mobile', 'Home', 'Work'];
+const COUNTRY_CODES = [
+    { code: '+61', label: 'Australia (+61)' },
+    { code: '+64', label: 'New Zealand (+64)' },
+    { code: '+44', label: 'UK (+44)' },
+    { code: '+1', label: 'USA (+1)' },
+    { code: '+91', label: 'India (+91)' },
+    { code: '+86', label: 'China (+86)' }
+];
 const TARIFF_TYPE_OPTIONS = ["Occupied Room Rate PRPN", "Rack Rate", "Corporate Rate"];
 const ROOM_TYPE_OPTIONS = ["Staff Accommodation", "Standard Ensuite Benjamin", "Standard Ensuite Shiel", "Standard Ensuite Wallace"];
 const STATUS_OPTIONS = ['Unconfirmed', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'];
@@ -123,12 +130,18 @@ const FormField = ({
             <div style={{ display: 'flex', width: '100%', gap: '4px', alignItems: 'center' }}>
                 {prefixSelect && (
                     <Select
-                        defaultValue={prefixSelect.options[0]}
-                        style={{ width: '80px' }}
+                        value={prefixSelect.value}
+                        onChange={prefixSelect.onChange}
+                        style={{ width: prefixSelect.width || '80px' }}
                         size="small"
                         suffixIcon={<CaretDownOutlined style={{ fontSize: '10px' }} />}
+                        dropdownMatchSelectWidth={false}
                     >
-                        {prefixSelect.options.map(opt => <Option key={opt} value={opt}>{opt}</Option>)}
+                        {prefixSelect.options.map(opt => (
+                            <Option key={typeof opt === 'string' ? opt : opt.code} value={typeof opt === 'string' ? opt : opt.code}>
+                                {typeof opt === 'string' ? opt : opt.label}
+                            </Option>
+                        ))}
                     </Select>
                 )}
                 <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
@@ -280,16 +293,17 @@ const ReservationsListPage = () => {
         groupname: '',
         surname: '',
         given: '',
-        title: 'Dr',
-        email: 'ssferoze@gmail.com',
+        title: '',
+        email: '',
         phoneAH: '',
         mobile: '0417123456',
+        mobilePrefix: '+61',
         email2: '',
-        blackList: 'No',
-        clientType: 'Client',
+        blackList: '',
+        clientType: '',
         company: '',
-        dateCreated: '05 Nov 2025',
-        dateModified: '05 Nov 2025',
+        dateCreated: '',
+        dateModified: '',
         // Reservation fields
         resNo: '(New Reservation)',
         masterResNo: '(New Reservation)',
@@ -305,7 +319,7 @@ const ReservationsListPage = () => {
         fixed: 'Yes',
         voucherNo: '',
         madeBy: 'Super Admin',
-        dateMade: '05 Nov 2025',
+        dateMade: '',
         cancelled: '',
         cancelledBy: '',
         confirmed: '',
@@ -527,7 +541,12 @@ const ReservationsListPage = () => {
                     clientData={clientData}
                     handleFieldChange={handleFieldChange}
                     setSmartSearch={setSmartSearch}
-                    prefixSelect={{ options: MOBILE_TYPE_OPTIONS }}
+                    prefixSelect={{
+                        value: clientData.mobilePrefix,
+                        onChange: (val) => handleFieldChange('mobilePrefix', val),
+                        options: COUNTRY_CODES,
+                        width: '130px'
+                    }}
                 />
                 <FormField label="Email 2" field="email2" clientData={clientData} handleFieldChange={handleFieldChange} />
 
