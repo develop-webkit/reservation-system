@@ -1,5 +1,6 @@
 // src/components/BookingChart.jsx
 import React, { useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Typography, Tooltip, Popover, Card, Spin, Alert } from 'antd';
 import dayjs from 'dayjs';
 import { useBookings } from '../hooks/useBookings';
@@ -29,6 +30,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const { data: bookingsResponse, isLoading: bookingsLoading, error: bookingsError } = useBookings();
     const { data: roomsResponse, isLoading: roomsLoading, error: roomsError } = useRooms();
 
+    const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
 
     // Extract data from API response
@@ -309,6 +311,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
     const handleMenuItemClick = (action) => {
         console.log(`Context menu action: ${action}`);
+        if (action === 'add_reservation') {
+            navigate('/reservations/list');
+        }
         handleCloseContextMenu();
     };
 
