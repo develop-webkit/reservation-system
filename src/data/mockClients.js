@@ -2,21 +2,6 @@
 
 export const mockClients = [
     {
-        id: 41,
-        clientNo: "41",
-        groupName: "Heritage Minerals",
-        clientName: "KELLY Sheryl Ms",
-        surname: "KELLY",
-        given: "Sheryl",
-        title: "Ms",
-        company: "",
-        address: "123 Mining St, Queensland",
-        mobile: "0417123456",
-        phoneAH: "",
-        phoneBH: "",
-        email: "sheryl.kelly@heritage.com"
-    },
-    {
         id: 101,
         clientNo: "101",
         groupName: "MMAV Staff",
@@ -29,7 +14,28 @@ export const mockClients = [
         mobile: "0417123456",
         phoneAH: "0298765432",
         phoneBH: "0298765433",
-        email: "shahbaz.sattar@mmav.com"
+        email: "ssferoze@gmail.com",
+        dateCreated: "05 Nov 2025",
+        dateModified: "05 Nov 2025",
+        clientType: "Client"
+    },
+    {
+        id: 41,
+        clientNo: "41",
+        groupName: "Heritage Minerals",
+        clientName: "KELLY Sheryl Ms",
+        surname: "KELLY",
+        given: "Sheryl",
+        title: "Ms",
+        company: "Heritage Minerals",
+        address: "123 Mining St, Queensland",
+        mobile: "0417123456",
+        phoneAH: "",
+        phoneBH: "",
+        email: "sheryl.kelly@heritage.com",
+        dateCreated: "01 Oct 2025",
+        dateModified: "10 Oct 2025",
+        clientType: "Client"
     },
     {
         id: 75,
@@ -44,36 +50,27 @@ export const mockClients = [
         mobile: "0416646146",
         phoneAH: "",
         phoneBH: "",
-        email: "tarne.shanks@heritage.com"
+        email: "tarne.shanks@heritage.com",
+        dateCreated: "15 Nov 2025",
+        dateModified: "15 Nov 2025",
+        clientType: "Client"
     },
     {
-        id: 78,
-        clientNo: "78",
-        groupName: "Heritage Minerals",
-        clientName: "SHANKS Tarne Mr",
-        surname: "SHANKS",
-        given: "Tarne",
-        title: "Mr",
-        company: "Heritage Minerals",
-        address: "79 Ore Road, Perth",
-        mobile: "0416646146",
+        id: 102,
+        clientNo: "102",
+        groupName: "Mt Morgan Hospital",
+        clientName: "SMITH John Dr",
+        surname: "SMITH",
+        given: "John",
+        title: "Dr",
+        company: "Mt Morgan Hospital",
+        address: "10 Hospital Lane, Mt Morgan",
+        mobile: "0400111222",
         phoneAH: "",
         phoneBH: "",
-        email: "tarne2.shanks@heritage.com"
-    },
-    {
-        id: 67,
-        clientNo: "67",
-        groupName: "Heritage Minerals",
-        clientName: "SHESHYN Ole Mr",
-        surname: "SHESHYN",
-        given: "Ole",
-        title: "Mr",
-        company: "Heritage Minerals",
-        address: "12 Carbon Way, Perth",
-        mobile: "0457317307",
-        phoneAH: "",
-        phoneBH: "",
-        email: "ole.sheshyn@heritage.com"
+        email: "john.smith@mtmorgan.com",
+        dateCreated: "20 Dec 2025",
+        dateModified: "21 Dec 2025",
+        clientType: "Staff"
     }
 ];
