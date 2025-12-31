@@ -1,245 +1,161 @@
 
-export const reservations = [
-    // --- Special & Parked ---
+import dayjs from 'dayjs';
+
+// Define Master Reservations (The "Accounts")
+const masters = [
+    {
+        id: 'M_HM', resNo: 'M-1000', masterResNo: null, guestId: 'MGR_HM', roomId: null,
+        groupName: 'Heritage Minerals', clientName: 'Thomas Lewis (Fin Manager)', people: '0', 
+        tariffType: 'Corporate', balance: '0.00', company: 'Heritage Minerals',
+        arriveTime: null, departTime: null,
+        checkIn: '2025-11-01', checkOut: '2026-11-01', nights: 365,
+        status: 'Active', bkgSource: 'Corp', isFixed: true,
+        createDate: '2025-10-01', createdBy: 'Admin', confirmedDate: '2025-10-01', confirmedBy: 'Admin',
+        adults: 0, lastModified: '2025-12-01', totalTariff: '150000.00', baseTariff: '150.00',
+        accountNo: 'ACC-HM-001', accomm: 'Multiple', ar: 'Current', activeAccounts: true,
+        guestPrefix: 'G_HM_'
+    },
+    {
+        id: 'M_MMH', resNo: 'M-2000', masterResNo: null, guestId: 'MGR_MMH', roomId: null,
+        groupName: 'Mt Morgan Hospital', clientName: 'Dr. Sarah Bennett', people: '0',
+        tariffType: 'Gov', balance: '1200.00', company: 'Mt Morgan Hospital',
+        arriveTime: null, departTime: null,
+        checkIn: '2025-11-01', checkOut: '2026-06-30', nights: 240,
+        status: 'Active', bkgSource: 'Gov', isFixed: true,
+        createDate: '2025-10-15', createdBy: 'Admin', confirmedDate: '2025-10-15', confirmedBy: 'Admin',
+        adults: 0, lastModified: '2025-12-05', totalTariff: '50000.00', baseTariff: '140.00',
+        accountNo: 'ACC-MMH-022', accomm: 'Ensuite', ar: 'Current', activeAccounts: true,
+        guestPrefix: 'G_MMH_'
+    },
+    {
+        id: 'M_QPS', resNo: 'M-3000', masterResNo: null, guestId: 'MGR_QPS', roomId: null,
+        groupName: 'QPS', clientName: 'Sgt. Peter Rowe', people: '0',
+        tariffType: 'Gov', balance: '0.00', company: 'QPS Mount Morgan',
+        arriveTime: null, departTime: null,
+        checkIn: '2025-12-01', checkOut: '2026-02-28', nights: 90,
+        status: 'Active', bkgSource: 'Gov', isFixed: true,
+        createDate: '2025-11-20', createdBy: 'Sales', confirmedDate: '2025-11-20', confirmedBy: 'Sales',
+        adults: 0, lastModified: '2025-12-10', totalTariff: '25000.00', baseTariff: '145.00',
+        accountNo: 'ACC-QPS-550', accomm: 'Single', ar: 'Current', activeAccounts: true,
+        guestPrefix: 'G_QPS_'
+    },
+    {
+        id: 'M_MMAV', resNo: 'M-4000', masterResNo: null, guestId: 'MGR_MMAV', roomId: null,
+        groupName: 'MMAV', clientName: 'Ops Manager (MMAV)', people: '0',
+        tariffType: 'Contract', balance: '5000.00', company: 'MMAV',
+        arriveTime: null, departTime: null,
+        checkIn: '2025-10-01', checkOut: '2026-10-01', nights: 365,
+        status: 'Active', bkgSource: 'Contract', isFixed: true,
+        createDate: '2025-09-01', createdBy: 'Manager', confirmedDate: '2025-09-01', confirmedBy: 'Manager',
+        adults: 0, lastModified: '2025-12-28', totalTariff: '200000.00', baseTariff: '160.00',
+        accountNo: 'ACC-MMAV-900', accomm: 'Multiple', ar: 'Overdue', activeAccounts: true,
+        guestPrefix: 'G_MMAV_'
+    }
+];
+
+// Room List (Extracted from rooms.js + expanded to be safe)
+const roomIds = [
+    // Benjamin
+    'B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B09',
+    // Shiel
+    'S01_SH', 'S02_SH', 'S03_SH', 'S04_SH', 'S05_SH', 'S06_SH', 'S07_SH', 'S08_SH',
+    // Wallace
+    'W01', 'W02', 'W03', 'W04', 'W05', 'W06', 'W07', 'W08',
+    // Staff (Optional, maybe skip or include)
+    'S01', 'S02'
+];
+
+// Determine Reservation Status based on date vs "Today" (Dec 31 2025)
+const getStatus = (checkIn, checkOut) => {
+    const today = dayjs('2025-12-31');
+    const inDate = dayjs(checkIn);
+    const outDate = dayjs(checkOut);
+
+    if (outDate.isBefore(today)) return 'Departed';
+    if (inDate.isAfter(today)) return 'Confirmed';
+    return 'Arrived';
+};
+
+// Data Generator Function
+const generateSubReservations = () => {
+    const subs = [];
+    let resCounter = 5000;
+    const startDate = dayjs('2025-12-01');
+    const endDate = dayjs('2026-01-31');
+
+    roomIds.forEach((roomId, index) => {
+        let currentDate = startDate;
+        
+        // Cycle through masters to distribute rooms
+        const master = masters[index % masters.length]; 
+        
+        while (currentDate.isBefore(endDate)) {
+            // Random Duration: 2 to 14 days
+            const stayDuration = Math.floor(Math.random() * 12) + 2; 
+            const checkOutDate = currentDate.add(stayDuration, 'day');
+            
+            // Random Gap: 0 or 1 day (rarely 2)
+            const gap = Math.random() > 0.8 ? 1 : 0;
+
+            const res = {
+                id: `S_${roomId}_${resCounter}`,
+                roomId: roomId,
+                resNo: `${resCounter}`,
+                masterResNo: master.resNo,
+                checkIn: currentDate.format('YYYY-MM-DD'),
+                checkOut: checkOutDate.format('YYYY-MM-DD'),
+                status: getStatus(currentDate, checkOutDate),
+                company: master.company,
+                guestId: `${master.guestPrefix}${resCounter}`,
+                clientName: `${master.company} Emp ${resCounter}`,
+                people: '1A',
+                tariffType: 'Standard',
+                balance: '0.00',
+                arriveTime: '14:00',
+                departTime: '10:00',
+                createDate: '2025-11-01',
+                createdBy: 'System',
+                confirmedDate: '2025-11-01',
+                confirmedBy: 'System',
+                adults: 1,
+                nights: stayDuration
+            };
+
+            subs.push(res);
+            resCounter++;
+
+            // Next booking starts after checkout + gap
+            currentDate = checkOutDate.add(gap, 'day');
+        }
+    });
+    return subs;
+};
+
+const generatedSubs = generateSubReservations();
+
+// Add Static Special Events
+const specialEvents = [
     { 
-        id: 'SP1', resNo: '9999', masterResNo: '9999', guestId: 'EV01', roomId: 'SP01',
+        id: 'SP1', resNo: '9999', masterResNo: 'M-EVT-99', guestId: 'EV01', roomId: 'SP01',
         groupName: 'New Year Bash', clientName: 'New Year Gala', people: '100A', tariffType: 'Function', balance: '0.00', company: 'Hotel Event',
         arriveTime: '18:00', departTime: '02:00',
         checkIn: '2025-12-31', checkOut: '2026-01-01', nights: 1,
         status: 'Confirmed', bkgSource: 'Internal', isFixed: true,
         createDate: '2025-10-01', createdBy: 'Events', confirmedDate: '2025-10-01', confirmedBy: 'Events',
-        specialEvent: true
+        specialEvent: true, adults: 100
     },
     { 
-        id: 'PK1', resNo: '8888', masterResNo: '8888', guestId: 'PK001', roomId: 'PK01',
+        id: 'PK1', resNo: '8888', masterResNo: 'M-GRP-88', guestId: 'PK001', roomId: 'PK01',
         groupName: 'Holding', clientName: 'Unassigned Group', people: '10A', tariffType: 'Standard', balance: '0.00', company: 'TBD',
         arriveTime: '14:00', departTime: '10:00',
         checkIn: '2026-01-05', checkOut: '2026-01-10', nights: 5,
         status: 'Unconfirmed', bkgSource: 'Group', isFixed: false,
-        createDate: '2025-12-30', createdBy: 'Sales', confirmedDate: null, confirmedBy: null
-    },
-    { 
-        id: 'PK2', resNo: '8889', masterResNo: '8889', guestId: 'PK002', roomId: 'PK01',
-        groupName: 'Waitlist', clientName: 'Waitlist Item', people: '2A', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-30', checkOut: '2026-01-02', nights: 3,
-        status: 'Unconfirmed', bkgSource: 'Online', isFixed: false,
-        createDate: '2025-12-28', createdBy: 'System', confirmedDate: null, confirmedBy: null
-    },
-
-    // --- Dec 31 2025 is "Today" ---
-
-    // 1. Arrived (Checked In) - Currently in house
-    { 
-        id: '1', resNo: '1001', masterResNo: '1001', guestId: 'G01', roomId: 'S01',
-        groupName: 'Staff', clientName: 'Manager John', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'Internal',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-01', checkOut: '2026-01-30', nights: 60,
-        status: 'Arrived', bkgSource: 'Staff', isFixed: true,
-        createDate: '2025-11-01', createdBy: 'Admin', confirmedDate: '2025-11-01', confirmedBy: 'Admin'
-    },
-    { 
-        id: '2', resNo: '1002', masterResNo: '1002', guestId: 'G02', roomId: 'B01',
-        groupName: 'Mining Co', clientName: 'Smith Team', people: '2A', tariffType: 'Occupied', balance: '500.00', company: 'Mining Co',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-28', checkOut: '2026-01-02', nights: 5,
-        status: 'Arrived', bkgSource: 'Contracted', isFixed: false,
-        createDate: '2025-12-10', createdBy: 'Reception', confirmedDate: '2025-12-12', confirmedBy: 'Reception'
-    },
-    { 
-        id: '3', resNo: '1003', masterResNo: '1003', guestId: 'G03', roomId: 'B02',
-        groupName: 'Holiday', clientName: 'Family Doe', people: '2A 2C', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '15:00', departTime: '10:00',
-        checkIn: '2025-12-29', checkOut: '2026-01-03', nights: 5,
-        status: 'Arrived', bkgSource: 'Online', isFixed: false,
-        createDate: '2025-12-05', createdBy: 'System', confirmedDate: '2025-12-05', confirmedBy: 'System'
-    },
-    { 
-        id: '4', resNo: '1004', masterResNo: '1004', guestId: 'G04', roomId: 'W01',
-        groupName: 'Tourists', clientName: 'Couple Brown', people: '2A', tariffType: 'Standard', balance: '100.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-30', checkOut: '2026-01-01', nights: 2,
-        status: 'Arrived', bkgSource: 'Direct', isFixed: false,
-        createDate: '2025-12-28', createdBy: 'Front Desk', confirmedDate: '2025-12-28', confirmedBy: 'Front Desk'
-    },
-
-    // 2. Confirmed - Coming soon or future
-    { 
-        id: '5', resNo: '1005', masterResNo: '1005', guestId: 'G05', roomId: 'B03',
-        groupName: 'Contractors', clientName: 'BuildCorp A', people: '1A', tariffType: 'Occupied', balance: '200.00', company: 'BuildCorp',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2026-01-02', checkOut: '2026-01-05', nights: 3,
-        status: 'Confirmed', bkgSource: 'Contracted', isFixed: true,
-        createDate: '2025-12-15', createdBy: 'Manager', confirmedDate: '2025-12-20', confirmedBy: 'Manager'
-    },
-    { 
-        id: '6', resNo: '1006', masterResNo: '1006', guestId: 'G06', roomId: 'W02',
-        groupName: 'Events', clientName: 'Event Staff 1', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'Events Inc',
-        arriveTime: '12:00', departTime: '12:00',
-        checkIn: '2026-01-05', checkOut: '2026-01-08', nights: 3,
-        status: 'Confirmed', bkgSource: 'Group', isFixed: true,
-        createDate: '2025-11-30', createdBy: 'Sales', confirmedDate: '2025-12-01', confirmedBy: 'Sales'
-    },
-    { 
-        id: '7', resNo: '1007', masterResNo: '1007', guestId: 'G07', roomId: 'S01_SH',
-        groupName: 'Mining Co', clientName: 'Shift B', people: '1A', tariffType: 'Occupied', balance: '0.00', company: 'Mining Co',
-        arriveTime: '16:00', departTime: '09:00',
-        checkIn: '2026-01-03', checkOut: '2026-01-10', nights: 7,
-        status: 'Confirmed', bkgSource: 'Contracted', isFixed: false,
-        createDate: '2025-12-25', createdBy: 'Reception', confirmedDate: '2025-12-26', confirmedBy: 'Reception'
-    },
-    { 
-        id: '8', resNo: '1008', masterResNo: '1008', guestId: 'G08', roomId: 'B04',
-        groupName: 'Regulars', clientName: 'Mrs. Jones', people: '1A', tariffType: 'Standard', balance: '50.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2026-01-01', checkOut: '2026-01-04', nights: 3,
-        status: 'Confirmed', bkgSource: 'Direct', isFixed: false,
-        createDate: '2025-12-10', createdBy: 'Front Desk', confirmedDate: '2025-12-12', confirmedBy: 'Front Desk'
-    },
-
-    // 3. Unconfirmed - Tentative bookings
-    { 
-        id: '9', resNo: '1009', masterResNo: '1009', guestId: 'G09', roomId: 'W03',
-        groupName: 'Wedding', clientName: 'Guest A', people: '2A', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2026-01-10', checkOut: '2026-01-12', nights: 2,
-        status: 'Unconfirmed', bkgSource: 'Online', isFixed: false,
-        createDate: '2025-12-29', createdBy: 'System', confirmedDate: null, confirmedBy: null
-    },
-    { 
-        id: '10', resNo: '1010', masterResNo: '1010', guestId: 'G10', roomId: 'B05',
-        groupName: 'General', clientName: 'Mr. White', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2026-01-05', checkOut: '2026-01-07', nights: 2,
-        status: 'Unconfirmed', bkgSource: 'Direct', isFixed: false,
-        createDate: '2025-12-30', createdBy: 'Front Desk', confirmedDate: null, confirmedBy: null
-    },
-
-    // 4. Departed (Checked Out) - Past bookings
-    { 
-        id: '11', resNo: '1011', masterResNo: '1011', guestId: 'G11', roomId: 'B06',
-        groupName: 'Xmas', clientName: 'Family Green', people: '2A 1C', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-24', checkOut: '2025-12-27', nights: 3,
-        status: 'Departed', bkgSource: 'Online', isFixed: false,
-        createDate: '2025-11-20', createdBy: 'System', confirmedDate: '2025-11-20', confirmedBy: 'System'
-    },
-    { 
-        id: '12', resNo: '1012', masterResNo: '1012', guestId: 'G12', roomId: 'W04',
-        groupName: 'Worker', clientName: 'Tech Guy', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'TechFix',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-20', checkOut: '2025-12-28', nights: 8,
-        status: 'Departed', bkgSource: 'Contracted', isFixed: false,
-        createDate: '2025-12-01', createdBy: 'Manager', confirmedDate: '2025-12-01', confirmedBy: 'Manager'
-    },
-    { 
-        id: '13', resNo: '1013', masterResNo: '1013', guestId: 'G13', roomId: 'S02',
-        groupName: 'Staff', clientName: 'Temp Staff', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'Internal',
-        arriveTime: '12:00', departTime: '12:00',
-        checkIn: '2025-12-15', checkOut: '2025-12-22', nights: 7,
-        status: 'Departed', bkgSource: 'Staff', isFixed: true,
-        createDate: '2025-12-01', createdBy: 'HR', confirmedDate: '2025-12-02', confirmedBy: 'HR'
-    },
-    { 
-        id: '14', resNo: '1014', masterResNo: '1014', guestId: 'G14', roomId: 'B01',
-        groupName: 'Mining Co', clientName: 'Smith Team prev', people: '1A', tariffType: 'Occupied', balance: '0.00', company: 'Mining Co',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-20', checkOut: '2025-12-25', nights: 5,
-        status: 'Departed', bkgSource: 'Contracted', isFixed: false,
-        createDate: '2025-11-10', createdBy: 'Admin', confirmedDate: '2025-11-12', confirmedBy: 'Admin'
-    },
-
-    // 5. Pre Check In
-    { 
-        id: '15', resNo: '1015', masterResNo: '1015', guestId: 'G15', roomId: 'W05',
-        groupName: 'Late Checkin', clientName: 'Ms. Late', people: '1A', tariffType: 'Standard', balance: '100.00', company: 'N/A',
-        arriveTime: '20:00', departTime: '10:00',
-        checkIn: '2025-12-31', checkOut: '2026-01-02', nights: 2,
-        status: 'Pre Check In', bkgSource: 'Online', isFixed: true,
-        createDate: '2025-12-25', createdBy: 'System', confirmedDate: '2025-12-25', confirmedBy: 'System'
-    },
-
-    // 6. Out of Order
-    { 
-        id: '16', resNo: 'OOO1', masterResNo: '', guestId: '', roomId: 'B09',
-        groupName: 'Maintenance', clientName: 'Plumbing Issue', people: '', tariffType: 'N/A', balance: '', company: 'Internal',
-        arriveTime: '', departTime: '',
-        checkIn: '2025-12-30', checkOut: '2026-01-02', nights: 3,
-        status: 'Out of Order', bkgSource: 'Internal', isFixed: true,
-        createDate: '2025-12-30', createdBy: 'Maintenance', confirmedDate: '2025-12-30', confirmedBy: 'Maintenance'
-    },
-    { 
-        id: '17', resNo: 'OOO2', masterResNo: '', guestId: '', roomId: 'S04_SH',
-        groupName: 'Renovation', clientName: 'Painting', people: '', tariffType: 'N/A', balance: '', company: 'Internal',
-        arriveTime: '', departTime: '',
-        checkIn: '2026-01-05', checkOut: '2026-01-10', nights: 5,
-        status: 'Out of Order', bkgSource: 'Internal', isFixed: true,
-        createDate: '2025-12-01', createdBy: 'Ops', confirmedDate: '2025-12-01', confirmedBy: 'Ops'
-    },
-
-    // More Randoms to fill up
-    { 
-        id: '18', resNo: '1018', masterResNo: '1018', guestId: 'G18', roomId: 'B07',
-        groupName: 'Public', clientName: 'Walker T', people: '2A', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-27', checkOut: '2025-12-29', nights: 2,
-        status: 'Departed', bkgSource: 'Direct', isFixed: false,
-        createDate: '2025-12-20', createdBy: 'Reception', confirmedDate: '2025-12-20', confirmedBy: 'Reception'
-    },
-    { 
-        id: '19', resNo: '1019', masterResNo: '1019', guestId: 'G19', roomId: 'B07',
-        groupName: 'Public', clientName: 'Ranger K', people: '1A', tariffType: 'Standard', balance: '50.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-29', checkOut: '2026-01-01', nights: 3,
-        status: 'Arrived', bkgSource: 'Online', isFixed: false,
-        createDate: '2025-12-21', createdBy: 'System', confirmedDate: '2025-12-21', confirmedBy: 'System'
-    },
-    { 
-        id: '20', resNo: '1020', masterResNo: '1020', guestId: 'G20', roomId: 'W06',
-        groupName: 'Group A', clientName: 'Member 1', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'Group A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-31', checkOut: '2026-01-02', nights: 2,
-        status: 'Pre Check In', bkgSource: 'Group', isFixed: true,
-        createDate: '2025-11-01', createdBy: 'Sales', confirmedDate: '2025-11-05', confirmedBy: 'Sales'
-    },
-    { 
-        id: '21', resNo: '1021', masterResNo: '1021', guestId: 'G21', roomId: 'S02_SH',
-        groupName: 'Staff', clientName: 'Temp 2', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'Internal',
-        arriveTime: '12:00', departTime: '12:00',
-        checkIn: '2025-12-25', checkOut: '2026-01-05', nights: 11,
-        status: 'Arrived', bkgSource: 'Staff', isFixed: true,
-        createDate: '2025-12-01', createdBy: 'HR', confirmedDate: '2025-12-01', confirmedBy: 'HR'
-    },
-    { 
-        id: '22', resNo: '1022', masterResNo: '1022', guestId: 'G22', roomId: 'B08',
-        groupName: 'Mining Co', clientName: 'Eng 42', people: '1A', tariffType: 'Occupied', balance: '0.00', company: 'Mining Co',
-        arriveTime: '16:00', departTime: '08:00',
-        checkIn: '2025-12-28', checkOut: '2025-12-30', nights: 2,
-        status: 'Departed', bkgSource: 'Contracted', isFixed: false,
-        createDate: '2025-12-15', createdBy: 'Admin', confirmedDate: '2025-12-16', confirmedBy: 'Admin'
-    },
-    { 
-        id: '23', resNo: '1023', masterResNo: '1023', guestId: 'G23', roomId: 'B08',
-        groupName: 'Solo', clientName: 'Mr. X', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2025-12-30', checkOut: '2026-01-01', nights: 2,
-        status: 'Arrived', bkgSource: 'Direct', isFixed: false,
-        createDate: '2025-12-28', createdBy: 'Front Desk', confirmedDate: '2025-12-28', confirmedBy: 'Front Desk'
-    },
-    { 
-        id: '24', resNo: '1024', masterResNo: '1024', guestId: 'G24', roomId: 'W07',
-        groupName: 'Couple', clientName: 'Newlyweds', people: '2A', tariffType: 'Standard', balance: '200.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2026-01-02', checkOut: '2026-01-09', nights: 7,
-        status: 'Confirmed', bkgSource: 'Online', isFixed: true,
-        createDate: '2025-11-20', createdBy: 'System', confirmedDate: '2025-11-20', confirmedBy: 'System'
-    },
-    { 
-        id: '25', resNo: '1025', masterResNo: '1025', guestId: 'G25', roomId: 'W08',
-        groupName: 'Public', clientName: 'Guest Z', people: '1A', tariffType: 'Standard', balance: '0.00', company: 'N/A',
-        arriveTime: '14:00', departTime: '10:00',
-        checkIn: '2026-01-04', checkOut: '2026-01-06', nights: 2,
-        status: 'Unconfirmed', bkgSource: 'Direct', isFixed: false,
-        createDate: '2025-12-31', createdBy: 'Front Desk', confirmedDate: null, confirmedBy: null
+        createDate: '2025-12-30', createdBy: 'Sales', confirmedDate: null, confirmedBy: null, adults: 10
     }
+];
+
+export const reservations = [
+    ...masters,
+    ...specialEvents,
+    ...generatedSubs
 ];

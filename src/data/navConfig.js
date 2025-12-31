@@ -28,7 +28,15 @@ export const navConfig = [
         ]
     },
     { name: 'Accounting', icon: 'bi-wallet-fill', path: '/accounting' },
-    { name: 'Housekeeping', icon: 'bi-basket-fill', path: '/housekeeping' },
+    { 
+        name: 'Housekeeping', 
+        icon: 'bi-basket-fill', 
+        path: '/housekeeping',
+        children: [
+            { name: 'Clean Screen', path: '/housekeeping/clean-screen' },
+            { name: 'Housekeeping Roster', path: '/housekeeping/roster' },
+        ]
+    },
     { name: 'Reports', icon: 'bi-file-earmark-bar-graph-fill', path: '/reports' },
     { name: 'Asset Maintenance', icon: 'bi-tools', path: '/asset-maintenance' },
     { name: 'Utilities', icon: 'bi-gear-fill', path: '/utilities' },

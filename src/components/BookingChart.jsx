@@ -441,8 +441,6 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
-                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('quick_quote')}>Quick Quote</div>
-                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_order')}>Add Out of Order</div>
                     <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_service')}>Add Out Of Service</div>
                     <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                     <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
