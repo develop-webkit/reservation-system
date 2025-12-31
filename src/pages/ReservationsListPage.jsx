@@ -24,59 +24,30 @@ import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { mockClients } from '../data/mockClients';
 import { COUNTRY_CODES } from '../data/countryCodes';
+import { companies } from '../data/companies';
+import { rooms, ROOM_TYPE_OPTIONS } from '../data/rooms';
+import { VOUCHER_OPTIONS } from '../data/vouchers';
+import {
+    TITLE_OPTIONS,
+    CLIENT_TYPE_OPTIONS,
+    TARIFF_TYPE_OPTIONS,
+    STATUS_OPTIONS,
+    BKG_SOURCE_OPTIONS
+} from '../data/options';
 
 const { Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const TITLE_OPTIONS = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr'];
-const CLIENT_TYPE_OPTIONS = ['Client', 'Contractor', 'Sales Lead', 'Staff'];
-const TARIFF_TYPE_OPTIONS = ["Occupied Room Rate PRPN", "Rack Rate", "Corporate Rate"];
-const ROOM_TYPE_OPTIONS = ["Staff Accommodation", "Standard Ensuite Benjamin", "Standard Ensuite Shiel", "Standard Ensuite Wallace"];
-const STATUS_OPTIONS = ['Unconfirmed', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'];
-const BKG_SOURCE_OPTIONS = ["Contracted with Meals", "Contracted Hold Night", "Non-Contracted", "Room Only - NO MEALS", "WalkIn"];
-const VOUCHER_OPTIONS = ["V-1001", "V-1002", "V-1003"];
-const AREA_OPTIONS = [
-    // Staff Accommodation
-    { area: '01 Manager', cleanStatus: 'Clean', description: '', resCount: 5, category: 'Staff Accommodation' },
-    { area: '02 Other Staff', cleanStatus: 'Clean', description: '', resCount: 3, category: 'Staff Accommodation' },
+const AREA_OPTIONS = rooms.map(room => ({
+    area: room.name,
+    cleanStatus: room.defaultCleanStatus,
+    description: '',
+    resCount: 0, // Placeholder, would need real count from reservations
+    category: room.category
+}));
 
-    // Standard Ensuite Benjamin
-    { area: 'B01', cleanStatus: 'Dirty', description: '', resCount: 11, category: 'Standard Ensuite Benjamin' },
-    { area: 'B02', cleanStatus: 'Dirty', description: '', resCount: 13, category: 'Standard Ensuite Benjamin' },
-    { area: 'B03', cleanStatus: 'Clean', description: '', resCount: 12, category: 'Standard Ensuite Benjamin' },
-    { area: 'B04', cleanStatus: 'Clean', description: '', resCount: 11, category: 'Standard Ensuite Benjamin' },
-    { area: 'B05', cleanStatus: 'Clean', description: '', resCount: 11, category: 'Standard Ensuite Benjamin' },
-    { area: 'B06', cleanStatus: 'Dirty', description: '', resCount: 12, category: 'Standard Ensuite Benjamin' },
-    { area: 'B07', cleanStatus: 'Clean', description: '', resCount: 8, category: 'Standard Ensuite Benjamin' },
-    { area: 'B08', cleanStatus: 'Clean', description: '', resCount: 13, category: 'Standard Ensuite Benjamin' },
-    { area: 'B09', cleanStatus: 'Clean', description: '', resCount: 13, category: 'Standard Ensuite Benjamin' },
-
-    // Standard Ensuite Shiel
-    { area: 'S01', cleanStatus: 'Clean', description: '', resCount: 6, category: 'Standard Ensuite Shiel' },
-    { area: 'S02', cleanStatus: 'Dirty', description: '', resCount: 4, category: 'Standard Ensuite Shiel' },
-    { area: 'S03', cleanStatus: 'Clean', description: '', resCount: 2, category: 'Standard Ensuite Shiel' },
-    { area: 'S04', cleanStatus: 'Clean', description: '', resCount: 5, category: 'Standard Ensuite Shiel' },
-    { area: 'S05', cleanStatus: 'Clean', description: '', resCount: 7, category: 'Standard Ensuite Shiel' },
-    { area: 'S06', cleanStatus: 'Clean', description: '', resCount: 3, category: 'Standard Ensuite Shiel' },
-    { area: 'S07', cleanStatus: 'Clean', description: '', resCount: 1, category: 'Standard Ensuite Shiel' },
-    { area: 'S08', cleanStatus: 'Clean', description: '', resCount: 0, category: 'Standard Ensuite Shiel' },
-
-    // Standard Ensuite Wallace
-    { area: 'W01', cleanStatus: 'Dirty', description: '', resCount: 9, category: 'Standard Ensuite Wallace' },
-    { area: 'W02', cleanStatus: 'Clean', description: '', resCount: 8, category: 'Standard Ensuite Wallace' },
-    { area: 'W03', cleanStatus: 'Clean', description: '', resCount: 7, category: 'Standard Ensuite Wallace' },
-    { area: 'W04', cleanStatus: 'Clean', description: '', resCount: 10, category: 'Standard Ensuite Wallace' },
-    { area: 'W05', cleanStatus: 'Clean', description: '', resCount: 5, category: 'Standard Ensuite Wallace' },
-    { area: 'W06', cleanStatus: 'Dirty', description: '', resCount: 4, category: 'Standard Ensuite Wallace' },
-    { area: 'W07', cleanStatus: 'Clean', description: '', resCount: 6, category: 'Standard Ensuite Wallace' },
-    { area: 'W08', cleanStatus: 'Clean', description: '', resCount: 3, category: 'Standard Ensuite Wallace' },
-];
-const COMPANY_OPTIONS = [
-    { name: 'Heritage Minerals', address: '123 Mineral Way', creditHold: 'No', tradingAs: 'HM' },
-    { name: 'Mt Morgan Hospital', address: '45 Hospital St', creditHold: 'Yes', tradingAs: 'MMH' },
-    { name: 'QPS Mount Morgan', address: '89 Police Rd', creditHold: 'Yes', tradingAs: 'QPS' },
-];
+const COMPANY_OPTIONS = companies;
 
 const FormField = ({
     label,

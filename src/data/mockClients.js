@@ -10,6 +10,7 @@ export const mockClients = [
         given: "Shahbaz",
         title: "Dr",
         company: "MMAV",
+        companyId: "C004", // Linked to MMAV
         address: "45 Broadway, Sydney",
         mobile: "0417123456",
         phoneAH: "0298765432",
@@ -28,6 +29,7 @@ export const mockClients = [
         given: "Sheryl",
         title: "Ms",
         company: "Heritage Minerals",
+        companyId: "C001", // Linked to Heritage Minerals
         address: "123 Mining St, Queensland",
         mobile: "0417123456",
         phoneAH: "",
@@ -46,6 +48,7 @@ export const mockClients = [
         given: "Tarne",
         title: "Mr",
         company: "Heritage Minerals",
+        companyId: "C001", // Linked to Heritage Minerals
         address: "78 Ore Road, Perth",
         mobile: "0416646146",
         phoneAH: "",
@@ -64,6 +67,7 @@ export const mockClients = [
         given: "John",
         title: "Dr",
         company: "Mt Morgan Hospital",
+        companyId: "C002", // Linked to Mt Morgan Hospital
         address: "10 Hospital Lane, Mt Morgan",
         mobile: "0400111222",
         phoneAH: "",
