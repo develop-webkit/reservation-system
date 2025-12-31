@@ -5,17 +5,20 @@ import { Typography, Tooltip, Popover, Card, Spin, Alert } from 'antd';
 import dayjs from 'dayjs';
 import { useBookings } from '../hooks/useBookings';
 import { useRooms } from '../hooks/useRooms';
-import { roomsData } from '../data/mockData'; // Fallback for rooms until we fetch them
+//import { useRooms } from '../hooks/useRooms'; // This hook likely needs to be updated or we bypass it for now as requested
+import { rooms as roomsFromData } from '../data/rooms';
+import { reservations } from '../data/reservations';
+
 
 const { Text } = Typography;
 
 const STATUS_COLORS = {
-    'PENDING': '#faad14',      // Unconfirmed (Orange)
-    'CONFIRMED': '#52c41a',    // Confirmed (Green)
-    'CHECKED_IN': '#1890ff',   // Arrived (Blue)
-    'PRE_CHECK_IN': '#13c2c2', // Pre Check In (Cyan)
-    'CHECKED_OUT': '#eb2f96',  // Departed (Pink)
-    'BLOCKED': '#722ed1',      // Out of Order (Purple)
+    'Unconfirmed': '#faad14',      // Orange
+    'Confirmed': '#52c41a',        // Green
+    'Arrived': '#1890ff',          // Blue
+    'Pre Check In': '#13c2c2',     // Cyan
+    'Departed': '#eb2f96',         // Pink
+    'Out of Order': '#722ed1',     // Purple
 };
 
 const ROOM_STATUS_COLORS = {
@@ -34,8 +37,11 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null });
 
     // Extract data from API response
-    const bookingsData = bookingsResponse?.data || [];
-    const rooms = roomsResponse?.data || roomsData; // Fallback to mockData if API fails
+    // Extract data from API response or use direct data as requested
+    const bookingsData = reservations;
+    // Use rooms from data/rooms.js as the primary source for status as requested
+    const rooms = roomsFromData;
+
 
     // 1. Generate column dates (Immutable)
     const dateRange = useMemo(() => {
@@ -107,6 +113,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         const isParkedRow = room.id === 'PK01';
         const rowHeight = isParkedRow ? '60px' : '30px';
 
+        const statusColor = room.outOfOrder ? ROOM_STATUS_COLORS['OOO'] : (ROOM_STATUS_COLORS[room.defaultCleanStatus.toUpperCase()] || ROOM_STATUS_COLORS['CLEAN']);
+        const roomStatusText = room.outOfOrder ? 'Out of Order' : room.defaultCleanStatus;
+
         const RoomInfoContent = (
             <div style={{ width: '300px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                 <div style={{
@@ -133,7 +142,15 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline' }}>
                         <Text strong style={{ textAlign: 'right' }}>Clean Status:</Text>
-                        <Text>{room.status ? room.status.charAt(0) + room.status.slice(1).toLowerCase() : 'Unknown'}</Text>
+                        <Text>{roomStatusText}</Text>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginTop: '4px' }}>
+                        <Text strong style={{ textAlign: 'right' }}>Last Clean:</Text>
+                        <Text>{room.lastCleanDate}</Text>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginTop: '4px' }}>
+                        <Text strong style={{ textAlign: 'right' }}>Days Since:</Text>
+                        <Text>{room.daysSinceLastClean}</Text>
                     </div>
                 </div>
             </div>
@@ -179,15 +196,13 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 <Popover content={RoomInfoContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
                     <div style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
                         <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
-                        {room.status && (
-                            <Tooltip title={room.status}>
-                                <div style={{
-                                    width: '11px', height: '11px', borderRadius: '50%',
-                                    backgroundColor: ROOM_STATUS_COLORS[room.status] || '#d9d9d9',
-                                    flexShrink: 0
-                                }} />
-                            </Tooltip>
-                        )}
+                        <Tooltip title={roomStatusText}>
+                            <div style={{
+                                width: '11px', height: '11px', borderRadius: '50%',
+                                backgroundColor: statusColor,
+                                flexShrink: 0
+                            }} />
+                        </Tooltip>
                     </div>
                 </Popover>
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
@@ -206,6 +221,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                         const pos = getGridPosition(booking.checkIn, booking.checkOut);
                         if (!pos.isVisible) return null;
 
+                        // Use the booking object directly as it comes from reservations.js now
+                        const displayBooking = booking;
+
                         const ReservationInfoContent = (
                             <div style={{ width: '350px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                                 <div style={{
@@ -215,27 +233,33 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                                     margin: '-12px -16px 12px -16px',
                                     borderRadius: '4px 4px 0 0'
                                 }}>
-                                    <Text strong style={{ color: '#fff', fontSize: '16px' }}>Reservation No: {booking.reservationNo || 'N/A'}</Text>
+                                    <Text strong style={{ color: '#fff', fontSize: '16px' }}>Reservation No: {displayBooking.resNo || displayBooking.reservationNo || 'N/A'}</Text>
                                 </div>
                                 <div style={{ padding: '0 8px' }}>
                                     {[
-                                        { label: 'Master Res No', value: booking.masterResNo },
-                                        { label: 'Reservation No', value: booking.reservationNo },
-                                        { label: 'Groupname', value: booking.groupName },
-                                        { label: 'Client Name', value: booking.clientName },
-                                        { label: 'Arrive', value: `${dayjs(booking.checkIn).format('ddd DD MMM YYYY')} ${booking.arriveTime || ''}` },
-                                        { label: 'Depart', value: `${dayjs(booking.checkOut).format('ddd DD MMM YYYY')} ${booking.departTime || ''}` },
+                                        { label: 'Master Res No', value: displayBooking.masterResNo },
+                                        { label: 'Reservation No', value: displayBooking.resNo || displayBooking.reservationNo },
+                                        { label: 'Groupname', value: displayBooking.groupName },
+                                        { label: 'Client Name', value: displayBooking.clientName || displayBooking.guestName },
+                                        { label: 'Arrive', value: `${dayjs(displayBooking.checkIn).format('ddd DD MMM YYYY')} ${displayBooking.arriveTime || ''}` },
+                                        { label: 'Depart', value: `${dayjs(displayBooking.checkOut).format('ddd DD MMM YYYY')} ${displayBooking.departTime || ''}` },
                                         { label: 'Property', value: propertyName },
                                         { label: 'Room Type', value: room.category },
                                         { label: 'Area', value: room.name },
-                                        { label: 'Status', value: booking.status ? booking.status.charAt(0) + booking.status.slice(1).toLowerCase() : 'Unknown' },
-                                        { label: 'People', value: booking.people },
-                                        { label: 'Bkg Source', value: booking.bkgSource },
-                                        { label: 'Tariff Type', value: booking.tariffType },
-                                        { label: 'Balance Owing', value: booking.balance },
-                                        { label: 'Caravan Sales Slide', value: booking.caravanSalesSlide },
-                                        { label: 'Company', value: booking.company },
-                                        { label: 'Fixed', value: booking.isFixed ? 'Yes' : 'No' }
+                                        { label: 'Status', value: displayBooking.status || 'Unknown' },
+                                        { label: 'People', value: displayBooking.people },
+                                        { label: 'Bkg Source', value: displayBooking.bkgSource },
+                                        { label: 'Tariff Type', value: displayBooking.tariffType },
+                                        { label: 'Balance Owing', value: displayBooking.balance },
+                                        { label: 'Caravan Sales Slide', value: displayBooking.caravanSalesSlide },
+                                        { label: 'Company', value: displayBooking.company },
+                                        { label: 'Fixed', value: displayBooking.isFixed ? 'Yes' : 'No' },
+                                        // Added fields from reservations.js
+                                        { label: 'Voucher No', value: displayBooking.voucherNo },
+                                        { label: 'Created By', value: displayBooking.createdBy },
+                                        { label: 'Date Made', value: displayBooking.createDate },
+                                        { label: 'Confirmed By', value: displayBooking.confirmedBy },
+                                        { label: 'Date Confirmed', value: displayBooking.confirmedDate }
                                     ].map((item, index) => (
                                         <div key={index} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px', alignItems: 'baseline', marginBottom: '4px' }}>
                                             <Text strong style={{ textAlign: 'right', fontSize: '12px' }}>{item.label}</Text>
@@ -288,7 +312,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                                     top: isParkedRow ? `${topPosition}px` : 'auto',
                                     width: isParkedRow ? 'calc(100% - 4px)' : 'auto' // absolute items need explicit width if not stretched
                                 }}>
-                                    <Text ellipsis style={{ color: '#fff', fontSize: '10px' }}>{booking.guestName}</Text>
+                                    <Text ellipsis style={{ color: '#fff', fontSize: '10px' }}>{booking.clientName}</Text>
                                 </div>
                             </Popover>
                         );

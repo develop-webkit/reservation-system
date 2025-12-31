@@ -157,5 +157,10 @@ export const bookingsData = [
     balance: '0.00',
     caravanSalesSlide: 'None',
     company: b.company || 'N/A',
-    isFixed: b.isFixed || false
+    isFixed: b.isFixed || false,
+    voucherNo: '',
+    createdBy: 'System',
+    confirmedBy: 'Reception',
+    createDate: '2025-10-01',
+    confirmedDate: '2025-10-02'
 }));

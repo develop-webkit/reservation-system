@@ -43,8 +43,12 @@ const AREA_OPTIONS = rooms.map(room => ({
     area: room.name,
     cleanStatus: room.defaultCleanStatus,
     description: '',
-    resCount: 0, // Placeholder, would need real count from reservations
-    category: room.category
+    resCount: 0, // Placeholder
+    category: room.category,
+    // Rich fields from data set
+    outOfOrder: room.outOfOrder ? 'Yes' : 'No',
+    lastCleanDate: room.lastCleanDate,
+    daysSinceLastClean: room.daysSinceLastClean
 }));
 
 const COMPANY_OPTIONS = companies;
@@ -182,11 +186,14 @@ const FormField = ({
                                 </div>
                             ) : label === 'Area' ? (menu) => (
                                 <div style={{ minWidth: '600px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', backgroundColor: '#fff', borderRadius: '4px' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '150px 150px 200px 100px', padding: '8px', backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: '11px', borderBottom: '1px solid #e8e8e8' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '80px 80px 100px 50px 80px 120px 80px', padding: '8px', backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: '11px', borderBottom: '1px solid #e8e8e8' }}>
                                         <span>Area</span>
-                                        <span>Clean Status</span>
-                                        <span>AreaDescription</span>
-                                        <span>Res Count</span>
+                                        <span>Status</span>
+                                        <span>Description</span>
+                                        <span>Res #</span>
+                                        <span>Out Order</span>
+                                        <span>Last Clean</span>
+                                        <span>Days Dirty</span>
                                     </div>
                                     {menu}
                                 </div>
@@ -207,11 +214,14 @@ const FormField = ({
                                                 <span>{opt.tradingAs}</span>
                                             </div>
                                         ) : label === 'Area' ? (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '150px 150px 200px 100px', fontSize: '11px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '80px 80px 100px 50px 80px 120px 80px', fontSize: '11px' }}>
                                                 <span>{opt.area}</span>
                                                 <span>{opt.cleanStatus}</span>
                                                 <span>{opt.description}</span>
                                                 <span>{opt.resCount}</span>
+                                                <span style={{ color: opt.outOfOrder === 'Yes' ? 'red' : 'inherit' }}>{opt.outOfOrder}</span>
+                                                <span>{opt.lastCleanDate}</span>
+                                                <span style={{ color: opt.daysSinceLastClean > 3 ? 'orange' : 'inherit' }}>{opt.daysSinceLastClean}</span>
                                             </div>
                                         ) : (opt.name || opt.area)}
                                     </Option>
