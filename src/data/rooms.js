@@ -1,6 +1,29 @@
 // src/data/rooms.js
 
 export const rooms = [
+    // Top-level "Special" rows (No category)
+    { 
+        id: 'SP01', 
+        name: 'Special Events', 
+        type: 'EVENT', 
+        category: null, 
+        defaultCleanStatus: 'Clean', 
+        maxOccupancy: 0, 
+        outOfOrder: false, 
+        lastCleanDate: '2025-12-30', 
+        daysSinceLastClean: 0 
+    },
+    { 
+        id: 'PK01', 
+        name: 'Parked Reservation', 
+        type: 'PARKED', 
+        category: null, 
+        defaultCleanStatus: 'Clean', 
+        maxOccupancy: 0, 
+        outOfOrder: false, 
+        lastCleanDate: '2025-12-30', 
+        daysSinceLastClean: 0 
+    },
     // Staff Accommodation
     { 
         id: 'S01', 

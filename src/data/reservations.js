@@ -1,5 +1,32 @@
 
 export const reservations = [
+    // --- Special & Parked ---
+    { 
+        id: 'SP1', resNo: '9999', masterResNo: '9999', guestId: 'EV01', roomId: 'SP01',
+        groupName: 'New Year Bash', clientName: 'New Year Gala', people: '100A', tariffType: 'Function', balance: '0.00', company: 'Hotel Event',
+        arriveTime: '18:00', departTime: '02:00',
+        checkIn: '2025-12-31', checkOut: '2026-01-01', nights: 1,
+        status: 'Confirmed', bkgSource: 'Internal', isFixed: true,
+        createDate: '2025-10-01', createdBy: 'Events', confirmedDate: '2025-10-01', confirmedBy: 'Events',
+        specialEvent: true
+    },
+    { 
+        id: 'PK1', resNo: '8888', masterResNo: '8888', guestId: 'PK001', roomId: 'PK01',
+        groupName: 'Holding', clientName: 'Unassigned Group', people: '10A', tariffType: 'Standard', balance: '0.00', company: 'TBD',
+        arriveTime: '14:00', departTime: '10:00',
+        checkIn: '2026-01-05', checkOut: '2026-01-10', nights: 5,
+        status: 'Unconfirmed', bkgSource: 'Group', isFixed: false,
+        createDate: '2025-12-30', createdBy: 'Sales', confirmedDate: null, confirmedBy: null
+    },
+    { 
+        id: 'PK2', resNo: '8889', masterResNo: '8889', guestId: 'PK002', roomId: 'PK01',
+        groupName: 'Waitlist', clientName: 'Waitlist Item', people: '2A', tariffType: 'Standard', balance: '0.00', company: 'N/A',
+        arriveTime: '14:00', departTime: '10:00',
+        checkIn: '2025-12-30', checkOut: '2026-01-02', nights: 3,
+        status: 'Unconfirmed', bkgSource: 'Online', isFixed: false,
+        createDate: '2025-12-28', createdBy: 'System', confirmedDate: null, confirmedBy: null
+    },
+
     // --- Dec 31 2025 is "Today" ---
 
     // 1. Arrived (Checked In) - Currently in house
