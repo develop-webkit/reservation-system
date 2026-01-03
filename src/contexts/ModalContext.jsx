@@ -24,7 +24,7 @@ export const ModalProvider = ({ children }) => {
         });
     }, []);
  
-    const closeModal = useCallback(() => {
+    const closeModal = useCallback(() => { 
         setModal(prev => ({ ...prev, isOpen: false }));
         // Optional: clear content after animation finishes if you use CSS transitions
         // setTimeout(() => setModal(prev => ({ ...prev, content: null })), 300); 
