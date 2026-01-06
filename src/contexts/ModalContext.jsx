@@ -28,7 +28,7 @@ export const ModalProvider = ({ children }) => {
         setModal(prev => ({ ...prev, isOpen: false }));
         // Optional: clear content after animation finishes if you use CSS transitions
         // setTimeout(() => setModal(prev => ({ ...prev, content: null })), 300); 
-    }, []);     
+    }, []);      
  
     const value = {
         openModal,
