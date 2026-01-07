@@ -9,7 +9,7 @@ export const useModal = () => useContext(ModalContext);
 
 export const ModalProvider = ({ children }) => {
     const [modal, setModal] = useState({
-        isOpen: false,
+        isOpen: false, 
         title: '',
         content: null,
         options: {} // size, isFullWidth, etc.
