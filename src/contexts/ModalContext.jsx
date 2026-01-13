@@ -9,12 +9,12 @@ export const useModal = () => useContext(ModalContext);
 
 export const ModalProvider = ({ children }) => {
     const [modal, setModal] = useState({
-        isOpen: false,
+        isOpen: false, 
         title: '',
         content: null,
         options: {} // size, isFullWidth, etc.
     });
-
+ 
     const openModal = useCallback((title, content, options = {}) => {
         setModal({
             isOpen: true,
@@ -23,13 +23,13 @@ export const ModalProvider = ({ children }) => {
             options: { size: 'lg', isFullWidth: false, ...options }
         });
     }, []);
-
-    const closeModal = useCallback(() => {
+ 
+    const closeModal = useCallback(() => {   
         setModal(prev => ({ ...prev, isOpen: false }));
         // Optional: clear content after animation finishes if you use CSS transitions
         // setTimeout(() => setModal(prev => ({ ...prev, content: null })), 300); 
-    }, []);
-
+    }, []);      
+ 
     const value = {
         openModal,
         closeModal,

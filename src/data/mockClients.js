@@ -1,0 +1,80 @@
+// src/data/mockClients.js
+
+export const mockClients = [
+    {
+        id: 101,
+        clientNo: "101",
+        groupName: "MMAV Staff",
+        clientName: "SATTAR Shahbaz Dr",
+        surname: "SATTAR",
+        given: "Shahbaz",
+        title: "Dr",
+        company: "MMAV",
+        companyId: "C004", // Linked to MMAV
+        address: "45 Broadway, Sydney",
+        mobile: "0417123456",
+        phoneAH: "0298765432",
+        phoneBH: "0298765433",
+        email: "ssferoze@gmail.com",
+        dateCreated: "05 Nov 2025",
+        dateModified: "05 Nov 2025",
+        clientType: "Client"
+    },
+    {
+        id: 41,
+        clientNo: "41",
+        groupName: "Heritage Minerals",
+        clientName: "KELLY Sheryl Ms",
+        surname: "KELLY",
+        given: "Sheryl",
+        title: "Ms",
+        company: "Heritage Minerals",
+        companyId: "C001", // Linked to Heritage Minerals
+        address: "123 Mining St, Queensland",
+        mobile: "0417123456",
+        phoneAH: "",
+        phoneBH: "",
+        email: "sheryl.kelly@heritage.com",
+        dateCreated: "01 Oct 2025",
+        dateModified: "10 Oct 2025",
+        clientType: "Client"
+    },
+    {
+        id: 75,
+        clientNo: "75",
+        groupName: "Heritage Minerals",
+        clientName: "SHANKS Tarne Mr",
+        surname: "SHANKS",
+        given: "Tarne",
+        title: "Mr",
+        company: "Heritage Minerals",
+        companyId: "C001", // Linked to Heritage Minerals
+        address: "78 Ore Road, Perth",
+        mobile: "0416646146",
+        phoneAH: "",
+        phoneBH: "",
+        email: "tarne.shanks@heritage.com",
+        dateCreated: "15 Nov 2025",
+        dateModified: "15 Nov 2025",
+        clientType: "Client"
+    },
+    {
+        id: 102,
+        clientNo: "102",
+        groupName: "Mt Morgan Hospital",
+        clientName: "SMITH John Dr",
+        surname: "SMITH",
+        given: "John",
+        title: "Dr",
+        company: "Mt Morgan Hospital",
+        companyId: "C002", // Linked to Mt Morgan Hospital
+        address: "10 Hospital Lane, Mt Morgan",
+        mobile: "0400111222",
+        phoneAH: "",
+        phoneBH: "",
+        email: "john.smith@mtmorgan.com",
+        dateCreated: "20 Dec 2025",
+        dateModified: "21 Dec 2025",
+        clientType: "Staff"
+    }
+];

@@ -1,6 +1,6 @@
 // src/api/reservationApi.js
 import axios from 'axios'; 
-import { mockReservations } from '../data/mockReservations'; // Assumes mock data exists
+import { reservations } from '../data/reservations';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -19,7 +19,17 @@ export const fetchReservations = async ({
     console.log(`Fetching Reservations: Page ${pageIndex}, Size ${pageSize}, Sort ${sortBy} ${sortOrder}`);
     await delay(750); // Simulate network latency
 
-    let data = [...mockReservations];
+    // Map the unified reservations data to the structure expected by the Reservations List Grid
+    let data = reservations.map(res => ({
+        id: res.id,
+        guestName: res.clientName || 'Unknown',
+        roomNumber: res.roomId,
+        checkIn: res.checkIn,
+        checkOut: res.checkOut,
+        status: res.status,
+        rate: parseFloat(res.balance || 0), // Mapping balance to rate for display
+        source: res.bkgSource
+    }));
 
     // 1. Apply Filtering (Basic mock)
     if (filters.status) {

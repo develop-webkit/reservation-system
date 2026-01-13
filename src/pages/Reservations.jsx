@@ -2,14 +2,14 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query'; // <-- NEW IMPORT
 import { fetchReservations } from '../api/reservationApi'; // <-- NEW IMPORT
-import { 
-    Table, 
-    Card, 
-    Tag, 
-    Space, 
-    Input, 
-    Button, 
-    Spin, 
+import {
+    Table,
+    Card,
+    Tag,
+    Space,
+    Input,
+    Button,
+    Spin,
     Alert,
     Typography
 } from 'antd';
@@ -22,21 +22,27 @@ const getStatusTag = (status) => {
     let color;
     switch (status) {
         case 'Confirmed':
-            color = 'blue';
-            break;
-        case 'Checked In':
             color = 'green';
             break;
-        case 'Canceled':
-            color = 'red';
+        case 'Arrived':
+            color = 'blue';
             break;
-        case 'Tentative':
-            color = 'orange';
+        case 'Departed':
+            color = 'magenta';
+            break;
+        case 'Unconfirmed':
+            color = 'gold';
+            break;
+        case 'Pre Check In':
+            color = 'cyan';
+            break;
+        case 'Out of Order':
+            color = 'purple';
             break;
         default:
             color = 'default';
     }
-    return <Tag color={color}>{status.toUpperCase()}</Tag>;
+    return <Tag color={color}>{status ? status.toUpperCase() : 'UNKNOWN'}</Tag>;
 };
 
 
@@ -48,7 +54,7 @@ const Reservations = () => {
     });
     const [sorter, setSorter] = useState({});
     const [filters, setFilters] = useState({});
-    
+
     // Convert sorter state for the API function call
     const queryParams = useMemo(() => ({
         pageIndex: pagination.current,
@@ -57,11 +63,11 @@ const Reservations = () => {
         sortOrder: sorter.order || 'ascend',
         filters: filters,
     }), [pagination, sorter, filters]);
-    
+
     // --- TanStack Query Hook for Fetching Data ---
-    const { 
-        data: response, 
-        isLoading, 
+    const {
+        data: response,
+        isLoading,
         isFetching,
         isError,
         error,
@@ -72,18 +78,18 @@ const Reservations = () => {
         staleTime: 60000, // Data is considered fresh for 1 minute
         keepPreviousData: true, // Keep old data visible during refetches
     });
-    
+
     // --- Table Change Handler (Updates State -> Reruns Query) ---
     const handleTableChange = (newPagination, newFilters, newSorter) => {
         // Update pagination
         setPagination(newPagination);
-        
+
         // Update sorter state
         setSorter({
             field: newSorter.field,
             order: newSorter.order, // 'ascend' or 'descend'
         });
-        
+
         // Update filters state
         setFilters(newFilters);
     };
@@ -93,15 +99,16 @@ const Reservations = () => {
         { title: 'ID', dataIndex: 'id', key: 'id', sorter: true, width: 80 },
         { title: 'Guest Name', dataIndex: 'guestName', key: 'guestName', sorter: true },
         { title: 'Room', dataIndex: 'roomNumber', key: 'roomNumber', sorter: true, width: 100 },
-        { 
-            title: 'Status', 
-            dataIndex: 'status', 
-            key: 'status', 
-            render: getStatusTag, 
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            render: getStatusTag,
             filters: [ // Mock filters for AntD Table
                 { text: 'Confirmed', value: 'Confirmed' },
-                { text: 'Checked In', value: 'Checked In' },
-                { text: 'Canceled', value: 'Canceled' },
+                { text: 'Arrived', value: 'Arrived' },
+                { text: 'Unconfirmed', value: 'Unconfirmed' },
+                { text: 'Departed', value: 'Departed' },
             ],
             filterMultiple: false,
             width: 130
@@ -110,9 +117,9 @@ const Reservations = () => {
         { title: 'Check Out', dataIndex: 'checkOut', key: 'checkOut', sorter: true, width: 120 },
         { title: 'Rate', dataIndex: 'rate', key: 'rate', sorter: true, render: (rate) => `$${rate.toFixed(2)}`, width: 100 },
         { title: 'Source', dataIndex: 'source', key: 'source', sorter: true },
-        { 
-            title: 'Action', 
-            key: 'action', 
+        {
+            title: 'Action',
+            key: 'action',
             render: () => (
                 <Button size="small" type="link">View</Button>
             ),
@@ -123,13 +130,13 @@ const Reservations = () => {
     return (
         <Space direction="vertical" style={{ width: '100%', display: 'flex' }}>
             <Title level={3}>Reservation List</Title>
-            
-            <Card 
+
+            <Card
                 title={
                     <Space>
-                        <Input 
-                            placeholder="Search reservations..." 
-                            prefix={<SearchOutlined />} 
+                        <Input
+                            placeholder="Search reservations..."
+                            prefix={<SearchOutlined />}
                             style={{ width: 250 }}
                         />
                         <Button icon={<ReloadOutlined />} onClick={refetch}>
@@ -139,15 +146,15 @@ const Reservations = () => {
                 }
                 styles={{ body: { padding: 0 } }} // Remove body padding for table borderless look
                 variant="borderless" // Use borderless variant
-                
+
             >
                 {/* Display error message if query failed */}
                 {isError && (
-                    <Alert 
-                        message="Error Fetching Data" 
-                        description={`Could not load reservations: ${error.message}`} 
-                        type="error" 
-                        showIcon 
+                    <Alert
+                        message="Error Fetching Data"
+                        description={`Could not load reservations: ${error.message}`}
+                        type="error"
+                        showIcon
                         style={{ margin: 16 }}
                     />
                 )}
@@ -170,7 +177,7 @@ const Reservations = () => {
                 />
             </Card>
             <Text type="secondary">
-                This table demonstrates fetching a large dataset with pagination, 
+                This table demonstrates fetching a large dataset with pagination,
                 sorting, and filtering managed by TanStack Query.
             </Text>
         </Space>
