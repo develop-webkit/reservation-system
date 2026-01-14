@@ -16,7 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       {/* Wrap everything with the Query Provider */}
       <QueryClientProvider client={queryClient}> 
         <ModalProvider>
-          <App /> 
+          <App />  
         </ModalProvider>
       </QueryClientProvider>
     </BrowserRouter>
