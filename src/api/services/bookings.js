@@ -25,6 +25,15 @@ const bookingsApi = {
     },
     
     /**
+     * Get booking chart data
+     * @returns {Promise<Array>}
+     */
+    getChart: async () => {
+         const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKINGS}/chart`);
+         return response.data;
+    },
+
+    /**
      * Get single booking by ID
      * @param {number|string} id - Booking ID
      * @returns {Promise<{data: Object}>}
@@ -38,6 +47,16 @@ const bookingsApi = {
         return response.data;
     },
     
+    /**
+     * Get booking status
+     * @param {number|string} id 
+     * @returns {Promise<{status: string}>}
+     */
+    getStatus: async (id) => {
+        const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKINGS}/${id}/status`);
+        return response.data;
+    },
+
     /**
      * Create new booking
      * @param {Object} bookingData - Booking data

@@ -1,20 +1,19 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Card, Typography, Space, message, Select, Tag, Divider } from 'antd';
-import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, Space, message, Tag, Divider } from 'antd';
+import { UserOutlined, LockOutlined, SafetyOutlined, NumberOutlined } from '@ant-design/icons';
 import { useForm, Controller } from 'react-hook-form';
 import useAuthStore from '../store/authStore';
-import { mockLogin } from '../data/mockUsers';
-import { ROLE_NAMES, ROLE_COLORS } from '../constants/roles';
+import { ROLE_COLORS } from '../constants/roles';
+import authApi from '../api/services/auth';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 const Login = () => {
     const navigate = useNavigate();
     const login = useAuthStore(state => state.login);
-    const [showDemoAccounts, setShowDemoAccounts] = useState(true);
+    const [showDemoAccounts] = useState(true);
 
     const {
         control,
@@ -23,29 +22,34 @@ const Login = () => {
         formState: { errors, isSubmitting }
     } = useForm({
         defaultValues: {
-            email: '',
+            clientNumber: '',
+            username: '',
             password: '',
         }
     });
 
     const onSubmit = async (data) => {
-        // Mock authentication delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+        try {
+            // Use real auth api
+            const response = await authApi.login({
+                clientNumber: data.clientNumber,
+                username: data.username,
+                password: data.password
+            });
 
-        const user = mockLogin(data.email, data.password);
-
-        if (user) {
-            message.success(`Welcome ${user.name}!`);
-            login(user);
+            message.success(`Welcome!`);
+            login(response.user || { name: data.username, ...response }); // Fallback if user object structure differs
             navigate('/');
-        } else {
-            message.error('Invalid email or password.');
+        } catch (error) {
+            console.error(error);
+            message.error('Invalid credentials.');
         }
     };
 
     // Quick login for demo
-    const quickLogin = (email, password) => {
-        setValue('email', email);
+    const quickLogin = (clientNumber, username, password) => {
+        setValue('clientNumber', clientNumber);
+        setValue('username', username);
         setValue('password', password);
     };
 
@@ -62,6 +66,7 @@ const Login = () => {
                 variant="borderless"
                 style={{ width: 450, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
             >
+                {/* Demo accounts updated to match new structure if needed, or just hidden for now as they might break with new backend requirement */}
                 {showDemoAccounts && (
                     <>
                         <div style={{ marginBottom: 20 }}>
@@ -72,29 +77,11 @@ const Login = () => {
                                 <Button
                                     size="small"
                                     block
-                                    onClick={() => quickLogin('admin@hotel.com', 'admin123')}
+                                    onClick={() => quickLogin('12345', 'admin', 'password123')}
                                     style={{ borderColor: ROLE_COLORS.SUPER_ADMIN }}
                                 >
                                     <Tag color={ROLE_COLORS.SUPER_ADMIN}>Super Admin</Tag>
-                                    admin@hotel.com / admin123
-                                </Button>
-                                <Button
-                                    size="small"
-                                    block
-                                    onClick={() => quickLogin('john@hotel.com', 'employee123')}
-                                    style={{ borderColor: ROLE_COLORS.EMPLOYEE }}
-                                >
-                                    <Tag color={ROLE_COLORS.EMPLOYEE}>Employee</Tag>
-                                    john@hotel.com / employee123
-                                </Button>
-                                <Button
-                                    size="small"
-                                    block
-                                    onClick={() => quickLogin('jane@customer.com', 'customer123')}
-                                    style={{ borderColor: ROLE_COLORS.CUSTOMER }}
-                                >
-                                    <Tag color={ROLE_COLORS.CUSTOMER}>Customer</Tag>
-                                    jane@customer.com / customer123
+                                    12345 / admin / password123
                                 </Button>
                             </Space>
                         </div>
@@ -104,25 +91,39 @@ const Login = () => {
 
                 <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
                     <Controller
-                        name="email"
+                        name="clientNumber"
                         control={control}
-                        rules={{
-                            required: 'Email is required',
-                            pattern: {
-                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                message: 'Invalid email address'
-                            }
-                        }}
+                        rules={{ required: 'Client Number is required' }}
                         render={({ field }) => (
                             <Form.Item
-                                label="Email"
-                                validateStatus={errors.email ? 'error' : ''}
-                                help={errors.email?.message}
+                                label="Client Number"
+                                validateStatus={errors.clientNumber ? 'error' : ''}
+                                help={errors.clientNumber?.message}
+                            >
+                                <Input
+                                    {...field}
+                                    prefix={<NumberOutlined />}
+                                    placeholder="Client Number"
+                                    size="large"
+                                />
+                            </Form.Item>
+                        )}
+                    />
+
+                    <Controller
+                        name="username"
+                        control={control}
+                        rules={{ required: 'Username is required' }}
+                        render={({ field }) => (
+                            <Form.Item
+                                label="Username"
+                                validateStatus={errors.username ? 'error' : ''}
+                                help={errors.username?.message}
                             >
                                 <Input
                                     {...field}
                                     prefix={<UserOutlined />}
-                                    placeholder="Email"
+                                    placeholder="Username"
                                     size="large"
                                 />
                             </Form.Item>

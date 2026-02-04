@@ -13,9 +13,15 @@ export const API_CONFIG = {
     ENDPOINTS: {
         BOOKINGS: '/bookings',
         ROOMS: '/rooms',
-        RESERVATIONS: '/reservations',
+        RESERVATIONS: '/Reservations', // Note: Case sensitive based on user request
         USERS: '/users',
         AUTH: '/auth',
+        GROUPS: '/groups',
+        COMPANIES: '/companies',
+        CLIENTS: '/clients',
+        VOUCHERS: '/vouchers',
+        TASKS: '/tasks',
+        DASHBOARD_STATS: '/dashboard/stats',
     },
     
     // Request timeout
