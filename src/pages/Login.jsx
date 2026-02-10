@@ -9,11 +9,23 @@ import authApi from '../api/services/auth';
 
 const { Title, Text } = Typography;
 
+/**
+ * Login Component: Handles user authentication for the RMS System.
+ * Supports manual login and quick login via demo accounts.
+ */
 const Login = () => {
     const navigate = useNavigate();
+
+    // Auth store hook to update global user state upon successful login.
     const login = useAuthStore(state => state.login);
+
+    // Local state to manage visibility of the demo accounts section.
     const [showDemoAccounts] = useState(true);
 
+    /**
+     * Initializing React Hook Form for robust form state management and validation.
+     * clientNumber, username, and password are the core fields for the updated backend.
+     */
     const {
         control,
         handleSubmit,
@@ -27,8 +39,13 @@ const Login = () => {
         }
     });
 
+    /**
+     * onSubmit handler: Processes the form data and attempts to log in via authApi.
+     * @param {Object} data - Contains clientNumber, username, and password.
+     */
     const onSubmit = async (data) => {
         try {
+            // Making a POST request to the backend auth/login endpoint.
             const response = await authApi.login({
                 clientNumber: data.clientNumber,
                 username: data.username,
@@ -36,14 +53,22 @@ const Login = () => {
             });
 
             message.success(`Welcome!`);
+
+            // Updating the global auth state with the user info returned from the API.
+            // Includes a fallback name if the response structure differs.
             login(response.user || { name: data.username, ...response });
+
+            // Redirecting to the main dashboard after success.
             navigate('/');
         } catch (error) {
-            console.error(error);
-            message.error('Invalid credentials.');
+            console.error('Login Error:', error);
+            message.error('Invalid credentials or server error.');
         }
     };
 
+    /**
+     * quickLogin helper: Utility function to pre-fill the form fields for demo purposes.
+     */
     const quickLogin = (clientNumber, username, password) => {
         setValue('clientNumber', clientNumber);
         setValue('username', username);
@@ -63,6 +88,7 @@ const Login = () => {
                 variant="borderless"
                 style={{ width: 450, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
             >
+                {/* Demo accounts section: Provides one-click login for testing. */}
                 {showDemoAccounts && (
                     <>
                         <div style={{ marginBottom: 20 }}>
@@ -85,7 +111,10 @@ const Login = () => {
                     </>
                 )}
 
+                {/* Main Login Form using Ant Design Layout and React Hook Form Controller */}
                 <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
+
+                    {/* Client Number Field */}
                     <Controller
                         name="clientNumber"
                         control={control}
@@ -99,13 +128,14 @@ const Login = () => {
                                 <Input
                                     {...field}
                                     prefix={<NumberOutlined />}
-                                    placeholder="Client Number"
+                                    placeholder="Enter Client Number"
                                     size="large"
                                 />
                             </Form.Item>
                         )}
                     />
 
+                    {/* Username Field */}
                     <Controller
                         name="username"
                         control={control}
@@ -119,13 +149,14 @@ const Login = () => {
                                 <Input
                                     {...field}
                                     prefix={<UserOutlined />}
-                                    placeholder="Username"
+                                    placeholder="Enter Username"
                                     size="large"
                                 />
                             </Form.Item>
                         )}
                     />
 
+                    {/* Password Field */}
                     <Controller
                         name="password"
                         control={control}
@@ -139,13 +170,14 @@ const Login = () => {
                                 <Input.Password
                                     {...field}
                                     prefix={<LockOutlined />}
-                                    placeholder="Password"
+                                    placeholder="Enter Password"
                                     size="large"
                                 />
                             </Form.Item>
                         )}
                     />
 
+                    {/* Submit Button */}
                     <Form.Item>
                         <Button
                             type="primary"
