@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, Space, message, Tag, Divider } from 'antd';
@@ -30,7 +29,6 @@ const Login = () => {
 
     const onSubmit = async (data) => {
         try {
-            // Use real auth api
             const response = await authApi.login({
                 clientNumber: data.clientNumber,
                 username: data.username,
@@ -38,7 +36,7 @@ const Login = () => {
             });
 
             message.success(`Welcome!`);
-            login(response.user || { name: data.username, ...response }); // Fallback if user object structure differs
+            login(response.user || { name: data.username, ...response });
             navigate('/');
         } catch (error) {
             console.error(error);
@@ -46,7 +44,6 @@ const Login = () => {
         }
     };
 
-    // Quick login for demo
     const quickLogin = (clientNumber, username, password) => {
         setValue('clientNumber', clientNumber);
         setValue('username', username);
@@ -66,7 +63,6 @@ const Login = () => {
                 variant="borderless"
                 style={{ width: 450, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
             >
-                {/* Demo accounts updated to match new structure if needed, or just hidden for now as they might break with new backend requirement */}
                 {showDemoAccounts && (
                     <>
                         <div style={{ marginBottom: 20 }}>
