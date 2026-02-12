@@ -52,6 +52,10 @@ const Login = () => {
                 password: data.password
             });
 
+            if (response.access_token) {
+                localStorage.setItem('authToken', response.access_token);
+            }
+
             message.success(`Welcome!`);
 
             // Updating the global auth state with the user info returned from the API.

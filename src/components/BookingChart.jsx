@@ -35,18 +35,16 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null });
 
-    // Use rooms from data/rooms.js as the primary source for status as requested
-    const rooms = roomsFromData;
-
     // Fetch chart data with date range
     const { data: chartData, isLoading: chartLoading, error: chartError } = useBookingChart({
         startDate: dayjs(startDate).format('YYYY-MM-DD'),
         endDate: dayjs(startDate).add(visibleDays, 'days').format('YYYY-MM-DD')
     });
 
-    // Use chartData if available, fallback to mock reservations if needed (or remove fallback if strict)
-    // For now, let's prioritize chartData
-    const bookingsData = chartData || [];
+    // Extract bookings and rooms from the API response object { rooms, bookings }
+    const bookingsData = chartData?.bookings || [];
+    // Prioritize API rooms, fallback to local data if needed
+    const rooms = chartData?.rooms || roomsFromData;
 
 
     // 1. Generate column dates (Immutable)
@@ -119,8 +117,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         const isParkedRow = room.id === 'PK01';
         const rowHeight = isParkedRow ? '60px' : '30px';
 
-        const statusColor = room.outOfOrder ? ROOM_STATUS_COLORS['OOO'] : (ROOM_STATUS_COLORS[room.defaultCleanStatus.toUpperCase()] || ROOM_STATUS_COLORS['CLEAN']);
-        const roomStatusText = room.outOfOrder ? 'Out of Order' : room.defaultCleanStatus;
+        const cleanStatus = room.status || room.defaultCleanStatus || 'Clean';
+        const statusColor = room.outOfOrder ? ROOM_STATUS_COLORS['OOO'] : (ROOM_STATUS_COLORS[cleanStatus.toUpperCase()] || ROOM_STATUS_COLORS['CLEAN']);
+        const roomStatusText = room.outOfOrder ? 'Out of Order' : cleanStatus;
 
         const RoomInfoContent = (
             <div style={{ width: '300px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>

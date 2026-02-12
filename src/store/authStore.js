@@ -24,12 +24,15 @@ const useAuthStore = create(
             },
 
             // Action to handle logout
-            logout: () => set({ 
-                isAuthenticated: false, 
-                user: null,
-                role: null,
-                permissions: [],
-            }),
+            logout: () => {
+                localStorage.removeItem('authToken');
+                set({ 
+                    isAuthenticated: false, 
+                    user: null,
+                    role: null,
+                    permissions: [],
+                });
+            },
             
             // Check if user has a specific permission
             hasPermission: (permission) => {
