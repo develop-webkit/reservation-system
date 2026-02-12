@@ -84,7 +84,7 @@ const AntdSidebar = () => {
             children: []
         };
 
-        // Super Admin sees both Employee and Customer management
+        // Admin sees both Employee and Customer management
         if (role === ROLES.SUPER_ADMIN) {
             userManagementMenu.children.push(
                 {
@@ -140,12 +140,12 @@ const AntdSidebar = () => {
             // Dashboard is available to all
             if (item.name === 'Dashboard') return true;
 
-            // Charts submenu - only Super Admin
+            // Charts submenu - only Admin
             if (item.name === 'Charts') {
                 return hasPermission(PERMISSIONS.ACCESS_BOOKING_CHART);
             }
 
-            // Reservations - only Super Admin
+            // Reservations - only Admin
             if (item.name === 'Reservations') {
                 return hasPermission(PERMISSIONS.VIEW_ALL_RESERVATIONS);
             }

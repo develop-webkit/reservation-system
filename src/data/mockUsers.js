@@ -7,7 +7,7 @@ export const MOCK_USERS = [
     email: 'admin@hotel.com',
     password: 'admin123',
     role: ROLES.SUPER_ADMIN,
-    name: 'Super Admin',
+    name: 'Admin',
     avatar: null,
   },
   {

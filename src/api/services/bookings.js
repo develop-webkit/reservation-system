@@ -26,11 +26,24 @@ const bookingsApi = {
     
     /**
      * Get booking chart data
+     * @param {Object} params - { startDate, endDate }
      * @returns {Promise<Array>}
      */
-    getChart: async () => {
-         const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKINGS}/chart`);
+    getChart: async (params = {}) => {
+         const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKINGS}/chart`, {
+             params: params
+         });
          return response.data;
+    },
+
+    /**
+     * Update booking chart (drag and drop)
+     * @param {Object} data - { bookingId, roomId, checkIn, checkOut }
+     * @returns {Promise<{data: Object}>}
+     */
+    updateChart: async (data) => {
+        const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.BOOKINGS}/chart`, data);
+        return response.data;
     },
 
     /**
@@ -54,6 +67,17 @@ const bookingsApi = {
      */
     getStatus: async (id) => {
         const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.BOOKINGS}/${id}/status`);
+        return response.data;
+    },
+
+    /**
+     * Update booking status
+     * @param {number|string} id 
+     * @param {string} status 
+     * @returns {Promise<{data: Object}>}
+     */
+    updateStatus: async (id, status) => {
+        const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.BOOKINGS}/${id}/status`, { status });
         return response.data;
     },
 

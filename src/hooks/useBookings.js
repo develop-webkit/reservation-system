@@ -10,6 +10,7 @@ export const bookingKeys = {
     list: (filters) => [...bookingKeys.lists(), filters],
     details: () => [...bookingKeys.all, 'detail'],
     detail: (id) => [...bookingKeys.details(), id],
+    chart: (params) => [...bookingKeys.all, 'chart', params],
 };
 
 /**
@@ -36,6 +37,19 @@ export const useBooking = (id) => {
         queryFn: () => bookingsApi.getById(id),
         enabled: !!id, // Only fetch if ID exists
         staleTime: 1000 * 60 * 5,
+    });
+};
+
+/**
+ * Hook to fetch booking chart data
+ * @param {Object} params - { startDate, endDate }
+ * @returns {QueryResult}
+ */
+export const useBookingChart = (params) => {
+    return useQuery({
+        queryKey: bookingKeys.chart(params),
+        queryFn: () => bookingsApi.getChart(params),
+        staleTime: 1000 * 60 * 5, // 5 minutes
     });
 };
 
@@ -69,6 +83,41 @@ export const useUpdateBooking = () => {
             queryClient.setQueryData(bookingKeys.detail(variables.id), data);
             // Invalidate lists to refetch
             queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });
+        },
+    });
+};
+
+/**
+ * Hook to update booking via chart (drag/drop)
+ * @returns {MutationResult}
+ */
+export const useUpdateBookingChart = () => {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: (data) => bookingsApi.updateChart(data),
+        onSuccess: () => {
+             // Invalidate list and chart queries
+            queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });
+        },
+    });
+};
+
+/**
+ * Hook to update booking status
+ * @returns {MutationResult}
+ */
+export const useUpdateBookingStatus = () => {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: ({ id, status }) => bookingsApi.updateStatus(id, status),
+        onSuccess: (data, variables) => {
+             // Invalidate list and chart queries
+            queryClient.invalidateQueries({ queryKey: bookingKeys.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });
         },
     });
 };

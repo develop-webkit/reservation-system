@@ -2,14 +2,14 @@ import PERMISSIONS from './permissions';
 
 // User roles
 export const ROLES = {
-  SUPER_ADMIN: 'SUPER_ADMIN',
-  EMPLOYEE: 'EMPLOYEE',
-  CUSTOMER: 'CUSTOMER',
+  SUPER_ADMIN: 'manager',
+  EMPLOYEE: 'housekeeper',
+  CUSTOMER: 'user',
 };
 
 // Role display names
 export const ROLE_NAMES = {
-  [ROLES.SUPER_ADMIN]: 'Super Admin',
+  [ROLES.SUPER_ADMIN]: 'Admin',
   [ROLES.EMPLOYEE]: 'Employee',
   [ROLES.CUSTOMER]: 'Customer',
 };
@@ -69,6 +69,11 @@ export const ROLE_PERMISSIONS = {
     
     // Limited dashboard
     PERMISSIONS.ACCESS_DASHBOARD,
+  ],
+
+  [ROLES.HOUSEKEEPER]: [
+    PERMISSIONS.ACCESS_DASHBOARD,
+    PERMISSIONS.EDIT_OWN_PROFILE,
   ],
   
   [ROLES.CUSTOMER]: [

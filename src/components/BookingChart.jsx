@@ -3,11 +3,10 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Tooltip, Popover, Card, Spin, Alert } from 'antd';
 import dayjs from 'dayjs';
-import { useBookings } from '../hooks/useBookings';
+import { useBookingChart } from '../hooks/useBookings';
 import { useRooms } from '../hooks/useRooms';
 //import { useRooms } from '../hooks/useRooms'; // This hook likely needs to be updated or we bypass it for now as requested
 import { rooms as roomsFromData } from '../data/rooms';
-import { reservations } from '../data/reservations';
 
 
 const { Text } = Typography;
@@ -30,17 +29,24 @@ const ROOM_STATUS_COLORS = {
 
 const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions" }) => {
     // Fetch bookings and rooms using TanStack Query hooks
-    const { data: bookingsResponse, isLoading: bookingsLoading, error: bookingsError } = useBookings();
-    const { data: roomsResponse, isLoading: roomsLoading, error: roomsError } = useRooms();
+    // const { data: bookingsResponse, isLoading: bookingsLoading, error: bookingsError } = useBookings(); // Not used directly anymore
+    const { isLoading: roomsLoading, error: roomsError } = useRooms();
 
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null });
 
-    // Extract data from API response
-    // Extract data from API response or use direct data as requested
-    const bookingsData = reservations;
     // Use rooms from data/rooms.js as the primary source for status as requested
     const rooms = roomsFromData;
+
+    // Fetch chart data with date range
+    const { data: chartData, isLoading: chartLoading, error: chartError } = useBookingChart({
+        startDate: dayjs(startDate).format('YYYY-MM-DD'),
+        endDate: dayjs(startDate).add(visibleDays, 'days').format('YYYY-MM-DD')
+    });
+
+    // Use chartData if available, fallback to mock reservations if needed (or remove fallback if strict)
+    // For now, let's prioritize chartData
+    const bookingsData = chartData || [];
 
 
     // 1. Generate column dates (Immutable)
@@ -84,7 +90,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     }, [rooms]);
 
     // Loading state
-    if (bookingsLoading || roomsLoading) {
+    if (chartLoading || roomsLoading) {
         return (
             <Card style={{ textAlign: 'center', padding: '50px' }}>
                 <Spin size="large" spinning={true}>
@@ -95,12 +101,12 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     }
 
     // Error state
-    if (bookingsError || roomsError) {
+    if (chartError || roomsError) {
         return (
             <Card>
                 <Alert
                     message="Error Loading Data"
-                    description={`Failed to load ${bookingsError ? 'bookings' : 'rooms'}. Please try again.`}
+                    description={`Failed to load ${chartError ? 'bookings' : 'rooms'}. Please try again.`}
                     type="error"
                     showIcon
                 />

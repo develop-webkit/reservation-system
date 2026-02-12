@@ -306,7 +306,7 @@ const ReservationsListPage = () => {
         bkgSource: 'Contracted with Meals',
         fixed: 'Yes',
         voucherNo: '',
-        madeBy: 'Super Admin',
+        madeBy: 'Admin',
         dateMade: '',
         cancelled: '',
         cancelledBy: '',

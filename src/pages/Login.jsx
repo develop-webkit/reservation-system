@@ -62,7 +62,7 @@ const Login = () => {
             navigate('/');
         } catch (error) {
             console.error('Login Error:', error);
-            message.error('Invalid credentials or server error.');
+            message.error('info incorrect');
         }
     };
 
@@ -99,11 +99,11 @@ const Login = () => {
                                 <Button
                                     size="small"
                                     block
-                                    onClick={() => quickLogin('12345', 'admin', 'password123')}
+                                    onClick={() => quickLogin('1001', 'admin', 'password123')}
                                     style={{ borderColor: ROLE_COLORS.SUPER_ADMIN }}
                                 >
-                                    <Tag color={ROLE_COLORS.SUPER_ADMIN}>Super Admin</Tag>
-                                    12345 / admin / password123
+                                    <Tag color={ROLE_COLORS.SUPER_ADMIN}>Admin</Tag>
+                                    1001 / admin / password123
                                 </Button>
                             </Space>
                         </div>
