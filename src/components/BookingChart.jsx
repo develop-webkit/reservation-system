@@ -43,8 +43,15 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
     // Extract bookings and rooms from the API response object { rooms, bookings }
     const bookingsData = chartData?.bookings || [];
+
     // Prioritize API rooms, fallback to local data if needed
-    const rooms = chartData?.rooms || roomsFromData;
+    // Ensure API rooms have 'id' property mapped from '_id' if missing
+    const rooms = useMemo(() => {
+        if (chartData?.rooms) {
+            return chartData.rooms.map(r => ({ ...r, id: r._id || r.id }));
+        }
+        return roomsFromData;
+    }, [chartData]);
 
 
     // 1. Generate column dates (Immutable)

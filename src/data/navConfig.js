@@ -23,6 +23,7 @@ export const navConfig = [
         children: [
             // Add sub-links for Reservations based on the "Master" view (Master Window on Edit Reservation...)
             { name: 'Reservations List', path: '/reservations/list' },
+            { name: 'Bookings by Date', path: '/reservations/by-date' },
             { name: 'Search Booking', path: '/reservations/search' },
             // ... more reservation sub-links
         ]

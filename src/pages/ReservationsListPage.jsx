@@ -22,6 +22,9 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
+import { message } from 'antd'; // Added message import
+import { useRooms } from '../hooks/useRooms'; // Added explicit hook import
+import { useCreateBooking } from '../hooks/useBookings'; // Added explicit hook import
 import { mockClients } from '../data/mockClients';
 import { COUNTRY_CODES } from '../data/countryCodes';
 import { companies } from '../data/companies';
@@ -274,6 +277,10 @@ const ReservationsListPage = () => {
     const areaParam = searchParams.get('area');
     const roomTypeParam = searchParams.get('roomType');
 
+    // --- Hooks for Data and Mutation ---
+    const { data: roomsData } = useRooms();
+    const createBookingMutation = useCreateBooking();
+
     // --- State for Form Fields ---
     const [clientData, setClientData] = useState({
         smartSearch: '',
@@ -438,6 +445,55 @@ const ReservationsListPage = () => {
         setSmartSearch({ isOpen: false, term: '' });
     };
 
+    const handleSaveReservation = () => {
+        // Validation
+        if (!clientData.arrive || !clientData.depart) {
+            message.error('Please select valid stay dates.');
+            return;
+        }
+        if (!clientData.area) {
+            message.error('Please select an Area (Room).');
+            return;
+        }
+        if (!clientData.surname) {
+            message.error('Please enter a Guest Name (Surname).');
+            return;
+        }
+
+        // Find room ID
+        const availableRooms = Array.isArray(roomsData) ? roomsData : (roomsData?.data || roomsData?.rooms || []);
+        const selectedRoom = availableRooms.find(r => r.name === clientData.area);
+
+        if (!selectedRoom) {
+            message.error(`Selected room '${clientData.area}' not found in database. Please ensure rooms are loaded.`);
+            return;
+        }
+
+        const payload = {
+            roomId: selectedRoom._id || selectedRoom.id, // Prefer _id for Mongo
+            startDate: clientData.arrive.toISOString(),
+            endDate: clientData.depart.toISOString(),
+            guestName: clientData.surname, // Using surname as requested
+            guestEmail: clientData.email || 'string', // fallback as per example
+            guestPhone: clientData.mobile || 'string',
+            bookingSource: clientData.bkgSource || 'Contracted with Meals',
+            voucher: clientData.voucherNo || 'string'
+        };
+
+        console.log('Saving Booking Payload:', payload);
+
+        createBookingMutation.mutate(payload, {
+            onSuccess: () => {
+                message.success('Reservation created successfully!');
+                // Optional: reset form or navigate
+            },
+            onError: (err) => {
+                console.error('Booking creation error:', err);
+                message.error('Failed to create reservation: ' + (err.response?.data?.message || err.message));
+            }
+        });
+    };
+
     // Sidebar navigation items
     const sidebarItems = [
         { key: 'Reservation', label: 'Reservation', icon: <HomeOutlined /> },
@@ -599,7 +655,13 @@ const ReservationsListPage = () => {
                         <Text strong style={{ fontSize: '16px' }}>Reservation</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <Button type="text" size="small" icon={<SearchOutlined />} />
-                            <Button type="text" size="small" icon={<SaveOutlined />} />
+                            <Button
+                                type="text"
+                                size="small"
+                                icon={<SaveOutlined />}
+                                onClick={handleSaveReservation}
+                                loading={createBookingMutation.isLoading || createBookingMutation.isPending}
+                            />
                             <Button type="text" size="small" icon={<MoreOutlined />} />
                         </div>
                     </div>

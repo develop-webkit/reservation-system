@@ -16,6 +16,7 @@ import BookingChart from './pages/BookingChart';
 import ReservationsListPage from './pages/ReservationsListPage';
 import CleanScreen from './pages/CleanScreen';
 import HousekeepingRoster from './pages/HousekeepingRoster';
+import BookingsByDate from './pages/BookingsByDate';
 
 const { Header, Sider, Content } = Layout;
 
@@ -75,6 +76,7 @@ function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/reservations" element={<Reservations />} />
                   <Route path="/reservations/list" element={<ReservationsListPage />} />
+                  <Route path="/reservations/by-date" element={<BookingsByDate />} />
                   <Route path="/housekeeping/clean-screen" element={<CleanScreen />} />
                   <Route path="/housekeeping/roster" element={<HousekeepingRoster />} />
                   <Route path="/charts/bookingchart" element={<BookingChart />} />
