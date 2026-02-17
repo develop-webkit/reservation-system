@@ -42,7 +42,16 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     });
 
     // Extract bookings and rooms from the API response object { rooms, bookings }
-    const bookingsData = chartData?.bookings || [];
+    const bookingsData = useMemo(() => {
+        return (chartData?.bookings || []).map(booking => ({
+            ...booking,
+            // Map backend fields to frontend expectations
+            checkIn: booking.checkIn || booking.startDate,
+            checkOut: booking.checkOut || booking.endDate,
+            clientName: booking.clientName || booking.guestName || 'Unknown Guest',
+            roomId: booking.roomId || booking.room?._id || booking.room // Handle various room references
+        }));
+    }, [chartData]);
 
     // Prioritize API rooms, fallback to local data if needed
     // Ensure API rooms have 'id' property mapped from '_id' if missing

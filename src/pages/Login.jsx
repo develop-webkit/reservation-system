@@ -4,7 +4,7 @@ import { Form, Input, Button, Card, Typography, Space, message, Tag, Divider } f
 import { UserOutlined, LockOutlined, SafetyOutlined, NumberOutlined } from '@ant-design/icons';
 import { useForm, Controller } from 'react-hook-form';
 import useAuthStore from '../store/authStore';
-import { ROLE_COLORS } from '../constants/roles';
+import { ROLES, ROLE_COLORS } from '../constants/roles';
 import authApi from '../api/services/auth';
 
 const { Title, Text } = Typography;
@@ -58,9 +58,21 @@ const Login = () => {
 
             message.success(`Welcome!`);
 
+            // Normalize user data for frontend expectations
+            let userData = response.user || { ...response };
+
+            // Map backend 'admin' role to frontend 'manager' role
+            if (userData.role === 'admin') {
+                userData.role = ROLES.SUPER_ADMIN;
+            }
+
+            // Ensure name property exists
+            if (!userData.name && userData.username) {
+                userData.name = userData.username;
+            }
+
             // Updating the global auth state with the user info returned from the API.
-            // Includes a fallback name if the response structure differs.
-            login(response.user || { name: data.username, ...response });
+            login(userData);
 
             // Redirecting to the main dashboard after success.
             navigate('/');
