@@ -2,50 +2,50 @@
 
 export const rooms = [
     // Top-level "Special" rows (No category)
-    { 
-        id: 'SP01', 
-        name: 'Special Events', 
-        type: 'EVENT', 
-        category: null, 
-        defaultCleanStatus: 'Clean', 
-        maxOccupancy: 0, 
-        outOfOrder: false, 
-        lastCleanDate: '2025-12-30', 
-        daysSinceLastClean: 0 
+    {
+        id: 'SP01',
+        name: 'Special Events',
+        type: 'EVENT',
+        category: null,
+        defaultCleanStatus: 'Clean',
+        maxOccupancy: 0,
+        outOfOrder: false,
+        lastCleanDate: '2025-12-30',
+        daysSinceLastClean: 0
     },
-    { 
-        id: 'PK01', 
-        name: 'Parked Reservation', 
-        type: 'PARKED', 
-        category: null, 
-        defaultCleanStatus: 'Clean', 
-        maxOccupancy: 0, 
-        outOfOrder: false, 
-        lastCleanDate: '2025-12-30', 
-        daysSinceLastClean: 0 
+    {
+        id: 'PK01',
+        name: 'Parked Reservation',
+        type: 'PARKED',
+        category: null,
+        defaultCleanStatus: 'Clean',
+        maxOccupancy: 0,
+        outOfOrder: false,
+        lastCleanDate: '2025-12-30',
+        daysSinceLastClean: 0
     },
     // Staff Accommodation
-    { 
-        id: 'S01', 
-        name: '01 Manager', 
-        type: 'STAFF', 
-        category: 'Staff Accommodation', 
-        defaultCleanStatus: 'Clean', 
-        maxOccupancy: 1, 
-        outOfOrder: false, 
-        lastCleanDate: '2025-12-28', 
-        daysSinceLastClean: 3 
+    {
+        id: 'S01',
+        name: '01 Manager',
+        type: 'STAFF',
+        category: 'Staff Accommodation',
+        defaultCleanStatus: 'Clean',
+        maxOccupancy: 1,
+        outOfOrder: false,
+        lastCleanDate: '2025-12-28',
+        daysSinceLastClean: 3
     },
-    { 
-        id: 'S02', 
-        name: '02 Other Staff', 
-        type: 'STAFF', 
-        category: 'Staff Accommodation', 
-        defaultCleanStatus: 'Clean', 
-        maxOccupancy: 1, 
-        outOfOrder: false, 
-        lastCleanDate: '2025-12-29', 
-        daysSinceLastClean: 2 
+    {
+        id: 'S02',
+        name: '02 Other Staff',
+        type: 'STAFF',
+        category: 'Staff Accommodation',
+        defaultCleanStatus: 'Clean',
+        maxOccupancy: 1,
+        outOfOrder: false,
+        lastCleanDate: '2025-12-29',
+        daysSinceLastClean: 2
     },
 
     // Standard Ensuite Benjamin
@@ -81,11 +81,24 @@ export const rooms = [
 ];
 
 export const ROOM_TYPE_OPTIONS = [
-    "Staff Accommodation", 
-    "Standard Ensuite Benjamin", 
-    "Standard Ensuite Shiel", 
-    "Standard Ensuite Wallace"
+    "Staff Accommodation",
+    "Benjamin Block",
+    "Shiel Block",
+    "Wallace Block"
 ];
+
+// Mapping between display names and actual room categories
+export const ROOM_TYPE_CATEGORY_MAP = {
+    "Staff Accommodation": "Staff Accommodation",
+    "Benjamin Block": "Standard Ensuite Benjamin",
+    "Shiel Block": "Standard Ensuite Shiel",
+    "Wallace Block": "Standard Ensuite Wallace",
+    // Reverse mapping for lookups
+    "Standard Ensuite Benjamin": "Benjamin Block",
+    "Standard Ensuite Shiel": "Shiel Block",
+    "Standard Ensuite Wallace": "Wallace Block"
+};
+
 
 export const housekeepers = [
     { id: 'HK01', name: 'Hamish', empType: 'Full Time' },

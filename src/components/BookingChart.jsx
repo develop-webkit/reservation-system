@@ -258,29 +258,29 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                                 </div>
                                 <div style={{ padding: '0 8px' }}>
                                     {[
-                                        { label: 'Master Res No', value: displayBooking.masterResNo },
-                                        { label: 'Reservation No', value: displayBooking.resNo || displayBooking.reservationNo },
-                                        { label: 'Groupname', value: displayBooking.groupName },
-                                        { label: 'Client Name', value: displayBooking.clientName || displayBooking.guestName },
-                                        { label: 'Arrive', value: `${dayjs(displayBooking.checkIn).format('ddd DD MMM YYYY')} ${displayBooking.arriveTime || ''}` },
-                                        { label: 'Depart', value: `${dayjs(displayBooking.checkOut).format('ddd DD MMM YYYY')} ${displayBooking.departTime || ''}` },
+                                        { label: 'Master Res No', value: displayBooking.masterResNo || displayBooking._id },
+                                        { label: 'Reservation No', value: displayBooking.resNo || displayBooking.reservationNo || displayBooking.id || displayBooking._id },
+                                        { label: 'Groupname', value: displayBooking.groupName || '-' },
+                                        { label: 'Client Name', value: displayBooking.clientName || displayBooking.guestName || 'Unknown' },
+                                        { label: 'Email', value: displayBooking.guestEmail || displayBooking.email || '-' },
+                                        { label: 'Phone', value: displayBooking.guestPhone || displayBooking.phone || '-' },
+                                        { label: 'Arrive', value: displayBooking.checkIn ? `${dayjs(displayBooking.checkIn).format('ddd DD MMM YYYY hh:mm A')}` : '-' },
+                                        { label: 'Depart', value: displayBooking.checkOut ? `${dayjs(displayBooking.checkOut).format('ddd DD MMM YYYY hh:mm A')}` : '-' },
                                         { label: 'Property', value: propertyName },
-                                        { label: 'Room Type', value: room.category },
-                                        { label: 'Area', value: room.name },
+                                        { label: 'Room Type', value: room.category || '-' },
+                                        { label: 'Area', value: room.name || '-' },
                                         { label: 'Status', value: displayBooking.status || 'Unknown' },
-                                        { label: 'People', value: displayBooking.people },
-                                        { label: 'Bkg Source', value: displayBooking.bkgSource },
-                                        { label: 'Tariff Type', value: displayBooking.tariffType },
-                                        { label: 'Balance Owing', value: displayBooking.balance },
-                                        { label: 'Caravan Sales Slide', value: displayBooking.caravanSalesSlide },
-                                        { label: 'Company', value: displayBooking.company },
-                                        { label: 'Fixed', value: displayBooking.isFixed ? 'Yes' : 'No' },
-                                        // Added fields from reservations.js
-                                        { label: 'Voucher No', value: displayBooking.voucherNo },
-                                        { label: 'Created By', value: displayBooking.createdBy },
-                                        { label: 'Date Made', value: displayBooking.createDate },
-                                        { label: 'Confirmed By', value: displayBooking.confirmedBy },
-                                        { label: 'Date Confirmed', value: displayBooking.confirmedDate }
+                                        { label: 'People', value: displayBooking.people || '-' },
+                                        { label: 'Bkg Source', value: displayBooking.bkgSource || displayBooking.bookingSource || '-' },
+                                        { label: 'Voucher No', value: displayBooking.voucherNo || displayBooking.voucher || '-' },
+                                        { label: 'Tariff Type', value: displayBooking.tariffType || '-' },
+                                        { label: 'Balance Owing', value: displayBooking.balance || '-' },
+                                        { label: 'Company', value: displayBooking.company || '-' },
+                                        { label: 'Fixed', value: displayBooking.isFixed ? 'Yes' : (displayBooking.fixed === 'Yes' ? 'Yes' : 'No') },
+                                        { label: 'Created By', value: displayBooking.createdBy || '-' },
+                                        { label: 'Date Made', value: displayBooking.createDate || displayBooking.createdAt ? dayjs(displayBooking.createdAt).format('DD MMM YYYY') : '-' },
+                                        { label: 'Confirmed By', value: displayBooking.confirmedBy || '-' },
+                                        { label: 'Date Confirmed', value: displayBooking.confirmedDate || '-' }
                                     ].map((item, index) => (
                                         <div key={index} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px', alignItems: 'baseline', marginBottom: '4px' }}>
                                             <Text strong style={{ textAlign: 'right', fontSize: '12px' }}>{item.label}</Text>

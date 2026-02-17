@@ -24,11 +24,11 @@ import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
 import { useRooms } from '../hooks/useRooms'; // Added explicit hook import
-import { useCreateBooking } from '../hooks/useBookings'; // Added explicit hook import
+import { useCreateBooking, useUpdateBooking } from '../hooks/useBookings'; // Added explicit hook import
 import { mockClients } from '../data/mockClients';
 import { COUNTRY_CODES } from '../data/countryCodes';
 import { companies } from '../data/companies';
-import { rooms, ROOM_TYPE_OPTIONS } from '../data/rooms';
+import { rooms, ROOM_TYPE_OPTIONS, ROOM_TYPE_CATEGORY_MAP } from '../data/rooms';
 import { VOUCHER_OPTIONS } from '../data/vouchers';
 import {
     TITLE_OPTIONS,
@@ -280,6 +280,7 @@ const ReservationsListPage = () => {
     // --- Hooks for Data and Mutation ---
     const { data: roomsData } = useRooms();
     const createBookingMutation = useCreateBooking();
+    const updateBookingMutation = useUpdateBooking();
 
     // --- State for Form Fields ---
     const [clientData, setClientData] = useState({
@@ -308,7 +309,7 @@ const ReservationsListPage = () => {
         nights: 1,
         adults: 1,
         tariffType: 'Occupied Room Rate PRPN',
-        roomType: roomTypeParam || 'Standard Ensuite Benjamin',
+        roomType: roomTypeParam || 'Benjamin Block',
         area: areaParam || 'B01',
         bkgSource: 'Contracted with Meals',
         fixed: 'Yes',
@@ -360,7 +361,9 @@ const ReservationsListPage = () => {
     }, [smartSearch.term]);
 
     const filteredAreaOptions = useMemo(() => {
-        return AREA_OPTIONS.filter(opt => opt.category === clientData.roomType);
+        // Map display name to actual category
+        const actualCategory = ROOM_TYPE_CATEGORY_MAP[clientData.roomType] || clientData.roomType;
+        return AREA_OPTIONS.filter(opt => opt.category === actualCategory);
     }, [clientData.roomType]);
 
     const handleFieldChange = (field, value) => {
@@ -368,7 +371,9 @@ const ReservationsListPage = () => {
             const newData = { ...prev, [field]: value };
 
             if (field === 'roomType') {
-                const firstAreaMatch = AREA_OPTIONS.find(opt => opt.category === value);
+                // Map display name to actual category
+                const actualCategory = ROOM_TYPE_CATEGORY_MAP[value] || value;
+                const firstAreaMatch = AREA_OPTIONS.find(opt => opt.category === actualCategory);
                 if (firstAreaMatch) {
                     newData.area = firstAreaMatch.area;
                 } else {
@@ -477,15 +482,35 @@ const ReservationsListPage = () => {
             guestEmail: clientData.email || 'string', // fallback as per example
             guestPhone: clientData.mobile || 'string',
             bookingSource: clientData.bkgSource || 'Contracted with Meals',
-            voucher: clientData.voucherNo || 'string'
+            voucher: clientData.voucherNo || 'string',
+            status: clientData.status || 'Unconfirmed' // Include the status field
         };
 
         console.log('Saving Booking Payload:', payload);
 
         createBookingMutation.mutate(payload, {
-            onSuccess: () => {
-                message.success('Reservation created successfully!');
-                // Optional: reset form or navigate
+            onSuccess: (createdBooking) => {
+                // If status is not Unconfirmed, update it after creation
+                const desiredStatus = clientData.status || 'Unconfirmed';
+                const bookingId = createdBooking._id || createdBooking.id;
+
+                if (desiredStatus !== 'Unconfirmed' && bookingId) {
+                    console.log(`Updating booking ${bookingId} status to ${desiredStatus}`);
+                    updateBookingMutation.mutate(
+                        { id: bookingId, data: { status: desiredStatus } },
+                        {
+                            onSuccess: () => {
+                                message.success(`Reservation created with status: ${desiredStatus}!`);
+                            },
+                            onError: (err) => {
+                                console.error('Status update error:', err);
+                                message.warning(`Reservation created but status update failed: ${err.message}`);
+                            }
+                        }
+                    );
+                } else {
+                    message.success('Reservation created successfully!');
+                }
             },
             onError: (err) => {
                 console.error('Booking creation error:', err);

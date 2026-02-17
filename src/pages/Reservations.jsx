@@ -98,7 +98,19 @@ const Reservations = () => {
     const columns = [
         { title: 'ID', dataIndex: 'id', key: 'id', sorter: true, width: 80 },
         { title: 'Guest Name', dataIndex: 'guestName', key: 'guestName', sorter: true },
-        { title: 'Room', dataIndex: 'roomNumber', key: 'roomNumber', sorter: true, width: 100 },
+        {
+            title: 'Room',
+            key: 'room',
+            sorter: true,
+            width: 100,
+            render: (_, record) => {
+                // Handle room object or roomId
+                if (record.room && typeof record.room === 'object') {
+                    return record.room.name || record.room.id || record.room._id || 'N/A';
+                }
+                return record.roomNumber || record.roomId || record.room || 'N/A';
+            }
+        },
         {
             title: 'Status',
             dataIndex: 'status',
