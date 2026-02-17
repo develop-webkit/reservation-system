@@ -33,25 +33,13 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
 
     const navigate = useNavigate();
-    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null });
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null });
 
     // Fetch chart data with date range
     const { data: chartData, isLoading: chartLoading, error: chartError } = useBookingChart({
         startDate: dayjs(startDate).format('YYYY-MM-DD'),
         endDate: dayjs(startDate).add(visibleDays, 'days').format('YYYY-MM-DD')
     });
-
-    // Extract bookings and rooms from the API response object { rooms, bookings }
-    const bookingsData = useMemo(() => {
-        return (chartData?.bookings || []).map(booking => ({
-            ...booking,
-            // Map backend fields to frontend expectations
-            checkIn: booking.checkIn || booking.startDate,
-            checkOut: booking.checkOut || booking.endDate,
-            clientName: booking.clientName || booking.guestName || 'Unknown Guest',
-            roomId: booking.roomId || booking.room?._id || booking.room // Handle various room references
-        }));
-    }, [chartData]);
 
     // Prioritize API rooms, fallback to local data if needed
     // Ensure API rooms have 'id' property mapped from '_id' if missing
@@ -61,6 +49,24 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         }
         return roomsFromData;
     }, [chartData]);
+
+    // Extract bookings and rooms from the API response object { rooms, bookings }
+    const bookingsData = useMemo(() => {
+        return (chartData?.bookings || []).map(booking => {
+            const rId = booking.roomId || booking.room?._id || booking.room;
+            const roomObj = rooms.find(r => r.id === rId || r._id === rId);
+
+            return {
+                ...booking,
+                // Map backend fields to frontend expectations
+                checkIn: booking.checkIn || booking.startDate,
+                checkOut: booking.checkOut || booking.endDate,
+                clientName: booking.clientName || booking.guestName || 'Unknown Guest',
+                roomId: rId,
+                room: roomObj || booking.room // Attach full room object if found
+            };
+        });
+    }, [chartData, rooms]);
 
 
     // 1. Generate column dates (Immutable)
@@ -298,64 +304,53 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
                         return (
                             <Popover key={booking.id} content={ReservationInfoContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
-                                <div style={{
-                                    gridColumnStart: Math.max(1, pos.start),
-                                    gridColumnEnd: Math.min(visibleDays + 1, pos.end),
-                                    gridRow: 1,
-                                    zIndex: 2,
-                                    height: '22px',
-                                    backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
-                                    borderRadius: '4px',
-                                    margin: '0 2px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    color: '#fff',
-                                    padding: '0 4px',
-                                    overflow: 'hidden',
-                                    cursor: 'pointer',
-                                    // Stacking styles
-                                    alignSelf: alignProp,
-                                    marginTop: isParkedRow ? `${topPosition}px` : 0,
-                                    position: isParkedRow ? 'absolute' : 'relative', // Relative in grid usually centers but absolute allows precise stacking if relative container is full height. 
-                                    // Actually within grid cell, 'alignSelf: start' + marginTop is easier than absolute if gridRow is correct.
-                                    // Let's stick to Grid layout. The parent container is absolute relative to row? No, it's defined as:
-                                    // display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative'
-                                    // The bookings are children of this grid.
-                                    // If we use absolute, we rely on the parent being relative and covering the whole row area.
-                                    // The parent div DOES have position: 'relative'.
-                                    // However, the booking divs utilize gridColumnStart/End. 
-                                    // If we use absolute, we might lose the grid column width unless we calculate left/width manually.
-                                    // Better approach: Keep grid column logic, but use marginTop or transforms for vertical offset.
-                                    // If we use position: absolute, we can't easily rely on grid columns.
-                                    // But wait! Grid items CAN be position: absolute, but then they position relative to the nearest positioned ancestor (the grid container), NOT the grid tracks.
-                                    // Exception: If you specify grid-column/row AND position: absolute, it positions within that grid area! (Verified behavior in modern CSS specs).
-                                    // Let's try position: absolute combined with grid properties.
-                                    top: isParkedRow ? `${topPosition}px` : 'auto',
-                                    width: isParkedRow ? 'calc(100% - 4px)' : 'auto' // absolute items need explicit width if not stretched
-                                }}>
+                                <div
+                                    onContextMenu={(e) => handleContextMenu(e, room, null, booking)}
+                                    style={{
+                                        gridColumnStart: Math.max(1, pos.start),
+                                        gridColumnEnd: Math.min(visibleDays + 1, pos.end),
+                                        gridRow: 1,
+                                        zIndex: 2,
+                                        height: '22px',
+                                        backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
+                                        borderRadius: '4px',
+                                        margin: '0 2px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        color: '#fff',
+                                        padding: '0 4px',
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                        // Stacking styles
+                                        alignSelf: alignProp,
+                                        marginTop: isParkedRow ? `${topPosition}px` : 0,
+                                        position: isParkedRow ? 'absolute' : 'relative',
+                                        top: isParkedRow ? `${topPosition}px` : 'auto',
+                                        width: isParkedRow ? 'calc(100% - 4px)' : 'auto'
+                                    }}>
                                     <Text ellipsis style={{ color: '#fff', fontSize: '10px' }}>{booking.clientName}</Text>
                                 </div>
                             </Popover>
                         );
                     })}
                 </div>
-            </div>
+            </div >
         );
     };
 
 
 
-    const handleContextMenu = (e, room, date) => {
+    const handleContextMenu = (e, room, date, booking = null) => {
         e.preventDefault();
-        if (room && date) {
-            e.stopPropagation(); // Stop propagation to prevent the parent's generic handler from resetting context
-        }
+        e.stopPropagation(); // Stop propagation to prevent the parent's generic handler from resetting context
+
         setContextMenu({
             visible: true,
             x: e.pageX,
             y: e.pageY,
             room: room || null,
-            date: date || null
+            date: date || null,
+            booking: booking || null
         });
     };
 
@@ -374,6 +369,26 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 params.set('area', contextMenu.room.name);
                 params.set('roomType', contextMenu.room.category || '');
             }
+            navigate(`/reservations/list?${params.toString()}`);
+        } else if (action === 'edit_reservation' && contextMenu.booking) {
+            const booking = contextMenu.booking;
+            const params = new URLSearchParams({
+                edit: 'true',
+                id: booking._id || booking.id,
+                surname: booking.guestName || booking.clientName || '',
+                mobile: booking.guestPhone || booking.phone || '',
+                email: booking.guestEmail || booking.email || '',
+
+                arrive: dayjs(booking.startDate || booking.checkIn).toISOString(), // Use ISO for reliable parsing
+                depart: dayjs(booking.endDate || booking.checkOut).toISOString(),
+
+                status: booking.status || 'Unconfirmed',
+                bkgSource: booking.bookingSource || booking.bkgSource || '',
+                voucher: booking.voucher || booking.voucherNo || '',
+
+                area: booking.room?.name || '',
+                roomType: booking.room?.category || ''
+            });
             navigate(`/reservations/list?${params.toString()}`);
         }
         handleCloseContextMenu();
@@ -461,8 +476,14 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
-                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_service')}>Add Out Of Service</div>
+                    {contextMenu.booking ? (
+                        <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }} onClick={() => handleMenuItemClick('edit_reservation')}>Edit Reservation</div>
+                    ) : (
+                        <>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_service')}>Add Out Of Service</div>
+                        </>
+                    )}
                     <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                     <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
                 </div>

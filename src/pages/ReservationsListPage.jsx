@@ -24,7 +24,7 @@ import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
 import { useRooms } from '../hooks/useRooms'; // Added explicit hook import
-import { useCreateBooking, useUpdateBooking } from '../hooks/useBookings'; // Added explicit hook import
+import { useCreateBooking, useUpdateBooking, useBooking } from '../hooks/useBookings'; // Added useBooking
 import { mockClients } from '../data/mockClients';
 import { COUNTRY_CODES } from '../data/countryCodes';
 import { companies } from '../data/companies';
@@ -41,18 +41,6 @@ import {
 const { Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
-
-const AREA_OPTIONS = rooms.map(room => ({
-    area: room.name,
-    cleanStatus: room.defaultCleanStatus,
-    description: '',
-    resCount: 0, // Placeholder
-    category: room.category,
-    // Rich fields from data set
-    outOfOrder: room.outOfOrder ? 'Yes' : 'No',
-    lastCleanDate: room.lastCleanDate,
-    daysSinceLastClean: room.daysSinceLastClean
-}));
 
 const COMPANY_OPTIONS = companies;
 
@@ -272,15 +260,45 @@ const ReservationsListPage = () => {
     const [selectedTab, setSelectedTab] = useState('Reservation');
     const [searchParams] = useSearchParams();
 
+    // Hooks for Data
+    const { data: roomsResponse } = useRooms();
+
+    // Process rooms into area options dynamically
+    const dynamicRooms = roomsResponse || rooms; // Use API rooms if available, fallback to local data
+    const AREA_OPTIONS = useMemo(() => {
+        return dynamicRooms.map(room => ({
+            area: room.name,
+            cleanStatus: room.defaultCleanStatus,
+            description: '',
+            resCount: 0,
+            category: room.category,
+            outOfOrder: room.outOfOrder ? 'Yes' : 'No',
+            lastCleanDate: room.lastCleanDate,
+            daysSinceLastClean: room.daysSinceLastClean
+        }));
+    }, [dynamicRooms]);
+
     // Extract values from query params
+    const isEditMode = searchParams.get('edit') === 'true';
+    const bookingId = searchParams.get('id');
     const arriveParam = searchParams.get('arrive');
+    const departParam = searchParams.get('depart');
     const areaParam = searchParams.get('area');
     const roomTypeParam = searchParams.get('roomType');
+    const surnameParam = searchParams.get('surname');
+    const mobileParam = searchParams.get('mobile');
+    const emailParam = searchParams.get('email');
+    const statusParam = searchParams.get('status');
+    const bkgSourceParam = searchParams.get('bkgSource');
+    const voucherParam = searchParams.get('voucher');
 
     // --- Hooks for Data and Mutation ---
-    const { data: roomsData } = useRooms();
     const createBookingMutation = useCreateBooking();
     const updateBookingMutation = useUpdateBooking();
+
+    // Fetch full booking details if in edit mode (robust fallback for URL params)
+    const { data: fetchedBooking, isLoading: isBookingLoading } = useBooking(bookingId && isEditMode ? bookingId : null);
+
 
     // --- State for Form Fields ---
     const [clientData, setClientData] = useState({
@@ -290,9 +308,9 @@ const ReservationsListPage = () => {
         surname: '',
         given: '',
         title: '',
-        email: '',
+        email: emailParam || '',
         phoneAH: '',
-        mobile: '',
+        mobile: mobileParam || '',
         mobilePrefix: '+61',
         email2: '',
         blackList: '',
@@ -303,17 +321,17 @@ const ReservationsListPage = () => {
         // Reservation fields
         resNo: '(New Reservation)',
         masterResNo: '(New Reservation)',
-        status: 'Unconfirmed',
+        status: statusParam || 'Unconfirmed',
         arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : dayjs('2026-02-04').hour(14).minute(0).toDate(),
-        depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : dayjs('2026-02-05').hour(10).minute(0).toDate(),
-        nights: 1,
+        depart: departParam ? dayjs(departParam).hour(10).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : dayjs('2026-02-05').hour(10).minute(0).toDate()),
+        nights: (arriveParam && departParam) ? dayjs(departParam).diff(dayjs(arriveParam), 'day') : 1,
         adults: 1,
         tariffType: 'Occupied Room Rate PRPN',
-        roomType: roomTypeParam || 'Benjamin Block',
+        roomType: (ROOM_TYPE_CATEGORY_MAP[roomTypeParam] || roomTypeParam) || 'Benjamin Block',
         area: areaParam || 'B01',
-        bkgSource: 'Contracted with Meals',
+        bkgSource: bkgSourceParam || 'Contracted with Meals',
         fixed: 'Yes',
-        voucherNo: '',
+        voucherNo: voucherParam || '',
         madeBy: 'Admin',
         dateMade: '',
         cancelled: '',
@@ -330,24 +348,60 @@ const ReservationsListPage = () => {
         activeAccounts: '(None)'
     });
 
-    // Update state when query params change
+    // Update state when query params change OR fetched data arrives
     useEffect(() => {
-        if (arriveParam || areaParam || roomTypeParam) {
-            setClientData(prev => ({
-                ...prev,
-                arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : prev.arrive,
-                depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : prev.depart,
-                area: areaParam || prev.area,
-                roomType: roomTypeParam || prev.roomType,
-                nights: 1
-            }));
+        if (isEditMode && fetchedBooking) {
+            setClientData(prev => {
+                const arrive = fetchedBooking.checkIn || fetchedBooking.startDate ? dayjs(fetchedBooking.checkIn || fetchedBooking.startDate).toDate() : prev.arrive;
+                const depart = fetchedBooking.checkOut || fetchedBooking.endDate ? dayjs(fetchedBooking.checkOut || fetchedBooking.endDate).toDate() : prev.depart;
+                const rType = (ROOM_TYPE_CATEGORY_MAP[fetchedBooking.room?.category] || fetchedBooking.room?.category) || prev.roomType;
+
+                return {
+                    ...prev,
+                    surname: fetchedBooking.guestName || fetchedBooking.clientName || prev.surname,
+                    mobile: fetchedBooking.guestPhone || fetchedBooking.phone || prev.mobile,
+                    email: fetchedBooking.guestEmail || fetchedBooking.email || prev.email,
+                    status: fetchedBooking.status || prev.status,
+                    bkgSource: fetchedBooking.bookingSource || fetchedBooking.bkgSource || prev.bkgSource,
+                    voucherNo: fetchedBooking.voucher || fetchedBooking.voucherNo || prev.voucherNo,
+                    arrive,
+                    depart,
+                    area: fetchedBooking.room?.name || prev.area,
+                    roomType: rType,
+                    nights: dayjs(depart).diff(dayjs(arrive), 'day') || 1,
+                    resNo: `Res: ${bookingId}`,
+                    masterResNo: `M-Res: ${bookingId}`
+                };
+            });
+        } else if (arriveParam || areaParam || roomTypeParam || surnameParam || mobileParam || emailParam || statusParam || bkgSourceParam || voucherParam) {
+            setClientData(prev => {
+                const arrive = arriveParam ? dayjs(arriveParam).toDate() : prev.arrive;
+                const depart = departParam ? dayjs(departParam).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').toDate() : prev.depart);
+                const roomType = (ROOM_TYPE_CATEGORY_MAP[roomTypeParam] || roomTypeParam) || prev.roomType;
+
+                return {
+                    ...prev,
+                    surname: surnameParam || prev.surname,
+                    mobile: mobileParam || prev.mobile,
+                    email: emailParam || prev.email,
+                    status: statusParam || prev.status,
+                    bkgSource: bkgSourceParam || prev.bkgSource,
+                    voucherNo: voucherParam || prev.voucherNo,
+                    arrive,
+                    depart,
+                    area: areaParam || prev.area,
+                    roomType,
+                    nights: dayjs(depart).diff(dayjs(arrive), 'day') || 1,
+                    resNo: isEditMode ? `Res: ${bookingId}` : '(New Reservation)',
+                    masterResNo: isEditMode ? `M-Res: ${bookingId}` : '(New Reservation)'
+                };
+            });
         }
-    }, [arriveParam, areaParam, roomTypeParam]);
+    }, [arriveParam, departParam, areaParam, roomTypeParam, surnameParam, mobileParam, emailParam, statusParam, bkgSourceParam, voucherParam, isEditMode, bookingId, fetchedBooking]);
 
     // --- State for Smart Search ---
     const [smartSearch, setSmartSearch] = useState({
         isOpen: false,
-        term: '',
     });
 
     const filteredClients = useMemo(() => {
@@ -364,7 +418,7 @@ const ReservationsListPage = () => {
         // Map display name to actual category
         const actualCategory = ROOM_TYPE_CATEGORY_MAP[clientData.roomType] || clientData.roomType;
         return AREA_OPTIONS.filter(opt => opt.category === actualCategory);
-    }, [clientData.roomType]);
+    }, [clientData.roomType, AREA_OPTIONS]);
 
     const handleFieldChange = (field, value) => {
         setClientData(prev => {
@@ -488,16 +542,33 @@ const ReservationsListPage = () => {
 
         console.log('Saving Booking Payload:', payload);
 
+        if (isEditMode && bookingId) {
+            console.log(`Updating existing booking ${bookingId}`);
+            updateBookingMutation.mutate(
+                { id: bookingId, data: payload },
+                {
+                    onSuccess: () => {
+                        message.success('Reservation updated successfully!');
+                    },
+                    onError: (err) => {
+                        console.error('Booking update error:', err);
+                        message.error('Failed to update reservation: ' + (err.response?.data?.message || err.message));
+                    }
+                }
+            );
+            return;
+        }
+
         createBookingMutation.mutate(payload, {
             onSuccess: (createdBooking) => {
                 // If status is not Unconfirmed, update it after creation
                 const desiredStatus = clientData.status || 'Unconfirmed';
-                const bookingId = createdBooking._id || createdBooking.id;
+                const newBookingId = createdBooking._id || createdBooking.id;
 
-                if (desiredStatus !== 'Unconfirmed' && bookingId) {
-                    console.log(`Updating booking ${bookingId} status to ${desiredStatus}`);
+                if (desiredStatus !== 'Unconfirmed' && newBookingId) {
+                    console.log(`Updating booking ${newBookingId} status to ${desiredStatus}`);
                     updateBookingMutation.mutate(
-                        { id: bookingId, data: { status: desiredStatus } },
+                        { id: newBookingId, data: { status: desiredStatus } },
                         {
                             onSuccess: () => {
                                 message.success(`Reservation created with status: ${desiredStatus}!`);
@@ -685,7 +756,7 @@ const ReservationsListPage = () => {
                                 size="small"
                                 icon={<SaveOutlined />}
                                 onClick={handleSaveReservation}
-                                loading={createBookingMutation.isLoading || createBookingMutation.isPending}
+                                loading={createBookingMutation.isPending || updateBookingMutation.isPending}
                             />
                             <Button type="text" size="small" icon={<MoreOutlined />} />
                         </div>
