@@ -10,8 +10,14 @@ import authApi from '../api/services/auth';
 const { Title, Text } = Typography;
 
 /**
- * Login Component: Handles user authentication for the RMS System.
- * Supports manual login and quick login via demo accounts.
+ * Login Component
+ * 
+ * Handles user authentication for the Reserviation Management System (RMS).
+ * Features:
+ * - Secure manual login using Client Number, Username, and Password.
+ * - Quick login via Demo Accounts for development/testing visibility.
+ * - Integration with global authentication state via Zustand (authStore).
+ * - Form validation and state management using React Hook Form.
  */
 const Login = () => {
     const navigate = useNavigate();
@@ -23,8 +29,11 @@ const Login = () => {
     const [showDemoAccounts] = useState(true);
 
     /**
-     * Initializing React Hook Form for robust form state management and validation.
-     * clientNumber, username, and password are the core fields for the updated backend.
+     * React Hook Form initialization.
+     * Manages form state, validation, and submission for:
+     * - clientNumber: Required for multi-tenant backend identification.
+     * - username: User's unique identifier.
+     * - password: Secure password for authentication.
      */
     const {
         control,
@@ -40,8 +49,12 @@ const Login = () => {
     });
 
     /**
-     * onSubmit handler: Processes the form data and attempts to log in via authApi.
-     * @param {Object} data - Contains clientNumber, username, and password.
+     * Handle form submission and authentication attempt.
+     * 
+     * @param {Object} data - Form payload containing credentials.
+     * @param {string} data.clientNumber - The organization/client ID.
+     * @param {string} data.username - The user's account name.
+     * @param {string} data.password - The user's password.
      */
     const onSubmit = async (data) => {
         try {
@@ -52,21 +65,22 @@ const Login = () => {
                 password: data.password
             });
 
+            // Perspective: Ensure the token is persisted for subsequent API calls.
             if (response.access_token) {
                 localStorage.setItem('authToken', response.access_token);
             }
 
-            message.success(`Welcome!`);
+            message.success(`Welcome back! Authenticated successfully.`);
 
-            // Updating the global auth state with the user info returned from the API.
-            // Includes a fallback name if the response structure differs.
+            // Synchronize the global authStore with user details.
+            // Includes a fallback mechanism if the API returns a flattened user object.
             login(response.user || { name: data.username, ...response });
 
-            // Redirecting to the main dashboard after success.
+            // Navigate the user to the application's home/dashboard.
             navigate('/');
         } catch (error) {
             console.error('Login Error:', error);
-            message.error('info incorrect');
+            message.error('Invalid credentials. Please check your client number, username, and password.');
         }
     };
 
