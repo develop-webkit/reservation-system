@@ -17,6 +17,9 @@ import useAuthStore from '../store/authStore';
 import { PERMISSIONS } from '../constants/permissions';
 import { ROLES, ROLE_NAMES, ROLE_COLORS } from '../constants/roles';
 
+// Roles that have full admin privileges
+const ADMIN_ROLES = [ROLES.SUPER_ADMIN, ROLES.MANAGER];
+
 const { SubMenu } = Menu;
 
 // Helper function to create AntD Menu items
@@ -85,7 +88,7 @@ const AntdSidebar = () => {
         };
 
         // Admin sees both Employee and Customer management
-        if (role === ROLES.SUPER_ADMIN) {
+        if (ADMIN_ROLES.includes(role)) {
             userManagementMenu.children.push(
                 {
                     name: 'Employees',

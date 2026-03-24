@@ -4,7 +4,7 @@ import { Form, Input, Button, Card, Typography, Space, message, Tag, Divider } f
 import { UserOutlined, LockOutlined, SafetyOutlined, NumberOutlined } from '@ant-design/icons';
 import { useForm, Controller } from 'react-hook-form';
 import useAuthStore from '../store/authStore';
-import { ROLE_COLORS } from '../constants/roles';
+import { ROLE_COLORS, ROLES } from '../constants/roles';
 import authApi from '../api/services/auth';
 
 const { Title, Text } = Typography;
@@ -118,9 +118,9 @@ const Login = () => {
                                     size="small"
                                     block
                                     onClick={() => quickLogin('1001', 'admin', 'password123')}
-                                    style={{ borderColor: ROLE_COLORS.SUPER_ADMIN }}
+                                    style={{ borderColor: ROLE_COLORS[ROLES.SUPER_ADMIN] }}
                                 >
-                                    <Tag color={ROLE_COLORS.SUPER_ADMIN}>Admin</Tag>
+                                    <Tag color={ROLE_COLORS[ROLES.SUPER_ADMIN]}>Admin</Tag>
                                     1001 / admin / password123
                                 </Button>
                             </Space>
