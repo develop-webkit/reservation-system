@@ -169,26 +169,26 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         );
 
         // Pre-process bookings for this room to determine vertical stacking for 'Parked' row
-        let roomBookings = bookingsData.filter(b => b.roomId === room.id);
+        let roomBookings = bookingsData.filter(b => b.roomId === room.id || b.roomId === room.name);
 
         // Map to store visual properties (like vertical track) for each booking
         const bookingLayout = {};
 
         if (isParkedRow) {
             // Sort by check-in time to greedy assign tracks
-            roomBookings.sort((a, b) => dayjs(a.checkIn).valueOf() - dayjs(b.checkIn).valueOf());
+            roomBookings.sort((a, b) => dayjs(a.checkIn || a.startDate).valueOf() - dayjs(b.checkIn || b.startDate).valueOf());
 
             const tracks = []; // Array of end times for each track
 
             roomBookings.forEach(booking => {
-                const startVal = dayjs(booking.checkIn).valueOf();
+                const startVal = dayjs(booking.checkIn || booking.startDate).valueOf();
                 let assignedTrack = -1;
 
                 // Find the first track where this booking fits
                 for (let i = 0; i < tracks.length; i++) {
                     if (tracks[i] <= startVal) {
                         assignedTrack = i;
-                        tracks[i] = dayjs(booking.checkOut).valueOf(); // Update track end time
+                        tracks[i] = dayjs(booking.checkOut || booking.endDate).valueOf(); // Update track end time
                         break;
                     }
                 }
@@ -196,7 +196,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 // If no track found, create a new one (up to a limit if desired, but flexible here)
                 if (assignedTrack === -1) {
                     assignedTrack = tracks.length;
-                    tracks.push(dayjs(booking.checkOut).valueOf());
+                    tracks.push(dayjs(booking.checkOut || booking.endDate).valueOf());
                 }
 
                 bookingLayout[booking.id] = { track: assignedTrack };
@@ -229,12 +229,14 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                             />
                         );
                     })}
-                    {bookingsData.filter(b => b.roomId === room.id).map(booking => {
-                        const pos = getGridPosition(booking.checkIn, booking.checkOut);
+                    {bookingsData.filter(b => b.roomId === room.id || b.roomId === room.name).map(booking => {
+                        const checkIn = booking.checkIn || booking.startDate;
+                        const checkOut = booking.checkOut || booking.endDate;
+                        const pos = getGridPosition(checkIn, checkOut);
                         if (!pos.isVisible) return null;
 
                         // Use the booking object directly as it comes from reservations.js now
-                        const displayBooking = booking;
+                        const displayBooking = { ...booking, checkIn, checkOut };
 
                         const ReservationInfoContent = (
                             <div style={{ width: '350px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>

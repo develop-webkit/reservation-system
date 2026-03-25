@@ -428,6 +428,7 @@ const ReservationsListPage = () => {
             ...prev,
             smartSearch: client.clientName,
             clientNo: client.clientNo,
+            masterResNo: client.clientNo, // Sourced from RMS SmartSearch per user request
             groupname: client.groupName,
             surname: client.surname,
             given: client.given,
@@ -469,8 +470,12 @@ const ReservationsListPage = () => {
             return;
         }
 
+        const generatedResNo = Math.floor(100000 + Math.random() * 900000).toString();
+
         const payload = {
             roomId: selectedRoom._id || selectedRoom.id, // Prefer _id for Mongo
+            reservationId: generatedResNo, // Changed from resNo to reservationId per user request
+            masterResNo: clientData.masterResNo !== '(New Reservation)' ? clientData.masterResNo : generatedResNo, 
             startDate: clientData.arrive.toISOString(),
             endDate: clientData.depart.toISOString(),
             guestName: clientData.surname, // Using surname as requested
@@ -478,7 +483,7 @@ const ReservationsListPage = () => {
             guestPhone: clientData.mobile || 'string',
             bookingSource: clientData.bkgSource || 'Contracted with Meals',
             voucher: clientData.voucherNo || 'string'
-        };
+        }; 
 
         console.log('Saving Booking Payload:', payload);
 
