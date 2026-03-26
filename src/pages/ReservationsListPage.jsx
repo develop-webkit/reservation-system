@@ -461,12 +461,13 @@ const ReservationsListPage = () => {
             return;
         }
 
-        // Find room ID
+        // Find room ID - check API rooms first, then fall back to local data
         const availableRooms = Array.isArray(roomsData) ? roomsData : (roomsData?.data || roomsData?.rooms || []);
-        const selectedRoom = availableRooms.find(r => r.name === clientData.area);
+        const selectedRoom = availableRooms.find(r => r.name === clientData.area)
+            || rooms.find(r => r.name === clientData.area);
 
         if (!selectedRoom) {
-            message.error(`Selected room '${clientData.area}' not found in database. Please ensure rooms are loaded.`);
+            message.error(`Selected room '${clientData.area}' not found.`);
             return;
         }
 
@@ -475,7 +476,6 @@ const ReservationsListPage = () => {
         const payload = {
             roomId: selectedRoom._id || selectedRoom.id, // Prefer _id for Mongo
             reservationId: generatedResNo, // Changed from resNo to reservationId per user request
-            masterResNo: clientData.masterResNo !== '(New Reservation)' ? clientData.masterResNo : generatedResNo, 
             startDate: clientData.arrive.toISOString(),
             endDate: clientData.depart.toISOString(),
             guestName: clientData.surname, // Using surname as requested
