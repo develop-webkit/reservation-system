@@ -17,6 +17,8 @@ import ReservationsListPage from './pages/ReservationsListPage';
 import CleanScreen from './pages/CleanScreen';
 import HousekeepingRoster from './pages/HousekeepingRoster';
 import BookingsByDate from './pages/BookingsByDate';
+import UserList from './pages/Users/UserList';
+import UserForm from './pages/Users/UserForm';
 
 const { Header, Sider, Content } = Layout;
 
@@ -80,6 +82,9 @@ function App() {
                   <Route path="/housekeeping/clean-screen" element={<CleanScreen />} />
                   <Route path="/housekeeping/roster" element={<HousekeepingRoster />} />
                   <Route path="/charts/bookingchart" element={<BookingChart />} />
+                  <Route path="/users/customers" element={<UserList />} />
+                  <Route path="/users/customers/new" element={<UserForm />} />
+                  <Route path="/users/customers/:id" element={<UserForm />} />
                   <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Page Not Found</h1>} />
                 </Routes>
               </MainLayout>

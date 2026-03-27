@@ -15,6 +15,7 @@ export const API_CONFIG = {
         ROOMS: '/rooms',
         RESERVATIONS: '/Reservations', // Note: Case sensitive based on user request
         USERS: '/users',
+        USER: '/user',
         AUTH: '/auth',
         GROUPS: '/groups',
         COMPANIES: '/companies',
