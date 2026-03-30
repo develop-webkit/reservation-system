@@ -99,17 +99,29 @@ const AntdSidebar = () => {
                     name: 'Customers',
                     path: '/users/customers',
                     icon: 'user'
+                },
+                {
+                    name: 'Clients',
+                    path: '/clients',
+                    icon: 'team'
                 }
             );
         }
 
         // Employee sees only Customer management
         else if (role === ROLES.EMPLOYEE) {
-            userManagementMenu.children.push({
-                name: 'Customers',
-                path: '/users/customers',
-                icon: 'user'
-            });
+            userManagementMenu.children.push(
+                {
+                    name: 'Customers',
+                    path: '/users/customers',
+                    icon: 'user'
+                },
+                {
+                    name: 'Clients',
+                    path: '/clients',
+                    icon: 'team'
+                }
+            );
         }
 
         // Customer sees only their profile

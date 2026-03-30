@@ -25,7 +25,8 @@ import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
 import { useRooms } from '../hooks/useRooms'; // Added explicit hook import
 import { useCreateBooking } from '../hooks/useBookings'; // Added explicit hook import
-import { mockClients } from '../data/mockClients';
+import { useClients } from '../hooks/useClients';
+// import { mockClients } from '../data/mockClients'; // Removed mock data
 import { COUNTRY_CODES } from '../data/countryCodes';
 import { companies } from '../data/companies';
 import { rooms, ROOM_TYPE_OPTIONS } from '../data/rooms';
@@ -280,6 +281,13 @@ const ReservationsListPage = () => {
     // --- Hooks for Data and Mutation ---
     const { data: roomsData } = useRooms();
     const createBookingMutation = useCreateBooking();
+    const { data: clientsFromApi } = useClients();
+    
+    // Normalize client data from API (in case it's wrapped in { data: [...] })
+    const allClients = useMemo(() => {
+        if (!clientsFromApi) return [];
+        return Array.isArray(clientsFromApi) ? clientsFromApi : (clientsFromApi.data || []);
+    }, [clientsFromApi]);
 
     // --- State for Form Fields ---
     const [clientData, setClientData] = useState({
@@ -352,12 +360,13 @@ const ReservationsListPage = () => {
     const filteredClients = useMemo(() => {
         if (!smartSearch.term) return [];
         const term = smartSearch.term.toLowerCase();
-        return mockClients.filter(c =>
-            c.clientName.toLowerCase().includes(term) ||
-            c.surname.toLowerCase().includes(term) ||
-            c.clientNo.includes(term)
+        return allClients.filter(c =>
+            (c.clientName || '').toLowerCase().includes(term) ||
+            (c.surname || '').toLowerCase().includes(term) ||
+            (c.clientNo || '').includes(term) ||
+            (c.email || '').toLowerCase().includes(term)
         );
-    }, [smartSearch.term]);
+    }, [smartSearch.term, allClients]);
 
     const filteredAreaOptions = useMemo(() => {
         return AREA_OPTIONS.filter(opt => opt.category === clientData.roomType);
@@ -439,9 +448,9 @@ const ReservationsListPage = () => {
             email2: '',
             blackList: 'No',
             clientType: client.clientType || 'Client',
-            company: client.company,
-            dateCreated: client.dateCreated || '05 Nov 2025',
-            dateModified: client.dateModified || '05 Nov 2025'
+            company: typeof client.company === 'object' ? client.company?.name : client.company,
+            dateCreated: client.createdAt ? dayjs(client.createdAt).format('DD MMM YYYY') : '05 Nov 2025',
+            dateModified: client.updatedAt ? dayjs(client.updatedAt).format('DD MMM YYYY') : '05 Nov 2025'
         }));
         setSmartSearch({ isOpen: false, term: '' });
     };
@@ -516,7 +525,7 @@ const ReservationsListPage = () => {
         { title: 'Client No', dataIndex: 'clientNo', key: 'clientNo', width: 80 },
         { title: 'Groupname', dataIndex: 'groupName', key: 'groupName', width: 120 },
         { title: 'Client Name', dataIndex: 'clientName', key: 'clientName', width: 150 },
-        { title: 'Company', dataIndex: 'company', key: 'company', width: 100 },
+        { title: 'Company', dataIndex: 'company', key: 'company', width: 100, render: (company) => typeof company === 'object' ? company?.name : company },
         { title: 'Address', dataIndex: 'address', key: 'address', width: 150 },
         { title: 'Mobile', dataIndex: 'mobile', key: 'mobile', width: 100 },
         { title: 'Phone AH', dataIndex: 'phoneAH', key: 'phoneAH', width: 100 },
