@@ -3,78 +3,88 @@
 
 
 /* Simple CSS Reset for consistent cross-browser display */
-html, body, #root {
-  height: 100%; /* Important for full-height AntD layout */
-  margin: 0;    /* Removes default browser margins */
-  padding: 0;   /* Removes default browser padding */
+html,
+body,
+#root {
+    height: 100%;
+    /* Important for full-height AntD layout */
+    margin: 0;
+    /* Removes default browser margins */
+    padding: 0;
+    /* Removes default browser padding */
 }
 
 /* Ensure all elements inherit box-sizing for predictable layout */
 *,
 *::before,
 *::after {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 /* Optional: Set the default Ant Design font */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  line-height: 1.5;
-  background-color: #f0f2f5; /* Matches AntD default background */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    line-height: 1.5;
+    background-color: #f0f2f5;
+    /* Matches AntD default background */
 }
 
 
 :root {
-  --sidebar-width: 250px;
-  --topbar-height: 50px;
-  --sidebar-bg-color: #0b1a2d; /* A dark blue close to the image */
+    --sidebar-width: 250px;
+    --topbar-height: 50px;
+    --sidebar-bg-color: #0b1a2d;
+    /* A dark blue close to the image */
 }
 
 /* ------------------------------------
    1. Sidebar Styling
    ------------------------------------ */
 #sidebar-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--sidebar-width);
-  height: 100vh;
-  background-color: var(--sidebar-bg-color);
-  color: white;
-  z-index: 1000;
-  overflow-y: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background-color: var(--sidebar-bg-color);
+    color: white;
+    z-index: 1000;
+    overflow-y: auto;
 }
 
 .sidebar-header {
-  padding: 10px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  height: var(--topbar-height);
-  display: flex;
-  align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
 }
 
 .components {
-  padding: 15px 0;
+    padding: 15px 0;
 }
 
 .components li {
-  padding: 0;
-  margin: 0;
+    padding: 0;
+    margin: 0;
 }
 
 .sidebar-link {
-  padding: 8px 15px;
-  color: #c9d6e4;
-  display: block;
-  text-decoration: none;
-  transition: all 0.3s;
+    padding: 8px 15px;
+    color: #c9d6e4;
+    display: block;
+    text-decoration: none;
+    transition: all 0.3s;
 }
 
-.sidebar-link:hover, .components li.active-link .sidebar-link {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  border-left: 5px solid #007bff; /* Highlight border */
-  padding-left: 10px; /* Adjust padding due to border */
+.sidebar-link:hover,
+.components li.active-link .sidebar-link {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 5px solid #007bff;
+    /* Highlight border */
+    padding-left: 10px;
+    /* Adjust padding due to border */
 }
 
 .sidebar-footer {
@@ -113,9 +123,11 @@ body {
    ------------------------------------ */
 #content-wrapper {
     margin-left: var(--sidebar-width);
-    padding-top: var(--topbar-height); /* Space for the fixed topbar */
+    padding-top: var(--topbar-height);
+    /* Space for the fixed topbar */
     min-height: 100vh;
-    background-color: #f8f9fa; /* Light background for main area */
+    background-color: #f8f9fa;
+    /* Light background for main area */
     width: 100%;
 }
 
@@ -133,20 +145,24 @@ body {
 
 .login-card {
     width: 100%;
-    max-width: 380px; /* Standard login card width */
+    max-width: 380px;
+    /* Standard login card width */
     background-color: white;
     border-radius: 12px;
 }
 
 .login-logo {
-    width: 60px; /* Sizing the logo */
+    width: 60px;
+    /* Sizing the logo */
 }
 
 /* Bootstrap Icon adjustments for the form */
 .input-group-text {
-    background-color: #f8f9fa; /* Light grey background */
+    background-color: #f8f9fa;
+    /* Light grey background */
     border-right: none;
 }
+
 .form-control {
     border-left: none;
 }
@@ -157,12 +173,14 @@ body {
    ------------------------------------ */
 .booking-chart-container {
     width: 100%;
-    overflow-x: hidden; /* Fixes the "Items all over the place" scroll issue */
+    overflow-x: hidden;
+    /* Fixes the "Items all over the place" scroll issue */
     background-color: #fff;
 }
 
 .chart-grid-wrapper {
-    overflow-x: auto; /* Allows horizontal scrolling of the chart area */
+    overflow-x: auto;
+    /* Allows horizontal scrolling of the chart area */
     overflow-y: hidden;
 }
 
@@ -171,14 +189,17 @@ body {
     display: grid;
     /* Grid gap is 1px for the day separators */
     grid-gap: 1px;
-    background-color: #dee2e6; /* Light grey for grid lines */
+    background-color: #dee2e6;
+    /* Light grey for grid lines */
     align-items: center;
 }
 
 /* Room/Date Header Styling */
 .chart-date-header {
-    background-color: #f8f9fa; /* Lighter header background */
-    position: sticky; /* Sticky header when scrolling down */
+    background-color: #f8f9fa;
+    /* Lighter header background */
+    position: sticky;
+    /* Sticky header when scrolling down */
     top: 0;
     z-index: 50;
     border-bottom: 2px solid #dee2e6;
@@ -190,14 +211,15 @@ body {
     flex-direction: column;
     justify-content: center;
     background-color: white;
-    border:1px solid #cecece;
-    border-bottom:0;
-    border-left:0px;
+    border: 1px solid #cecece;
+    border-bottom: 0;
+    border-left: 0px;
     text-align: center;
 }
 
 .date-cell.weekend {
-    background-color: #fff3cd; /* Light yellow background for weekends */
+    background-color: #fff3cd;
+    /* Light yellow background for weekends */
 }
 
 /* Room Type Grouping Header */
@@ -206,11 +228,13 @@ body {
     font-weight: bold;
     cursor: pointer;
     padding-left: 10px !important;
-    grid-column: 1 / -1; /* Spans the entire width */
+    grid-column: 1 / -1;
+    /* Spans the entire width */
     height: 30px;
     display: flex;
     align-items: center;
 }
+
 .room-type-header.collapsed {
     background-color: #e0e0e0;
 }
@@ -219,11 +243,13 @@ body {
 /* Individual Room Row Styling */
 .room-data-row {
     height: 40px;
-    background-color: white; /* Room rows themselves are white */
+    background-color: white;
+    /* Room rows themselves are white */
 }
 
 .room-name-cell {
-    background-color: #f8f9fa; /* Separates the room column visually */
+    background-color: #f8f9fa;
+    /* Separates the room column visually */
     border-right: 1px solid #dee2e6;
     height: 100%;
 }
@@ -237,15 +263,30 @@ body {
     overflow: hidden;
     line-height: 1.5;
     white-space: nowrap;
+
     /* Custom colors from image */
-    &.bg-success { background-color: #28a745 !important; }
-    &.bg-info { background-color: #17a2b8 !important; }
-    &.bg-warning { background-color: #ffc107 !important; color: #333 !important;} /* Warning bar is dark text */
-    &.bg-danger { background-color: #dc3545 !important; }
+    &.bg-success {
+        background-color: #28a745 !important;
+    }
+
+    &.bg-info {
+        background-color: #17a2b8 !important;
+    }
+
+    &.bg-warning {
+        background-color: #ffc107 !important;
+        color: #333 !important;
+    }
+
+    /* Warning bar is dark text */
+    &.bg-danger {
+        background-color: #dc3545 !important;
+    }
 }
 
 /* Placeholder for the floating hover/context menus */
-.hover-info-popup, .context-menu {
+.hover-info-popup,
+.context-menu {
     position: absolute;
     z-index: 2000;
     background: white;
@@ -258,18 +299,20 @@ body {
 /* Update base link hover/active styles */
 .sidebar-link {
     /* ... existing styles ... */
-    cursor: pointer; /* Ensure non-link parents are clickable */
+    cursor: pointer;
+    /* Ensure non-link parents are clickable */
 }
 
 /* Base Active/Hover Style for Parent and Child */
-.sidebar-link:hover, 
+.sidebar-link:hover,
 .components li.active-link .sidebar-link,
 .components li.active-link-sub .sidebar-link,
-.sidebar-link.active-link { /* Style for parent when clicked */
+.sidebar-link.active-link {
+    /* Style for parent when clicked */
     color: white !important;
     background: rgba(255, 255, 255, 0.1) !important;
-    border-left: 3px solid #007bff; 
-    padding-left: 12px; 
+    border-left: 3px solid #007bff;
+    padding-left: 12px;
 }
 
 /* Sub-Menu Styles */
@@ -279,8 +322,10 @@ body {
     margin-left: 0;
     list-style: none;
 }
+
 .sub-menu .sidebar-link.sub-link {
-    padding-left: 30px; /* Indent sub-items */
+    padding-left: 30px;
+    /* Indent sub-items */
     font-size: 0.95rem;
     color: #c9d6e4;
     border-left: none !important;
@@ -305,6 +350,7 @@ body {
 .collapse:not(.show) {
     display: none;
 }
+
 .collapse.show {
     display: block;
 }
@@ -314,19 +360,23 @@ body {
    ------------------------------------ */
 .reservation-tooltip-popup {
     /* Based on the image: Dark blue header, black/dark background for body */
-    background-color: #2c3e50; /* Dark background for the body */
+    background-color: #2c3e50;
+    /* Dark background for the body */
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     border-radius: 4px;
     width: 300px;
-    z-index: 5000; /* Ensure it's on top of everything */
-    pointer-events: none; /* Crucial: Allows clicking through to elements underneath */
+    z-index: 5000;
+    /* Ensure it's on top of everything */
+    pointer-events: none;
+    /* Crucial: Allows clicking through to elements underneath */
     transition: opacity 0.2s ease-in-out;
 }
 
 .reservation-tooltip-popup .tooltip-header {
-    background-color: #1f3044; /* Slightly darker header */
+    background-color: #1f3044;
+    /* Slightly darker header */
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -341,7 +391,8 @@ body {
 
 /* Highlighted green/text-success color for Arrive/Depart/Status */
 .reservation-tooltip-popup .tooltip-detail .text-success {
-    color: #4CAF50 !important; /* Custom green that matches the image */
+    color: #4CAF50 !important;
+    /* Custom green that matches the image */
 }
 
 /* ------------------------------------
@@ -354,18 +405,22 @@ body {
 
 .user-dropdown .dropdown-menu {
     position: absolute;
-    top: 100%; /* Position right below the button */
+    top: 100%;
+    /* Position right below the button */
     right: 0;
-    min-width: 280px; /* Width based on the image */
+    min-width: 280px;
+    /* Width based on the image */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     border: none;
     padding: 0;
     border-radius: 4px;
-    z-index: 1050; /* Above TopBar elements */
+    z-index: 1050;
+    /* Above TopBar elements */
 }
 
 .user-dropdown .dropdown-header {
-    background-color: #0b1a2d; /* Dark blue background from sidebar */
+    background-color: #0b1a2d;
+    /* Dark blue background from sidebar */
     color: white;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
@@ -392,7 +447,8 @@ body {
 }
 
 .profile-nav li:hover:not(.active-profile-tab) {
-    background-color: #e9ecef; /* Light hover effect */
+    background-color: #e9ecef;
+    /* Light hover effect */
 }
 
 /* Ensure 'cursor-pointer' is defined if not using a utility library */
@@ -411,7 +467,7 @@ body {
 .chart-grid-wrapper {
     /* Set the chart wrapper to be a vertical flex container to stack header and body */
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
     /* The overflowY: auto is already on the inline style in BookingChart.jsx */
 }
 
@@ -423,8 +479,9 @@ body {
        Alternatively, just a simple div if the rows manage their own grid flow.
        We will stick to stacking rows for simplicity:
     */
-    display: flex; 
-    flex-direction: column; /* Stack Room Rows vertically */
+    display: flex;
+    flex-direction: column;
+    /* Stack Room Rows vertically */
 }
 
 /* The RoomRow grid and the ChartHeader grid rows must use the same grid-template-columns. 
@@ -435,8 +492,8 @@ body {
 
 /* --- END CORE CHART STYLES --- */
 
-.modal-dialog.modal-xl{
-    background-color:#fff;
+.modal-dialog.modal-xl {
+    background-color: #fff;
 }
 
 
@@ -444,45 +501,47 @@ body {
 
 /* --- Main Chart Container (Card Body) --- */
 .booking-chart-container {
-    overflow-x: auto; 
+    overflow-x: auto;
     min-width: 1350px;
-    padding-bottom: 20px; 
+    padding-bottom: 20px;
 }
 
 /* --- Header Row Structure --- */
 .chart-header {
     display: grid;
     grid-template-columns: 150px 1fr;
-    position: sticky; 
+    position: sticky;
     top: 0;
     z-index: 20;
-    background-color: #fff; 
+    background-color: #fff;
 
 }
 
-.chart-header > .room-label {
+.chart-header>.room-label {
     padding: 8px;
     font-weight: bold;
     min-width: 150px;
     color: #141414;
-    border:1px solid #cecece;
+    border: 1px solid #cecece;
 }
 
 .date-cell-container {
-display: grid;
+    display: grid;
     /* Use dynamic columns and flexible width */
-    grid-template-columns: repeat(var(--visible-days, 30), var(--cell-width, 40px)); 
-    width: 100%; /* Fill the available space */
+    grid-template-columns: repeat(var(--visible-days, 30), var(--cell-width, 40px));
+    width: 100%;
+    /* Fill the available space */
     border-bottom: 1px solid #cecece;
 }
 
 /* --- Room Row Structure (NEW STRUCTURE) --- */
 .chart-row-grid {
     display: grid;
-    grid-template-columns: 150px 1fr; /* Label is fixed, grid is flexible */
+    grid-template-columns: 150px 1fr;
+    /* Label is fixed, grid is flexible */
     width: 100%;
     position: relative;
-    height: 50px; 
+    height: 50px;
     border-bottom: 1px solid #cecece;
 }
 
@@ -500,9 +559,9 @@ display: grid;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    border:1px solid #cecece;
-    border-bottom:0;
-    border-top:0;
+    border: 1px solid #cecece;
+    border-bottom: 0;
+    border-top: 0;
 }
 
 
@@ -512,7 +571,8 @@ display: grid;
     /* Use dynamic columns and flexible width */
     grid-template-columns: repeat(var(--visible-days), 1fr);
     display: grid;
-    width: 100%; /* Must be 100% to fill the parent container */
+    width: 100%;
+    /* Must be 100% to fill the parent container */
     position: relative;
 }
 
@@ -526,13 +586,13 @@ display: grid;
 .booking-item {
     position: relative;
     height: 30px;
-    margin-top:10px; 
+    margin-top: 10px;
     border-radius: 4px;
-    padding:0  10px;
+    padding: 0 10px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    cursor: grab; 
+    cursor: grab;
     transition: opacity 0.2s;
-    grid-row: 1; 
+    grid-row: 1;
     z-index: 5;
     align-items: center;
     display: flex;
@@ -547,11 +607,11 @@ display: grid;
 .booking-item .resizer-handle {
     position: absolute;
     top: 0;
-    right: 0; 
-    width: 8px; 
+    right: 0;
+    width: 8px;
     height: 100%;
-    background: rgba(255, 255, 255, 0.3); 
-    cursor: ew-resize; 
+    background: rgba(255, 255, 255, 0.3);
+    cursor: ew-resize;
     z-index: 10;
 }
 
@@ -563,4 +623,3 @@ display: grid;
 .booking-item:hover .resizer-handle {
     background: rgba(255, 255, 255, 0.5);
 }
-
