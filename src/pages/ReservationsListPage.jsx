@@ -541,19 +541,22 @@ const ReservationsListPage = () => {
 
             if (reservation.status === 'Cancelled' || reservation.status === 'No Show') return false;
 
-            const resCheckIn = dayjs(reservation.checkIn);
-            const resCheckOut = dayjs(reservation.checkOut);
+            const resCheckInStr = dayjs(reservation.checkIn).format('YYYY-MM-DD');
+            const resCheckOutStr = dayjs(reservation.checkOut).format('YYYY-MM-DD');
+            const aDate = arriveDate.format('YYYY-MM-DD');
+            const dDate = departDate.format('YYYY-MM-DD');
             
-            // Compare at the "day" level because the backend truncates times from checkIn/checkOut
-            const isOverlap = arriveDate.isBefore(resCheckOut, 'day') && departDate.isAfter(resCheckIn, 'day');
+            // Compare string dates to be 100% immune to local timezone hours shifting
+            // Overlap happens if: start1 < end2 AND end1 > start2
+            const isOverlap = aDate < resCheckOutStr && dDate > resCheckInStr;
             
             console.log('Comparing vs Reservation:', {
                 id: reservation._id || reservation.id,
                 resNo: reservation.resNo,
                 status: reservation.status,
                 resRoomId,
-                checkIn: resCheckIn.format('YYYY-MM-DD'),
-                checkOut: resCheckOut.format('YYYY-MM-DD'),
+                checkIn: resCheckInStr,
+                checkOut: resCheckOutStr,
                 overlapResult: isOverlap
             });
 
