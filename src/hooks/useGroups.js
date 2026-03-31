@@ -1,26 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '../api/client';
 import API_CONFIG from '../api/config';
+import apiClient from '../api/client';
 
-export const useCompanies = () => {
+export const useGroups = () => {
     return useQuery({
-        queryKey: ['companies'],
+        queryKey: ['groups'],
         queryFn: async () => {
-            const response = await apiClient.get(API_CONFIG.ENDPOINTS.COMPANIES);
+            const response = await apiClient.get(API_CONFIG.ENDPOINTS.GROUPS);
             return response.data;
         },
     });
 };
 
-export const useCreateCompany = () => {
+export const useCreateGroup = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (data) => {
-            const response = await apiClient.post(API_CONFIG.ENDPOINTS.COMPANIES, data);
+            const response = await apiClient.post(API_CONFIG.ENDPOINTS.GROUPS, data);
             return response.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['companies'] });
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
         },
     });
 };

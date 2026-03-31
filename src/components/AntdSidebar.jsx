@@ -104,6 +104,11 @@ const AntdSidebar = () => {
                     name: 'Clients',
                     path: '/clients',
                     icon: 'team'
+                },
+                {
+                    name: 'General Management',
+                    path: '/users/management',
+                    icon: 'setting'
                 }
             );
         }

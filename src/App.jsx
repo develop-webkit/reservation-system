@@ -21,6 +21,7 @@ import UserList from './pages/Users/UserList';
 import UserForm from './pages/Users/UserForm';
 import ClientList from './pages/Clients/ClientList';
 import ClientForm from './pages/Clients/ClientForm';
+import UserManagementTabs from './pages/Users/UserManagementTabs';
 
 const { Header, Sider, Content } = Layout;
 
@@ -87,6 +88,7 @@ function App() {
                   <Route path="/users/customers" element={<UserList />} />
                   <Route path="/users/customers/new" element={<UserForm />} />
                   <Route path="/users/customers/:id" element={<UserForm />} />
+                  <Route path="/users/management" element={<UserManagementTabs />} />
                   <Route path="/clients" element={<ClientList />} />
                   <Route path="/clients/new" element={<ClientForm />} />
                   <Route path="/clients/:id" element={<ClientForm />} />

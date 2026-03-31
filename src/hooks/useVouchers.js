@@ -1,26 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '../api/client';
 import API_CONFIG from '../api/config';
+import apiClient from '../api/client';
 
-export const useCompanies = () => {
+export const useVouchers = () => {
     return useQuery({
-        queryKey: ['companies'],
+        queryKey: ['vouchers'],
         queryFn: async () => {
-            const response = await apiClient.get(API_CONFIG.ENDPOINTS.COMPANIES);
+            const response = await apiClient.get(API_CONFIG.ENDPOINTS.VOUCHERS);
             return response.data;
         },
     });
 };
 
-export const useCreateCompany = () => {
+export const useCreateVoucher = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (data) => {
-            const response = await apiClient.post(API_CONFIG.ENDPOINTS.COMPANIES, data);
+            const response = await apiClient.post(API_CONFIG.ENDPOINTS.VOUCHERS, data);
             return response.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['companies'] });
+            queryClient.invalidateQueries({ queryKey: ['vouchers'] });
         },
     });
 };
