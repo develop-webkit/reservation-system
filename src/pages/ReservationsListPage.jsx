@@ -23,8 +23,8 @@ import {
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
-import { useRooms } from '../hooks/useRooms'; // Added explicit hook import
-import { useCreateBooking } from '../hooks/useBookings'; // Added explicit hook import
+import { useRooms } from '../hooks/useRooms';
+import { useCreateReservation } from '../hooks/useReservations';
 import { useClients } from '../hooks/useClients';
 // import { mockClients } from '../data/mockClients'; // Removed mock data
 import { COUNTRY_CODES } from '../data/countryCodes';
@@ -280,7 +280,7 @@ const ReservationsListPage = () => {
 
     // --- Hooks for Data and Mutation ---
     const { data: roomsData } = useRooms();
-    const createBookingMutation = useCreateBooking();
+    const createReservationMutation = useCreateReservation();
     const { data: clientsFromApi } = useClients();
     
     // Normalize client data from API (in case it's wrapped in { data: [...] })
@@ -334,7 +334,11 @@ const ReservationsListPage = () => {
         avgUpgradeTariff: '0.00',
         accomm: '0.00',
         ar: '0.00',
-        activeAccounts: '(None)'
+        activeAccounts: '(None)',
+        clientId: '',
+        companyId: '',
+        children: 0,
+        infants: 0
     });
 
     // Update state when query params change
@@ -449,6 +453,8 @@ const ReservationsListPage = () => {
             blackList: 'No',
             clientType: client.clientType || 'Client',
             company: typeof client.company === 'object' ? client.company?.name : client.company,
+            companyId: typeof client.company === 'object' ? client.company?._id : client.company,
+            clientId: client._id || client.id,
             dateCreated: client.createdAt ? dayjs(client.createdAt).format('DD MMM YYYY') : '05 Nov 2025',
             dateModified: client.updatedAt ? dayjs(client.updatedAt).format('DD MMM YYYY') : '05 Nov 2025'
         }));
@@ -483,26 +489,36 @@ const ReservationsListPage = () => {
         const generatedResNo = Math.floor(100000 + Math.random() * 900000).toString();
 
         const payload = {
-            roomId: selectedRoom._id || selectedRoom.id, // Prefer _id for Mongo
-            reservationId: generatedResNo, // Changed from resNo to reservationId per user request
-            startDate: clientData.arrive.toISOString(),
-            endDate: clientData.depart.toISOString(),
-            guestName: clientData.surname, // Using surname as requested
-            guestEmail: clientData.email || 'string', // fallback as per example
-            guestPhone: clientData.mobile || 'string',
-            bookingSource: clientData.bkgSource || 'Contracted with Meals',
-            voucher: clientData.voucherNo || 'string'
-        }; 
+            resNo: clientData.resNo === '(New Reservation)' ? `RES-${generatedResNo}` : clientData.resNo,
+            masterResNo: clientData.masterResNo === '(New Reservation)' ? `MASTER-${generatedResNo}` : clientData.masterResNo,
+            room: selectedRoom._id || selectedRoom.id,
+            client: clientData.clientId || undefined,
+            guestName: `${clientData.given} ${clientData.surname}`.trim(),
+            company: clientData.companyId || undefined,
+            checkIn: clientData.arrive.toISOString(),
+            checkOut: clientData.depart.toISOString(),
+            arriveTime: dayjs(clientData.arrive).format('HH:mm'),
+            departTime: dayjs(clientData.depart).format('HH:mm'),
+            status: clientData.status || 'Confirmed',
+            adults: clientData.adults || 1,
+            children: clientData.children || 0,
+            infants: clientData.infants || 0,
+            tariffType: clientData.tariffType || 'Corporate',
+            totalTariff: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
+            balance: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
+            bookingSource: clientData.bkgSource || 'Direct',
+            isFixed: clientData.fixed === 'Yes',
+            importId: `IMPORT-${generatedResNo}`
+        };
 
-        console.log('Saving Booking Payload:', payload);
+        console.log('Saving Reservation Payload:', payload);
 
-        createBookingMutation.mutate(payload, {
+        createReservationMutation.mutate(payload, {
             onSuccess: () => {
                 message.success('Reservation created successfully!');
-                // Optional: reset form or navigate
             },
             onError: (err) => {
-                console.error('Booking creation error:', err);
+                console.error('Reservation creation error:', err);
                 message.error('Failed to create reservation: ' + (err.response?.data?.message || err.message));
             }
         });
@@ -674,7 +690,7 @@ const ReservationsListPage = () => {
                                 size="small"
                                 icon={<SaveOutlined />}
                                 onClick={handleSaveReservation}
-                                loading={createBookingMutation.isLoading || createBookingMutation.isPending}
+                                loading={createReservationMutation.isLoading}
                             />
                             <Button type="text" size="small" icon={<MoreOutlined />} />
                         </div>

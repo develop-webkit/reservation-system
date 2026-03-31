@@ -46,7 +46,13 @@ const UserManagementTabs = () => {
     };
 
     const onFinishVoucher = (values) => {
-        createVoucherMutation.mutate(values, {
+        // Normalize expiryDate from DatePicker (dayjs) to ISO string
+        const payload = {
+            ...values,
+            expiryDate: values.expiryDate ? values.expiryDate.toISOString() : undefined
+        };
+
+        createVoucherMutation.mutate(payload, {
             onSuccess: () => {
                 message.success('Voucher created successfully');
                 voucherForm.resetFields();
