@@ -24,7 +24,7 @@ import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
 import { useRooms } from '../hooks/useRooms';
-import { useCreateReservation } from '../hooks/useReservations';
+import { useCreateReservation, useReservations } from '../hooks/useReservations';
 import { useClients } from '../hooks/useClients';
 import { useCompanies } from '../hooks/useCompanies';
 import { useVouchers } from '../hooks/useVouchers';
@@ -268,6 +268,7 @@ const ReservationsListPage = () => {
     const { data: companiesFromApi } = useCompanies();
     const { data: vouchersFromApi } = useVouchers();
     const { data: clientsFromApi } = useClients();
+    const { data: reservationsFromApi } = useReservations();
     const createReservationMutation = useCreateReservation();
 
     // --- Data Normalization ---
@@ -275,6 +276,11 @@ const ReservationsListPage = () => {
         if (!roomsFromApi) return [];
         return Array.isArray(roomsFromApi) ? roomsFromApi : (roomsFromApi.data || roomsFromApi.rooms || []);
     }, [roomsFromApi]);
+
+    const allReservations = useMemo(() => {
+        if (!reservationsFromApi) return [];
+        return Array.isArray(reservationsFromApi) ? reservationsFromApi : (reservationsFromApi.data || reservationsFromApi.reservations || []);
+    }, [reservationsFromApi]);
 
     const allCompanies = useMemo(() => {
         if (!companiesFromApi) return [];
@@ -517,6 +523,48 @@ const ReservationsListPage = () => {
             return;
         }
 
+        const arriveDate = dayjs(clientData.arrive);
+        const departDate = dayjs(clientData.depart);
+
+        console.log('--- Overlap Check ---');
+        console.log('New Reservation Dates:', { arrive: arriveDate.format(), depart: departDate.format(), room: selectedRoom._id || selectedRoom.id });
+        console.log('Total Reservations Count:', allReservations.length);
+
+        // Check for room availability (no overlapping reservations)
+        const isOverlapping = allReservations.some(reservation => {
+            if (clientData.resNo !== '(New Reservation)' && reservation.resNo === clientData.resNo) return false;
+
+            // The backend maps the room to `roomId` inside the response data.
+            const resRoomId = reservation.roomId || reservation.room?._id || reservation.room?.id || reservation.room;
+            const isSameRoom = resRoomId === selectedRoom._id || resRoomId === selectedRoom.id || resRoomId === selectedRoom.name;
+            if (!isSameRoom) return false;
+
+            if (reservation.status === 'Cancelled' || reservation.status === 'No Show') return false;
+
+            const resCheckIn = dayjs(reservation.checkIn);
+            const resCheckOut = dayjs(reservation.checkOut);
+            
+            // Compare at the "day" level because the backend truncates times from checkIn/checkOut
+            const isOverlap = arriveDate.isBefore(resCheckOut, 'day') && departDate.isAfter(resCheckIn, 'day');
+            
+            console.log('Comparing vs Reservation:', {
+                id: reservation._id || reservation.id,
+                resNo: reservation.resNo,
+                status: reservation.status,
+                resRoomId,
+                checkIn: resCheckIn.format('YYYY-MM-DD'),
+                checkOut: resCheckOut.format('YYYY-MM-DD'),
+                overlapResult: isOverlap
+            });
+
+            return isOverlap;
+        });
+
+        if (isOverlapping) {
+             message.error(`Cannot reserve ${clientData.area} from ${arriveDate.format('MMM D')} to ${departDate.format('MMM D')} because it is already booked. Please select different dates or room.`);
+             return;
+        }
+
         // --- GUID Check: Ensure room ID is a valid MongoDB ObjectId ---
         const mongoRoomId = selectedRoom._id || selectedRoom.id;
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(mongoRoomId);
@@ -561,7 +609,10 @@ const ReservationsListPage = () => {
             balance: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
             bookingSource: clientData.bkgSource || 'Direct',
             isFixed: clientData.fixed === 'Yes',
-            importId: `IMPORT-${generatedResNo}`
+            importId: `IMPORT-${generatedResNo}`,
+            groupName: clientData.groupname || undefined,
+            confirmedBy: clientData.confirmedBy || undefined,
+            confirmedDate: clientData.confirmed || undefined
         };
 
         console.log('Saving Reservation Payload:', payload);
