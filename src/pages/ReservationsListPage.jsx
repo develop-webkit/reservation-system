@@ -26,11 +26,9 @@ import { message } from 'antd'; // Added message import
 import { useRooms } from '../hooks/useRooms';
 import { useCreateReservation } from '../hooks/useReservations';
 import { useClients } from '../hooks/useClients';
-// import { mockClients } from '../data/mockClients'; // Removed mock data
+import { useCompanies } from '../hooks/useCompanies';
+import { useVouchers } from '../hooks/useVouchers';
 import { COUNTRY_CODES } from '../data/countryCodes';
-import { companies } from '../data/companies';
-import { rooms, ROOM_TYPE_OPTIONS } from '../data/rooms';
-import { VOUCHER_OPTIONS } from '../data/vouchers';
 import {
     TITLE_OPTIONS,
     CLIENT_TYPE_OPTIONS,
@@ -43,19 +41,6 @@ const { Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const AREA_OPTIONS = rooms.map(room => ({
-    area: room.name,
-    cleanStatus: room.defaultCleanStatus,
-    description: '',
-    resCount: 0, // Placeholder
-    category: room.category,
-    // Rich fields from data set
-    outOfOrder: room.outOfOrder ? 'Yes' : 'No',
-    lastCleanDate: room.lastCleanDate,
-    daysSinceLastClean: room.daysSinceLastClean
-}));
-
-const COMPANY_OPTIONS = companies;
 
 const FormField = ({
     label,
@@ -279,15 +264,63 @@ const ReservationsListPage = () => {
     const roomTypeParam = searchParams.get('roomType');
 
     // --- Hooks for Data and Mutation ---
-    const { data: roomsData } = useRooms();
-    const createReservationMutation = useCreateReservation();
+    const { data: roomsFromApi } = useRooms();
+    const { data: companiesFromApi } = useCompanies();
+    const { data: vouchersFromApi } = useVouchers();
     const { data: clientsFromApi } = useClients();
-    
-    // Normalize client data from API (in case it's wrapped in { data: [...] })
+    const createReservationMutation = useCreateReservation();
+
+    // --- Data Normalization ---
+    const allRooms = useMemo(() => {
+        if (!roomsFromApi) return [];
+        return Array.isArray(roomsFromApi) ? roomsFromApi : (roomsFromApi.data || roomsFromApi.rooms || []);
+    }, [roomsFromApi]);
+
+    const allCompanies = useMemo(() => {
+        if (!companiesFromApi) return [];
+        return Array.isArray(companiesFromApi) ? companiesFromApi : (companiesFromApi.data || []);
+    }, [companiesFromApi]);
+
+    const allVouchers = useMemo(() => {
+        if (!vouchersFromApi) return [];
+        const items = Array.isArray(vouchersFromApi) ? vouchersFromApi : (vouchersFromApi.data || []);
+        return items.map(v => typeof v === 'object' ? v.code : v);
+    }, [vouchersFromApi]);
+
     const allClients = useMemo(() => {
         if (!clientsFromApi) return [];
         return Array.isArray(clientsFromApi) ? clientsFromApi : (clientsFromApi.data || []);
     }, [clientsFromApi]);
+
+    // UI Options mapping
+    const dynamicAreaOptions = useMemo(() => {
+        return allRooms.map(room => ({
+            area: room.name,
+            cleanStatus: room.status || 'Clean',
+            description: room.category || '',
+            resCount: 0,
+            category: room.category,
+            outOfOrder: room.status === 'Out of Order' ? 'Yes' : 'No',
+            lastCleanDate: room.updatedAt ? dayjs(room.updatedAt).format('YYYY-MM-DD') : '-',
+            daysSinceLastClean: 0,
+            _id: room._id || room.id
+        }));
+    }, [allRooms]);
+
+    const dynamicRoomTypeOptions = useMemo(() => {
+        const categories = allRooms.map(r => r.category).filter(Boolean);
+        return [...new Set(categories)];
+    }, [allRooms]);
+
+    const dynamicCompanyOptions = useMemo(() => {
+        return allCompanies.map(c => ({
+            name: c.name,
+            address: c.address || '',
+            creditHold: c.creditHold ? 'Yes' : 'No',
+            tradingAs: c.tradingAs || '',
+            _id: c._id || c.id
+        }));
+    }, [allCompanies]);
 
     // --- State for Form Fields ---
     const [clientData, setClientData] = useState({
@@ -373,15 +406,15 @@ const ReservationsListPage = () => {
     }, [smartSearch.term, allClients]);
 
     const filteredAreaOptions = useMemo(() => {
-        return AREA_OPTIONS.filter(opt => opt.category === clientData.roomType);
-    }, [clientData.roomType]);
+        return dynamicAreaOptions.filter(opt => opt.category === clientData.roomType);
+    }, [clientData.roomType, dynamicAreaOptions]);
 
     const handleFieldChange = (field, value) => {
         setClientData(prev => {
             const newData = { ...prev, [field]: value };
 
             if (field === 'roomType') {
-                const firstAreaMatch = AREA_OPTIONS.find(opt => opt.category === value);
+                const firstAreaMatch = dynamicAreaOptions.find(opt => opt.category === value);
                 if (firstAreaMatch) {
                     newData.area = firstAreaMatch.area;
                 } else {
@@ -476,14 +509,34 @@ const ReservationsListPage = () => {
             return;
         }
 
-        // Find room ID - check API rooms first, then fall back to local data
-        const availableRooms = Array.isArray(roomsData) ? roomsData : (roomsData?.data || roomsData?.rooms || []);
-        const selectedRoom = availableRooms.find(r => r.name === clientData.area)
-            || rooms.find(r => r.name === clientData.area);
+        // Find room ID - check API rooms first
+        const selectedRoom = allRooms.find(r => r.name === clientData.area);
 
         if (!selectedRoom) {
             message.error(`Selected room '${clientData.area}' not found.`);
             return;
+        }
+
+        // --- GUID Check: Ensure room ID is a valid MongoDB ObjectId ---
+        const mongoRoomId = selectedRoom._id || selectedRoom.id;
+        const isMongoId = /^[0-9a-fA-F]{24}$/.test(mongoRoomId);
+
+        if (!isMongoId) {
+            console.warn('ID provided for room is not a Mongo ID:', mongoRoomId);
+            message.error(`Room ID error: '${mongoRoomId}' is not a valid database ID. Please wait for rooms to load.`);
+            return;
+        }
+
+        // Validate Client and Company IDs if provided (must be 24-char hex if not blank)
+        const isValidId = (id) => !id || /^[0-9a-fA-F]{24}$/.test(id);
+        
+        if (!isValidId(clientData.clientId)) {
+             message.error(`Invalid Client ID format. Please select a client from SmartSearch.`);
+             return;
+        }
+        if (!isValidId(clientData.companyId)) {
+             message.error(`Invalid Company ID format.`);
+             return;
         }
 
         const generatedResNo = Math.floor(100000 + Math.random() * 900000).toString();
@@ -633,7 +686,7 @@ const ReservationsListPage = () => {
                 <FormField label="Date Created" field="dateCreated" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 <FormField label="Date Modified" field="dateModified" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 <FormField label="Client Type" field="clientType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={CLIENT_TYPE_OPTIONS} />
-                <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={COMPANY_OPTIONS} suffix={<SearchOutlined />} />
+                <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined />} />
             </div>
 
             {/* Main Content Area (Reservation + Account) with Overlay Container */}
@@ -703,12 +756,12 @@ const ReservationsListPage = () => {
                     <FormField label="Nights" field="nights" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Adults" field="adults" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Tariff Type" field="tariffType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TARIFF_TYPE_OPTIONS} />
-                    <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={ROOM_TYPE_OPTIONS} />
+                    <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicRoomTypeOptions} />
                     <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={filteredAreaOptions} />
                     <FormField label="Bkg Source" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
                     <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
-                    <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={COMPANY_OPTIONS} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
-                    <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={VOUCHER_OPTIONS} />
+                    <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
+                    <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={allVouchers} />
                     <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Date Made" field="dateMade" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Cancelled" field="cancelled" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
