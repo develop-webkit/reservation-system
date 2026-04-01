@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"mockChartData\\\\|mockReservations\\\\|mockUsers\\\\|mockClients\\\\|mockData\\\\|mockApi\" d:projectsreservation-systemsrc --include=*.jsx --include=*.js)"
+    ]
+  }
+}

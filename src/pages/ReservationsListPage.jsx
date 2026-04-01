@@ -25,6 +25,7 @@ import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
 import { useRooms } from '../hooks/useRooms';
 import { useCreateReservation, useReservations } from '../hooks/useReservations';
+import { useBookings } from '../hooks/useBookings';
 import { useClients } from '../hooks/useClients';
 import { useCompanies } from '../hooks/useCompanies';
 import { useVouchers } from '../hooks/useVouchers';
@@ -269,6 +270,7 @@ const ReservationsListPage = () => {
     const { data: vouchersFromApi } = useVouchers();
     const { data: clientsFromApi } = useClients();
     const { data: reservationsFromApi } = useReservations();
+    const { data: bookingsFromApi } = useBookings();
     const createReservationMutation = useCreateReservation();
 
     // --- Data Normalization ---
@@ -281,6 +283,11 @@ const ReservationsListPage = () => {
         if (!reservationsFromApi) return [];
         return Array.isArray(reservationsFromApi) ? reservationsFromApi : (reservationsFromApi.data || reservationsFromApi.reservations || []);
     }, [reservationsFromApi]);
+
+    const allBookings = useMemo(() => {
+        if (!bookingsFromApi) return [];
+        return Array.isArray(bookingsFromApi) ? bookingsFromApi : (bookingsFromApi.data || bookingsFromApi.bookings || []);
+    }, [bookingsFromApi]);
 
     const allCompanies = useMemo(() => {
         if (!companiesFromApi) return [];
@@ -526,48 +533,6 @@ const ReservationsListPage = () => {
         const arriveDate = dayjs(clientData.arrive);
         const departDate = dayjs(clientData.depart);
 
-        console.log('--- Overlap Check ---');
-        console.log('New Reservation Dates:', { arrive: arriveDate.format(), depart: departDate.format(), room: selectedRoom._id || selectedRoom.id });
-        console.log('Total Reservations Count:', allReservations.length);
-
-        // Check for room availability (no overlapping reservations)
-        const isOverlapping = allReservations.some(reservation => {
-            if (clientData.resNo !== '(New Reservation)' && reservation.resNo === clientData.resNo) return false;
-
-            // The backend maps the room to `roomId` inside the response data.
-            const resRoomId = reservation.roomId || reservation.room?._id || reservation.room?.id || reservation.room;
-            const isSameRoom = resRoomId === selectedRoom._id || resRoomId === selectedRoom.id || resRoomId === selectedRoom.name;
-            if (!isSameRoom) return false;
-
-            if (reservation.status === 'Cancelled' || reservation.status === 'No Show') return false;
-
-            const resCheckInStr = dayjs(reservation.checkIn).format('YYYY-MM-DD');
-            const resCheckOutStr = dayjs(reservation.checkOut).format('YYYY-MM-DD');
-            const aDate = arriveDate.format('YYYY-MM-DD');
-            const dDate = departDate.format('YYYY-MM-DD');
-            
-            // Compare string dates to be 100% immune to local timezone hours shifting
-            // Overlap happens if: start1 < end2 AND end1 > start2
-            const isOverlap = aDate < resCheckOutStr && dDate > resCheckInStr;
-            
-            console.log('Comparing vs Reservation:', {
-                id: reservation._id || reservation.id,
-                resNo: reservation.resNo,
-                status: reservation.status,
-                resRoomId,
-                checkIn: resCheckInStr,
-                checkOut: resCheckOutStr,
-                overlapResult: isOverlap
-            });
-
-            return isOverlap;
-        });
-
-        if (isOverlapping) {
-             message.error(`Cannot reserve ${clientData.area} from ${arriveDate.format('MMM D')} to ${departDate.format('MMM D')} because it is already booked. Please select different dates or room.`);
-             return;
-        }
-
         // --- GUID Check: Ensure room ID is a valid MongoDB ObjectId ---
         const mongoRoomId = selectedRoom._id || selectedRoom.id;
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(mongoRoomId);
@@ -577,6 +542,67 @@ const ReservationsListPage = () => {
             message.error(`Room ID error: '${mongoRoomId}' is not a valid database ID. Please wait for rooms to load.`);
             return;
         }
+
+        // ========== DOUBLE-BOOKING CHECK (Using BOOKINGS, not Reservations) ==========
+        // Check if there's already a booking on this room for the requested dates
+        // Bookings represent actual chart occupancy (excludes parked/hidden reservations)
+        const newArriveDate = arriveDate.format('YYYY-MM-DD');
+        const newDepartDate = departDate.format('YYYY-MM-DD');
+
+        const conflictingBookings = allBookings.filter(booking => {
+            // Check if it's the same room
+            const bookingRoomId = booking.roomId || booking.room?._id || booking.room?.id || booking.room;
+            const isSameRoom = bookingRoomId === selectedRoom._id ||
+                               bookingRoomId === selectedRoom.id ||
+                               bookingRoomId === selectedRoom.name;
+
+            if (!isSameRoom) {
+                return false;
+            }
+
+            // Only check ACTIVE bookings (not canceled or parked)
+            // Exclude: Canceled status or isParked=true
+            if (booking.status === 'Canceled' || booking.isParked) {
+                console.log(`[FILTERED OUT] Booking ${booking.resNo} - Status: ${booking.status}, Parked: ${booking.isParked}`);
+                return false;
+            }
+
+            // Check for date overlap
+            const bookingStartDate = dayjs(booking.startDate).format('YYYY-MM-DD');
+            const bookingEndDate = dayjs(booking.endDate).format('YYYY-MM-DD');
+
+            // Overlap logic: new arrival is before existing checkout AND new departure is after existing checkin
+            // This allows same-day bookings: if someone leaves on Apr 8, new guest can arrive Apr 8
+            const hasOverlap = newArriveDate < bookingEndDate && newDepartDate > bookingStartDate;
+
+            if (hasOverlap) {
+                console.log(`[CONFLICT FOUND] Booking ${booking.resNo}:`, {
+                    existingDates: { start: bookingStartDate, end: bookingEndDate },
+                    newDates: { arrive: newArriveDate, depart: newDepartDate },
+                    status: booking.status,
+                    isParked: booking.isParked
+                });
+            }
+
+            return hasOverlap;
+        });
+
+        // If there are conflicts, show error and don't allow booking
+        if (conflictingBookings.length > 0) {
+            const conflicts = conflictingBookings.map(booking => {
+                const startDate = dayjs(booking.startDate).format('MMM DD, YYYY');
+                const endDate = dayjs(booking.endDate).format('MMM DD, YYYY');
+                return `${booking.resNo}: ${startDate} - ${endDate}`;
+            }).join('\n');
+
+            message.error(
+                `❌ Room ${clientData.area} has existing booking(s) that overlap with your selected dates (${newArriveDate} to ${newDepartDate}):\n\n${conflicts}\n\nPlease select different dates or room.`,
+                7
+            );
+            return;
+        }
+
+        // ========== END DOUBLE-BOOKING CHECK ==========
 
         // Validate Client and Company IDs if provided (must be 24-char hex if not blank)
         const isValidId = (id) => !id || /^[0-9a-fA-F]{24}$/.test(id);
