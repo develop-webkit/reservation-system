@@ -392,6 +392,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 params.set('depart', booking.checkOut || booking.endDate || '');
                 params.set('area', booking.roomId || contextMenu.room?.name || '');
                 params.set('roomType', contextMenu.room?.category || '');
+                params.set('clientId', booking.reservationId || ''); // Pass client ID to auto-select from SmartSearch
                 params.set('given', booking.clientName?.split(' ')[0] || '');
                 params.set('surname', booking.clientName?.split(' ').slice(1).join(' ') || '');
                 params.set('status', booking.status || 'Confirmed');

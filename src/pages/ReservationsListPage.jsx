@@ -276,6 +276,7 @@ const ReservationsListPage = () => {
     const totalTariffParam = searchParams.get('totalTariff');
     const fixedParam = searchParams.get('fixed');
     const groupnameParam = searchParams.get('groupname');
+    const clientIdParam = searchParams.get('clientId');
 
     // --- Hooks for Data and Mutation ---
     const { data: roomsFromApi } = useRooms();
@@ -429,6 +430,21 @@ const ReservationsListPage = () => {
             }));
         }
     }, [arriveParam, areaParam, roomTypeParam, resNoParam, masterResNoParam, departParam, givenParam, surnameParam, statusParam, peopleParam, companyParam, bkgSourceParam, tariffTypeParam, totalTariffParam, fixedParam, groupnameParam]);
+
+    // Auto-select client from SmartSearch when clientIdParam is provided
+    useEffect(() => {
+        if (clientIdParam && allClients.length > 0) {
+            console.log('[AUTO-SELECT CLIENT] Looking for client with ID:', clientIdParam);
+            const selectedClient = allClients.find(c => c._id === clientIdParam || c.id === clientIdParam);
+
+            if (selectedClient) {
+                console.log('[AUTO-SELECT CLIENT] Found and selecting client:', selectedClient.clientName);
+                handleSelectClient(selectedClient);
+            } else {
+                console.warn('[AUTO-SELECT CLIENT] Client not found with ID:', clientIdParam);
+            }
+        }
+    }, [clientIdParam, allClients]);
 
     // --- State for Smart Search ---
     const [smartSearch, setSmartSearch] = useState({
