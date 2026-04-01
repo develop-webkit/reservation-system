@@ -33,7 +33,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
 
     const navigate = useNavigate();
-    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null });
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null });
 
     // Fetch chart data with date range
     const { data: chartData, isLoading: chartLoading, error: chartError } = useBookingChart({
@@ -291,7 +291,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
                         return (
                             <Popover key={booking.id} content={ReservationInfoContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
-                                <div style={{
+                                <div
+                                    onContextMenu={(e) => { e.stopPropagation(); handleContextMenu(e, room, null, booking); }}
+                                    style={{
                                     gridColumnStart: Math.max(1, pos.start),
                                     gridColumnEnd: Math.min(visibleDays + 1, pos.end),
                                     gridRow: 1,
@@ -338,17 +340,24 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
 
 
-    const handleContextMenu = (e, room, date) => {
+    const handleContextMenu = (e, room, date, booking = null) => {
         e.preventDefault();
-        if (room && date) {
-            e.stopPropagation(); // Stop propagation to prevent the parent's generic handler from resetting context
-        }
+        e.stopPropagation();
+
+        console.log('[CONTEXT MENU] Right-click detected:', {
+            isBooking: !!booking,
+            bookingResNo: booking?.resNo,
+            room: room?.name,
+            date
+        });
+
         setContextMenu({
             visible: true,
             x: e.pageX,
             y: e.pageY,
             room: room || null,
-            date: date || null
+            date: date || null,
+            booking: booking || null
         });
     };
 
@@ -357,7 +366,8 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     };
 
     const handleMenuItemClick = (action) => {
-        console.log(`Context menu action: ${action}`);
+        console.log(`[MENU CLICK] Context menu action: ${action}`, contextMenu);
+
         if (action === 'add_reservation') {
             const params = new URLSearchParams();
             if (contextMenu.date) {
@@ -368,6 +378,36 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 params.set('roomType', contextMenu.room.category || '');
             }
             navigate(`/reservations/list?${params.toString()}`);
+        } else if (action === 'edit_booking') {
+            console.log('[EDIT BOOKING] Opening booking in reservations:', contextMenu.booking);
+            // Edit booking - pre-fill the form with booking data
+            if (contextMenu.booking) {
+                const params = new URLSearchParams();
+                const booking = contextMenu.booking;
+
+                // Pre-fill form fields from booking/reservation data
+                params.set('resNo', booking.resNo || '');
+                params.set('masterResNo', booking.masterResNo || '');
+                params.set('arrive', booking.checkIn || booking.startDate || '');
+                params.set('depart', booking.checkOut || booking.endDate || '');
+                params.set('area', booking.roomId || contextMenu.room?.name || '');
+                params.set('roomType', contextMenu.room?.category || '');
+                params.set('given', booking.clientName?.split(' ')[0] || '');
+                params.set('surname', booking.clientName?.split(' ').slice(1).join(' ') || '');
+                params.set('status', booking.status || 'Confirmed');
+                params.set('people', booking.people || '1A');
+                params.set('company', booking.company || '');
+                params.set('bkgSource', booking.bkgSource || '');
+                params.set('tariffType', booking.tariffType || 'Corporate');
+                params.set('totalTariff', booking.balance || '0.00');
+                params.set('fixed', booking.isFixed ? 'Yes' : 'No');
+                params.set('groupname', booking.groupName || '');
+
+                console.log('[NAVIGATE] URL:', `/reservations/list?${params.toString()}`);
+                navigate(`/reservations/list?${params.toString()}`);
+            } else {
+                console.warn('[EDIT BOOKING] No booking data available');
+            }
         }
         handleCloseContextMenu();
     };
@@ -454,10 +494,25 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
-                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_service')}>Add Out Of Service</div>
-                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
-                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
+                    {contextMenu.booking ? (
+                        <>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>
+                                ✎ Edit {contextMenu.booking.resNo || 'Booking'}
+                            </div>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('edit_booking')}>
+                                Open in Reservations
+                            </div>
+                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_out_of_service')}>Add Out Of Service</div>
+                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
+                        </>
+                    )}
                 </div>
             )}
         </Card>

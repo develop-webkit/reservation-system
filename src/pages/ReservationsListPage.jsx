@@ -263,6 +263,19 @@ const ReservationsListPage = () => {
     const arriveParam = searchParams.get('arrive');
     const areaParam = searchParams.get('area');
     const roomTypeParam = searchParams.get('roomType');
+    const resNoParam = searchParams.get('resNo');
+    const masterResNoParam = searchParams.get('masterResNo');
+    const departParam = searchParams.get('depart');
+    const givenParam = searchParams.get('given');
+    const surnameParam = searchParams.get('surname');
+    const statusParam = searchParams.get('status');
+    const peopleParam = searchParams.get('people');
+    const companyParam = searchParams.get('company');
+    const bkgSourceParam = searchParams.get('bkgSource');
+    const tariffTypeParam = searchParams.get('tariffType');
+    const totalTariffParam = searchParams.get('totalTariff');
+    const fixedParam = searchParams.get('fixed');
+    const groupnameParam = searchParams.get('groupname');
 
     // --- Hooks for Data and Mutation ---
     const { data: roomsFromApi } = useRooms();
@@ -389,17 +402,33 @@ const ReservationsListPage = () => {
 
     // Update state when query params change
     useEffect(() => {
-        if (arriveParam || areaParam || roomTypeParam) {
+        if (arriveParam || areaParam || roomTypeParam || resNoParam || givenParam || surnameParam) {
             setClientData(prev => ({
                 ...prev,
+                // Reservation fields from booking
+                resNo: resNoParam || prev.resNo,
+                masterResNo: masterResNoParam || prev.masterResNo,
+                // Dates
                 arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : prev.arrive,
-                depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : prev.depart,
+                depart: departParam ? dayjs(departParam).hour(10).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : prev.depart),
                 area: areaParam || prev.area,
                 roomType: roomTypeParam || prev.roomType,
+                // Client fields
+                given: givenParam || prev.given,
+                surname: surnameParam || prev.surname,
+                // Other reservation fields
+                status: statusParam || prev.status,
+                people: peopleParam || prev.people,
+                company: companyParam || prev.company,
+                bkgSource: bkgSourceParam || prev.bkgSource,
+                tariffType: tariffTypeParam || prev.tariffType,
+                totalTariff: totalTariffParam || prev.totalTariff,
+                fixed: fixedParam || prev.fixed,
+                groupname: groupnameParam || prev.groupname,
                 nights: 1
             }));
         }
-    }, [arriveParam, areaParam, roomTypeParam]);
+    }, [arriveParam, areaParam, roomTypeParam, resNoParam, masterResNoParam, departParam, givenParam, surnameParam, statusParam, peopleParam, companyParam, bkgSourceParam, tariffTypeParam, totalTariffParam, fixedParam, groupnameParam]);
 
     // --- State for Smart Search ---
     const [smartSearch, setSmartSearch] = useState({
