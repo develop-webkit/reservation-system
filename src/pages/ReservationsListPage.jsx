@@ -686,7 +686,8 @@ const ReservationsListPage = () => {
             importId: `IMPORT-${generatedResNo}`,
             groupName: clientData.groupname || undefined,
             confirmedBy: clientData.confirmedBy || undefined,
-            confirmedDate: clientData.confirmed || undefined
+            confirmedDate: clientData.confirmed || undefined,
+            voucherNo: clientData.voucherNo || undefined
         };
 
         console.log('Saving Reservation Payload:', payload);

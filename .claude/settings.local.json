@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -r \"mockChartData\\\\|mockReservations\\\\|mockUsers\\\\|mockClients\\\\|mockData\\\\|mockApi\" d:projectsreservation-systemsrc --include=*.jsx --include=*.js)"
+      "Bash(grep -r \"mockChartData\\\\|mockReservations\\\\|mockUsers\\\\|mockClients\\\\|mockData\\\\|mockApi\" d:projectsreservation-systemsrc --include=*.jsx --include=*.js)",
+      "Bash(curl -s http://localhost:7000/api/v1/swagger/documentation)",
+      "Bash(curl -s http://localhost:7000/api/v1/swagger/documentation-json)",
+      "Bash(curl -s http://localhost:7000/api/v1/swagger/documentation/json)",
+      "Bash(python -c ':*)",
+      "Bash(node -e ':*)",
+      "Bash(npm run:*)"
     ]
   }
 }

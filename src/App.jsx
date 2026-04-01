@@ -14,6 +14,7 @@ import Dashboard from './pages/Dashboard';
 import Reservations from './pages/Reservations';
 import BookingChart from './pages/BookingChart';
 import ReservationsListPage from './pages/ReservationsListPage';
+import ReservationEditPage from './pages/ReservationEditPage';
 import CleanScreen from './pages/CleanScreen';
 import HousekeepingRoster from './pages/HousekeepingRoster';
 import BookingsByDate from './pages/BookingsByDate';
@@ -81,6 +82,7 @@ function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/reservations" element={<Reservations />} />
                   <Route path="/reservations/list" element={<ReservationsListPage />} />
+                  <Route path="/reservations/edit" element={<ReservationEditPage />} />
                   <Route path="/reservations/by-date" element={<BookingsByDate />} />
                   <Route path="/housekeeping/clean-screen" element={<CleanScreen />} />
                   <Route path="/housekeeping/roster" element={<HousekeepingRoster />} />

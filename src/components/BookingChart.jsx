@@ -385,6 +385,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 const params = new URLSearchParams();
                 const booking = contextMenu.booking;
 
+                // Add reservationId (the MongoDB _id of the Reservation)
+                params.set('reservationId', booking.reservationId || '');
+
                 // Pre-fill form fields from booking/reservation data
                 params.set('resNo', booking.resNo || '');
                 params.set('masterResNo', booking.masterResNo || '');
@@ -392,7 +395,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 params.set('depart', booking.checkOut || booking.endDate || '');
                 params.set('area', booking.roomId || contextMenu.room?.name || '');
                 params.set('roomType', contextMenu.room?.category || '');
-                params.set('clientId', booking.reservationId || ''); // Pass client ID to auto-select from SmartSearch
+                params.set('clientId', booking.clientId || booking.client || ''); // Pass client ID to auto-select from SmartSearch
                 params.set('given', booking.clientName?.split(' ')[0] || '');
                 params.set('surname', booking.clientName?.split(' ').slice(1).join(' ') || '');
                 params.set('status', booking.status || 'Confirmed');
@@ -404,8 +407,8 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 params.set('fixed', booking.isFixed ? 'Yes' : 'No');
                 params.set('groupname', booking.groupName || '');
 
-                console.log('[NAVIGATE] URL:', `/reservations/list?${params.toString()}`);
-                navigate(`/reservations/list?${params.toString()}`);
+                console.log('[NAVIGATE] URL:', `/reservations/edit?${params.toString()}`);
+                navigate(`/reservations/edit?${params.toString()}`);
             } else {
                 console.warn('[EDIT BOOKING] No booking data available');
             }
