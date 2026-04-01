@@ -455,22 +455,33 @@ const ReservationEditPage = () => {
     };
 
     const handleSaveReservation = () => {
+        console.log('[BUTTON CLICKED] Save button was clicked');
+        console.log('[DEBUG] clientData:', clientData);
+        console.log('[DEBUG] allRooms:', allRooms);
+        console.log('[DEBUG] allBookings:', allBookings);
+
         // Validation
         if (!clientData.arrive || !clientData.depart) {
+            console.log('[VALIDATION] Missing dates');
             message.error('Please select valid stay dates.');
             return;
         }
         if (!clientData.area) {
+            console.log('[VALIDATION] Missing area');
             message.error('Please select an Area (Room).');
             return;
         }
         if (!clientData.surname) {
+            console.log('[VALIDATION] Missing surname');
             message.error('Please enter a Guest Name (Surname).');
             return;
         }
 
         const selectedRoom = allRooms.find(r => r.name === clientData.area);
+        console.log('[DEBUG] selectedRoom:', selectedRoom);
+
         if (!selectedRoom) {
+            console.log('[VALIDATION] Room not found');
             message.error(`Selected room '${clientData.area}' not found.`);
             return;
         }
@@ -480,8 +491,13 @@ const ReservationEditPage = () => {
         const newArriveDate = arriveDate.format('YYYY-MM-DD');
         const newDepartDate = departDate.format('YYYY-MM-DD');
 
-        // Double-booking check
+        // Double-booking check (exclude current reservation being edited)
         const conflictingBookings = allBookings.filter(booking => {
+            // Skip the current reservation being edited
+            if (booking.reservationId === reservationId || booking._id === reservationId) {
+                return false;
+            }
+
             const bookingRoomId = booking.roomId || booking.room?._id || booking.room?.id || booking.room;
             const isSameRoom = bookingRoomId === selectedRoom._id || bookingRoomId === selectedRoom.id || bookingRoomId === selectedRoom.name;
 
@@ -495,7 +511,10 @@ const ReservationEditPage = () => {
             return hasOverlap;
         });
 
+        console.log('[DEBUG] conflictingBookings:', conflictingBookings);
+
         if (conflictingBookings.length > 0) {
+            console.log('[VALIDATION] Booking conflict found');
             const conflicts = conflictingBookings.map(booking => {
                 const startDate = dayjs(booking.startDate).format('MMM DD, YYYY');
                 const endDate = dayjs(booking.endDate).format('MMM DD, YYYY');
@@ -512,29 +531,37 @@ const ReservationEditPage = () => {
         const mongoRoomId = selectedRoom._id || selectedRoom.id;
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(mongoRoomId);
 
+        console.log('[DEBUG] mongoRoomId:', mongoRoomId, 'isMongoId:', isMongoId);
+
         if (!isMongoId) {
+            console.log('[VALIDATION] Invalid room ID format');
             console.warn('ID provided for room is not a Mongo ID:', mongoRoomId);
             message.error(`Room ID error: '${mongoRoomId}' is not a valid database ID.`);
             return;
         }
 
-        const isValidId = (id) => !id || /^[0-9a-fA-F]{24}$/.test(id);
-        if (!isValidId(clientData.clientId)) {
+        // Helper to validate MongoDB ID format
+        const isValidMongoId = (id) => !id || /^[0-9a-fA-F]{24}$/.test(id);
+        const isValidMongoIdRequired = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+
+        console.log('[DEBUG] clientId:', clientData.clientId, 'valid:', isValidMongoId(clientData.clientId));
+        console.log('[DEBUG] companyId:', clientData.companyId, 'valid:', isValidMongoId(clientData.companyId));
+
+        if (clientData.clientId && !isValidMongoId(clientData.clientId)) {
+            console.log('[VALIDATION] Invalid client ID');
             message.error('Invalid Client ID format.');
             return;
         }
-        if (!isValidId(clientData.companyId)) {
-            message.error('Invalid Company ID format.');
-            return;
-        }
+        // Don't validate companyId if it's not a valid mongo ID - just exclude it from payload
+        // (company can be a string name from the UI, not always an ID)
+
+        console.log('[VALIDATION] All checks passed, proceeding to save');
 
         const payload = {
             resNo: clientData.resNo,
             masterResNo: clientData.masterResNo,
             room: mongoRoomId,
-            client: clientData.clientId || undefined,
             guestName: `${clientData.given} ${clientData.surname}`.trim(),
-            company: clientData.companyId || undefined,
             checkIn: clientData.arrive.toISOString(),
             checkOut: clientData.depart.toISOString(),
             arriveTime: dayjs(clientData.arrive).format('HH:mm'),
@@ -547,24 +574,43 @@ const ReservationEditPage = () => {
             totalTariff: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
             balance: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
             bookingSource: clientData.bkgSource || 'Direct',
-            isFixed: clientData.fixed === 'Yes',
-            groupName: clientData.groupname || undefined,
-            confirmedBy: clientData.confirmedBy || undefined,
-            confirmedDate: clientData.confirmed || undefined,
-            voucherNo: clientData.voucherNo || undefined
+            isFixed: clientData.fixed === 'Yes'
         };
 
-        console.log('Saving Reservation Payload:', payload);
+        // Add optional fields only if they have values and are valid MongoDB IDs where required
+
+        if (clientData.clientId && isValidMongoIdRequired(clientData.clientId)) {
+            payload.client = clientData.clientId;
+        }
+        if (clientData.companyId && isValidMongoIdRequired(clientData.companyId)) {
+            payload.company = clientData.companyId;
+        }
+        if (clientData.groupname) payload.groupName = clientData.groupname;
+        if (clientData.confirmedBy && isValidMongoIdRequired(clientData.confirmedBy)) {
+            payload.confirmedBy = clientData.confirmedBy;
+        }
+        if (clientData.confirmedDate) payload.confirmedDate = clientData.confirmedDate;
+        if (clientData.voucherNo) payload.voucherNo = clientData.voucherNo;
+
+        console.log('[SAVE] Reservation ID:', reservationId);
+        console.log('[SAVE] Payload:', JSON.stringify(payload, null, 2));
+
+        if (!reservationId) {
+            message.error('No reservation ID found. Cannot update.');
+            return;
+        }
 
         updateReservationMutation.mutate(
             { id: reservationId, data: payload },
             {
-                onSuccess: () => {
+                onSuccess: (data) => {
+                    console.log('[SUCCESS] Reservation updated:', data);
                     message.success('Reservation updated successfully!');
                     navigate(-1);
                 },
                 onError: (err) => {
-                    console.error('Reservation update error:', err);
+                    console.error('[ERROR] Update failed:', err);
+                    console.error('[ERROR] Response:', err.response?.data);
                     message.error('Failed to update reservation: ' + (err.response?.data?.message || err.message));
                 }
             }
