@@ -11,6 +11,14 @@ const BookingChartPage = () => {
     const [visibleDays, setVisibleDays] = useState(30);
     const [collapsedCategories, setCollapsedCategories] = useState(new Set());
 
+    // Filter states
+    const [filters, setFilters] = useState({
+        surname: '',
+        status: [],
+        tariffType: [],
+        area: ''
+    });
+
     const toggleCategory = (category) => {
         const newCollapsed = new Set(collapsedCategories);
         if (newCollapsed.has(category)) {
@@ -40,12 +48,15 @@ const BookingChartPage = () => {
                 onExpandAll={handleExpandAll}
                 onCollapseAll={handleCollapseAll}
                 propertyName="Mount Morgan Space Solutions"
+                filters={filters}
+                onFiltersChange={setFilters}
             />
             <CoreBookingChart
                 startDate={startDate}
                 visibleDays={visibleDays}
                 collapsedCategories={collapsedCategories}
                 onToggleCategory={toggleCategory}
+                filters={filters}
             />
         </div>
     );

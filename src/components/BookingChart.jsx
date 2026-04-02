@@ -27,7 +27,7 @@ const ROOM_STATUS_COLORS = {
     'OOO': '#722ed1',   // Out of Order (Purple)
 };
 
-const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions" }) => {
+const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {} }) => {
     // Fetch bookings and rooms using TanStack Query hooks
     // const { data: bookingsResponse, isLoading: bookingsLoading, error: bookingsError } = useBookings(); // Not used directly anymore
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
@@ -171,6 +171,43 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         // Pre-process bookings for this room to determine vertical stacking for 'Parked' row
         let roomBookings = bookingsData.filter(b => b.roomId === room.id || b.roomId === room.name);
 
+        // Apply filters
+        if (filters && Object.keys(filters).length > 0) {
+            roomBookings = roomBookings.filter(booking => {
+                // Surname filter
+                if (filters.surname) {
+                    const guestName = booking.clientName || booking.guestName || '';
+                    if (!guestName.toLowerCase().includes(filters.surname.toLowerCase())) {
+                        return false;
+                    }
+                }
+
+                // Status filter
+                if (filters.status && filters.status.length > 0) {
+                    if (!filters.status.includes(booking.status)) {
+                        return false;
+                    }
+                }
+
+                // Tariff Type filter
+                if (filters.tariffType && filters.tariffType.length > 0) {
+                    if (!filters.tariffType.includes(booking.tariffType)) {
+                        return false;
+                    }
+                }
+
+                // Area/Room filter
+                if (filters.area) {
+                    const roomName = booking.roomId || '';
+                    if (!roomName.toLowerCase().includes(filters.area.toLowerCase())) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+        }
+
         // Map to store visual properties (like vertical track) for each booking
         const bookingLayout = {};
 
@@ -229,7 +266,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                             />
                         );
                     })}
-                    {bookingsData.filter(b => b.roomId === room.id || b.roomId === room.name).map(booking => {
+                    {roomBookings.map(booking => {
                         const checkIn = booking.checkIn || booking.startDate;
                         const checkOut = booking.checkOut || booking.endDate;
                         const pos = getGridPosition(checkIn, checkOut);
