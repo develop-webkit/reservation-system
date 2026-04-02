@@ -45,11 +45,13 @@ export const useReservation = (id) => {
  */
 export const useCreateReservation = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: (reservationData) => reservationsApi.create(reservationData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: reservationKeys.lists() });
+            // Also invalidate bookings queries since creating a reservation creates a booking
+            queryClient.invalidateQueries({ queryKey: ['bookings'] });
         },
     });
 };
@@ -60,12 +62,14 @@ export const useCreateReservation = () => {
  */
 export const useUpdateReservation = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: ({ id, data }) => reservationsApi.update(id, data),
         onSuccess: (data, variables) => {
             queryClient.setQueryData(reservationKeys.detail(variables.id), data);
             queryClient.invalidateQueries({ queryKey: reservationKeys.lists() });
+            // Also invalidate bookings queries since updating a reservation affects bookings
+            queryClient.invalidateQueries({ queryKey: ['bookings'] });
         },
     });
 };
@@ -76,12 +80,14 @@ export const useUpdateReservation = () => {
  */
 export const useDeleteReservation = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: (id) => reservationsApi.delete(id),
         onSuccess: (data, id) => {
             queryClient.removeQueries({ queryKey: reservationKeys.detail(id) });
             queryClient.invalidateQueries({ queryKey: reservationKeys.lists() });
+            // Also invalidate bookings queries since deleting a reservation removes a booking
+            queryClient.invalidateQueries({ queryKey: ['bookings'] });
         },
     });
 };
