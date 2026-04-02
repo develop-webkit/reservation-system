@@ -13,7 +13,6 @@ import {
     Col,
     Statistic,
     Typography,
-    Spin,
     Alert,
     Space,
     Flex,
@@ -55,7 +54,7 @@ const QuickCounts = ({ bookingsData, roomsData, isLoading }) => {
         calculateCounts();
     }, [bookingsData, roomsData]);
 
-    if (isLoading || !counts) return <Spin />;
+    if (isLoading || !counts) return null;
     if (error) return <Alert message="Error loading counts" description={error.message} type="error" showIcon />;
 
     return (
@@ -124,7 +123,7 @@ const ActivityFeed = ({ bookingsData, isLoading }) => {
         fetchActivities();
     }, [bookingsData]);
 
-    if (isLoading || !activities) return <Spin />;
+    if (isLoading || !activities) return null;
     if (error) return <Alert message="Error loading feed" description={error.message} type="error" showIcon />;
     if (activities.length === 0) return <Card title="Today's Activity"><Empty description="No activity today" /></Card>;
 
@@ -172,7 +171,7 @@ const UpcomingTasks = ({ roomsData, bookingsData, isLoading }) => {
         fetchTasks();
     }, [roomsData, bookingsData]);
 
-    if (isLoading || !tasks) return <Spin />;
+    if (isLoading || !tasks) return null;
     if (error) return <Alert message="Error loading tasks" description={error.message} type="error" showIcon />;
     if (tasks.length === 0) return <Card title="Housekeeping Tasks"><Empty description="No pending tasks" /></Card>;
 
@@ -220,7 +219,7 @@ const OccupancyChart = ({ bookingsData, roomsData, isLoading }) => {
         calculateOccupancy();
     }, [bookingsData, roomsData]);
 
-    if (isLoading || !chartData) return <Spin />;
+    if (isLoading || !chartData) return null;
     if (error) return <Alert message="Error loading chart data" description={error.message} type="error" showIcon />;
     if (!chartData || chartData.length === 0) return <Card><Empty description="No occupancy data" /></Card>;
 
