@@ -18,13 +18,15 @@ import {
     DollarOutlined,
     UserSwitchOutlined,
     CaretDownOutlined,
-    EllipsisOutlined
+    EllipsisOutlined,
+    FilePdfOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
+import InvoiceModal from '../components/InvoiceModal';
 import { useRooms } from '../hooks/useRooms';
-import { useCreateReservation, useReservations } from '../hooks/useReservations';
+import { useCreateReservation, useUpdateReservation, useReservations } from '../hooks/useReservations';
 import { useBookings } from '../hooks/useBookings';
 import { useClients } from '../hooks/useClients';
 import { useCompanies } from '../hooks/useCompanies';
@@ -257,6 +259,8 @@ const FormField = ({
 
 const ReservationsListPage = () => {
     const [selectedTab, setSelectedTab] = useState('Reservation');
+    const [savedReservationId, setSavedReservationId] = useState(null);
+    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [searchParams] = useSearchParams();
 
     // Extract values from query params
@@ -286,6 +290,7 @@ const ReservationsListPage = () => {
     const { data: reservationsFromApi } = useReservations();
     const { data: bookingsFromApi } = useBookings();
     const createReservationMutation = useCreateReservation();
+    const updateReservationMutation = useUpdateReservation();
 
     // --- Data Normalization ---
     const allRooms = useMemo(() => {
@@ -693,7 +698,14 @@ const ReservationsListPage = () => {
         console.log('Saving Reservation Payload:', payload);
 
         createReservationMutation.mutate(payload, {
-            onSuccess: () => {
+            onSuccess: (response) => {
+                const newId = response?.data?._id || response?.data?.id || response?._id || response?.id;
+                console.log('Save Success Response:', response);
+                console.log('Extracted ID:', newId);
+                if (newId) setSavedReservationId(newId);
+                // Update clientData with the actual resNo that was saved
+                const savedResNo = payload.resNo;
+                setClientData(prev => ({ ...prev, resNo: savedResNo }));
                 message.success('Reservation created successfully!');
             },
             onError: (err) => {
@@ -701,6 +713,82 @@ const ReservationsListPage = () => {
                 message.error('Failed to create reservation: ' + (err.response?.data?.message || err.message));
             }
         });
+    };
+
+    // Derive reservationId from saved or existing reservation
+    const reservationId = useMemo(() => {
+        if (savedReservationId) return savedReservationId;
+        // For reservations loaded via URL params (from booking chart)
+        if (resNoParam) {
+            const existing = allReservations.find(r => r.resNo === resNoParam);
+            return existing?._id || null;
+        }
+        return null;
+    }, [savedReservationId, resNoParam, allReservations]);
+
+    // Invoice data memo
+    const invoiceData = useMemo(() => ({
+        resNo: clientData.resNo,
+        guestName: `${clientData.given} ${clientData.surname}`.trim(),
+        clientNo: clientData.clientNo,
+        company: clientData.company,
+        area: clientData.area,
+        roomType: clientData.roomType,
+        arrive: clientData.arrive ? dayjs(clientData.arrive).format('ddd, D MMM YYYY h:mm A') : '',
+        depart: clientData.depart ? dayjs(clientData.depart).format('ddd, D MMM YYYY h:mm A') : '',
+        nights: clientData.nights,
+        baseTariff: parseFloat(clientData.baseTariff.split(' / ')[0]) || 0,
+        package: parseFloat(clientData.package.split(' / ')[0]) || 0,
+        totalTariff: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
+        accomm: parseFloat(clientData.accomm) || 0,
+        ar: parseFloat(clientData.ar) || 0,
+        accountNo: clientData.accountNo,
+        generatedDate: dayjs().format('D MMM YYYY'),
+    }), [clientData]);
+
+    // Invoice handlers
+    const handleGenerateInvoice = () => {
+        if (!reservationId || clientData.resNo === '(New Reservation)') {
+            message.warning('Please save the reservation first.');
+            return;
+        }
+        setIsInvoiceModalOpen(true);
+    };
+
+    const handleConfirmInvoice = () => {
+        const doUpdate = clientData.status === 'Unconfirmed' && reservationId;
+        if (doUpdate) {
+            // Build update payload with required fields
+            const updatePayload = {
+                status: 'Confirmed',
+                guestName: `${clientData.given} ${clientData.surname}`.trim(),
+                checkIn: clientData.arrive.toISOString(),
+                checkOut: clientData.depart.toISOString(),
+            };
+
+            updateReservationMutation.mutate(
+                { id: reservationId, data: updatePayload },
+                {
+                    onSuccess: () => {
+                        setClientData(prev => ({ ...prev, status: 'Confirmed' }));
+                        message.success('Reservation confirmed and invoice generated.');
+                        setIsInvoiceModalOpen(false);
+                        // Print the PDF iframe
+                        setTimeout(() => {
+                            const iframe = document.querySelector('.invoice-pdf-viewer iframe');
+                            if (iframe) iframe.contentWindow.print();
+                        }, 500);
+                    },
+                    onError: (err) => message.error('Failed: ' + (err.response?.data?.message || err.message))
+                }
+            );
+        } else {
+            setIsInvoiceModalOpen(false);
+            setTimeout(() => {
+                const iframe = document.querySelector('.invoice-pdf-viewer iframe');
+                if (iframe) iframe.contentWindow.print();
+            }, 500);
+        }
     };
 
     // Sidebar navigation items
@@ -903,6 +991,15 @@ const ReservationsListPage = () => {
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <Button type="text" size="small" icon={<SaveOutlined />} />
                             <Button type="text" size="small" icon={<CopyOutlined />} />
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<FilePdfOutlined />}
+                                onClick={handleGenerateInvoice}
+                                disabled={!reservationId || clientData.resNo === '(New Reservation)'}
+                            >
+                                Invoice
+                            </Button>
                             <Button type="text" size="small" icon={<MoreOutlined />} />
                         </div>
                     </div>
@@ -924,6 +1021,14 @@ const ReservationsListPage = () => {
                     <FormField label="Active Accounts" field="activeAccounts" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 </div>
             </div>
+
+            <InvoiceModal
+                open={isInvoiceModalOpen}
+                onClose={() => setIsInvoiceModalOpen(false)}
+                onConfirm={handleConfirmInvoice}
+                invoiceData={invoiceData}
+                isConfirming={updateReservationMutation.isPending}
+            />
         </div>
     );
 };
