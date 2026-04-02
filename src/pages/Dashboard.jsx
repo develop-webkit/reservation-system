@@ -1,11 +1,12 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
-import { useQuery } from '@tanstack/react-query'; // <-- NEW IMPORT
+import { useQuery } from '@tanstack/react-query';
 import {
     fetchQuickCounts,
     fetchActivityFeed,
+    fetchUpcomingTasks,
     fetchOccupancyChart
-} from '../api/dashboardApi'; // <-- NEW IMPORT
+} from '../api/dashboardApi';
 import {
     Card,
     Row,
@@ -15,29 +16,47 @@ import {
     Spin,
     Alert,
     Space,
-    Table,
-    Flex
-} from 'antd'; // Ant Design Components
+    Flex,
+    Tag,
+    Progress,
+    Divider,
+    Empty
+} from 'antd';
 import {
     ArrowUpOutlined,
     ArrowDownOutlined,
     UserAddOutlined,
-    CheckOutlined
+    CheckOutlined,
+    ClockCircleOutlined
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import { useRooms } from '../hooks/useRooms';
+import { useBookings } from '../hooks/useBookings';
 
 const { Title, Text } = Typography;
 
 // --- 1. Quick Counts Widget Component ---
-const QuickCounts = () => {
-    const { data, isLoading, isError, error } = useQuery({
-        queryKey: ['dashboard', 'quickCounts'],
-        queryFn: fetchQuickCounts,
-        staleTime: 60000, // Data is fresh for 1 minute
-    });
+const QuickCounts = ({ bookingsData, roomsData, isLoading }) => {
+    const [counts, setCounts] = React.useState(null);
+    const [error, setError] = React.useState(null);
 
-    if (isLoading) return <Spin />;
-    if (isError) return <Alert message="Error loading counts" description={error.message} type="error" showIcon />;
-    if (!data) return null;
+    React.useEffect(() => {
+        const calculateCounts = async () => {
+            try {
+                if (bookingsData && roomsData) {
+                    const result = await fetchQuickCounts(bookingsData, roomsData);
+                    setCounts(result);
+                }
+            } catch (err) {
+                setError(err);
+                console.error('Error calculating counts:', err);
+            }
+        };
+        calculateCounts();
+    }, [bookingsData, roomsData]);
+
+    if (isLoading || !counts) return <Spin />;
+    if (error) return <Alert message="Error loading counts" description={error.message} type="error" showIcon />;
 
     return (
         <Row gutter={16}>
@@ -45,8 +64,8 @@ const QuickCounts = () => {
                 <Card variant="borderless">
                     <Statistic
                         title="Occupied Rooms"
-                        value={data.roomsOccupied}
-                        suffix={`/ ${data.roomsOccupied + data.roomsAvailable}`}
+                        value={counts.roomsOccupied}
+                        suffix={`/ ${counts.roomsOccupied + counts.roomsAvailable}`}
                         prefix={<CheckOutlined style={{ color: '#52c41a' }} />}
                     />
                 </Card>
@@ -55,7 +74,7 @@ const QuickCounts = () => {
                 <Card variant="borderless">
                     <Statistic
                         title="Arrivals Today"
-                        value={data.arrivalsToday}
+                        value={counts.arrivalsToday}
                         styles={{ value: { color: '#3f8600' } }}
                         prefix={<ArrowUpOutlined />}
                     />
@@ -65,7 +84,7 @@ const QuickCounts = () => {
                 <Card variant="borderless">
                     <Statistic
                         title="Departures Today"
-                        value={data.departuresToday}
+                        value={counts.departuresToday}
                         styles={{ value: { color: '#cf1322' } }}
                         prefix={<ArrowDownOutlined />}
                     />
@@ -75,7 +94,7 @@ const QuickCounts = () => {
                 <Card variant="borderless">
                     <Statistic
                         title="Rooms Available"
-                        value={data.roomsAvailable}
+                        value={counts.roomsAvailable}
                         styles={{ value: { color: '#1890ff' } }}
                         prefix={<UserAddOutlined />}
                     />
@@ -85,33 +104,47 @@ const QuickCounts = () => {
     );
 };
 
-// --- 2. Recent Activity Feed Component ---
-const ActivityFeed = () => {
-    const { data, isLoading, isError, error } = useQuery({
-        queryKey: ['dashboard', 'activityFeed'],
-        queryFn: fetchActivityFeed,
-        staleTime: 30000, // Data is fresh for 30 seconds
-    });
+// --- 3. Recent Activity Feed Component ---
+const ActivityFeed = ({ bookingsData, isLoading }) => {
+    const [activities, setActivities] = React.useState(null);
+    const [error, setError] = React.useState(null);
 
-    if (isLoading) return <Spin />;
-    if (isError) return <Alert message="Error loading feed" description={error.message} type="error" showIcon />;
-    if (!data || data.length === 0) return <Text type="secondary">No recent activity.</Text>;
+    React.useEffect(() => {
+        const fetchActivities = async () => {
+            try {
+                if (bookingsData) {
+                    const result = await fetchActivityFeed(bookingsData);
+                    setActivities(result);
+                }
+            } catch (err) {
+                setError(err);
+                console.error('Error fetching activities:', err);
+            }
+        };
+        fetchActivities();
+    }, [bookingsData]);
+
+    if (isLoading || !activities) return <Spin />;
+    if (error) return <Alert message="Error loading feed" description={error.message} type="error" showIcon />;
+    if (activities.length === 0) return <Card title="Today's Activity"><Empty description="No activity today" /></Card>;
 
     return (
-        <Card title="Recent Activity" variant="borderless" style={{ height: '100%' }}>
-            <Flex vertical gap="small">
-                {data.map((item, index) => (
-                    <div key={index} style={{ padding: '12px 0', borderBottom: index < data.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                        <Space>
-                            <Text strong>{item.type}</Text>
-                            <Text type="secondary" style={{ fontSize: '0.8rem' }}>{item.time}</Text>
+        <Card title="Today's Activity" variant="borderless" style={{ height: '100%' }}>
+            <Flex vertical gap="middle">
+                {activities.map((item, index) => (
+                    <div key={item.id}>
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                            <Space>
+                                <Tag color={item.type === 'Arrival' ? 'green' : 'red'}>
+                                    {item.type}
+                                </Tag>
+                                <Text type="secondary" style={{ fontSize: '0.85rem' }}>
+                                    <ClockCircleOutlined /> {item.time}
+                                </Text>
+                            </Space>
+                            <Text>{item.guest} {item.room && <Tag>{item.room}</Tag>}</Text>
                         </Space>
-                        <div style={{ marginTop: '4px' }}>
-                            <Text>
-                                {item.guest} {item.room ? `(${item.room})` : ''}
-                                {item.notes && <Text type="warning" style={{ marginLeft: 8 }}>- {item.notes}</Text>}
-                            </Text>
-                        </div>
+                        {index < activities.length - 1 && <Divider style={{ margin: '12px 0' }} />}
                     </div>
                 ))}
             </Flex>
@@ -119,63 +152,173 @@ const ActivityFeed = () => {
     );
 };
 
-// --- 3. Occupancy Chart (Mock Table) Component ---
-const OccupancyChart = () => {
-    const { data, isLoading, isError, error } = useQuery({
-        queryKey: ['dashboard', 'occupancyChart'],
-        queryFn: fetchOccupancyChart,
-        staleTime: Infinity, // Treat as static historical data
-    });
+// --- 4. Upcoming Tasks Component ---
+const UpcomingTasks = ({ roomsData, bookingsData, isLoading }) => {
+    const [tasks, setTasks] = React.useState(null);
+    const [error, setError] = React.useState(null);
 
-    const columns = [
-        { title: 'Month', dataIndex: 'month', key: 'month' },
-        { title: 'Occupancy (%)', dataIndex: 'occupancy', key: 'occupancy', sorter: (a, b) => a.occupancy - b.occupancy },
-    ];
+    React.useEffect(() => {
+        const fetchTasks = async () => {
+            try {
+                if (roomsData) {
+                    const result = await fetchUpcomingTasks(roomsData, bookingsData);
+                    setTasks(result);
+                }
+            } catch (err) {
+                setError(err);
+                console.error('Error fetching tasks:', err);
+            }
+        };
+        fetchTasks();
+    }, [roomsData, bookingsData]);
 
-    if (isLoading) return <Spin />;
-    if (isError) return <Alert message="Error loading chart data" description={error.message} type="error" showIcon />;
-    if (!data) return null;
+    if (isLoading || !tasks) return <Spin />;
+    if (error) return <Alert message="Error loading tasks" description={error.message} type="error" showIcon />;
+    if (tasks.length === 0) return <Card title="Housekeeping Tasks"><Empty description="No pending tasks" /></Card>;
 
     return (
-        <Card title="Monthly Occupancy Trend (Mock Data)" variant="borderless" style={{ height: '100%' }}>
-            {/* In a real app, this would be a chart library like recharts or Nivo */}
-            <Table
-                dataSource={data}
-                columns={columns}
-                pagination={false}
-                size="small"
-                rowKey="month"
-            />
+        <Card title="Housekeeping Tasks" variant="borderless" style={{ height: '100%' }}>
+            <Flex vertical gap="middle">
+                {tasks.map((task, index) => (
+                    <div key={task.id}>
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                            <Space>
+                                <Tag color={task.priority === 'high' ? 'red' : task.priority === 'medium' ? 'orange' : 'blue'}>
+                                    {task.priority.toUpperCase()}
+                                </Tag>
+                                <Text strong>{task.task}</Text>
+                            </Space>
+                            <Text type="secondary" style={{ fontSize: '0.85rem' }}>
+                                <ClockCircleOutlined /> {task.dueTime}
+                            </Text>
+                        </Space>
+                        {index < tasks.length - 1 && <Divider style={{ margin: '12px 0' }} />}
+                    </div>
+                ))}
+            </Flex>
         </Card>
     );
 };
 
+// --- 5. Occupancy Chart Component ---
+const OccupancyChart = ({ bookingsData, roomsData, isLoading }) => {
+    const [chartData, setChartData] = React.useState(null);
+    const [error, setError] = React.useState(null);
+
+    React.useEffect(() => {
+        const calculateOccupancy = async () => {
+            try {
+                if (bookingsData && roomsData) {
+                    const result = await fetchOccupancyChart(bookingsData, roomsData);
+                    setChartData(result);
+                }
+            } catch (err) {
+                setError(err);
+                console.error('Error calculating occupancy:', err);
+            }
+        };
+        calculateOccupancy();
+    }, [bookingsData, roomsData]);
+
+    if (isLoading || !chartData) return <Spin />;
+    if (error) return <Alert message="Error loading chart data" description={error.message} type="error" showIcon />;
+    if (!chartData || chartData.length === 0) return <Card><Empty description="No occupancy data" /></Card>;
+
+    return (
+        <Card title="6-Month Occupancy Trend" variant="borderless" style={{ height: '100%' }}>
+            <Flex vertical gap="large">
+                {chartData.map((item, index) => (
+                    <div key={index}>
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                            <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+                                <Text strong>{item.month}</Text>
+                                <Text>{item.occupancy}%</Text>
+                            </Space>
+                            <Progress
+                                percent={item.occupancy}
+                                strokeColor={item.occupancy >= 90 ? '#52c41a' : item.occupancy >= 75 ? '#1890ff' : '#faad14'}
+                                size="small"
+                            />
+                        </Space>
+                    </div>
+                ))}
+            </Flex>
+        </Card>
+    );
+};
 
 // --- Main Dashboard Component ---
 const Dashboard = () => {
+    // Fetch real data from the system
+    const { data: roomsData, isLoading: roomsLoading } = useRooms();
+    const { data: bookingsData, isLoading: bookingsLoading } = useBookings();
+
+    // Normalize data
+    const normalizedRooms = React.useMemo(() => {
+        if (!roomsData) return [];
+        return Array.isArray(roomsData) ? roomsData : (roomsData.data || roomsData.rooms || []);
+    }, [roomsData]);
+
+    const normalizedBookings = React.useMemo(() => {
+        if (!bookingsData) return [];
+        return Array.isArray(bookingsData) ? bookingsData : (bookingsData.data || bookingsData.bookings || []);
+    }, [bookingsData]);
+
+    const isLoading = roomsLoading || bookingsLoading;
+
     return (
-        <Space orientation="vertical" size="large" style={{ display: 'flex' }}>
+        <Space orientation="vertical" size="large" style={{ display: 'flex', padding: '0' }}>
+            {/* Header */}
+            <div>
+                <Title level={2} style={{ margin: '0 0 8px 0' }}>Dashboard</Title>
+                <Text type="secondary">Welcome back! Here's an overview of your hotel operations.</Text>
+            </div>
 
             {/* Row 1: Quick Count Statistics */}
-            <QuickCounts />
+            <div>
+                <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '12px' }}>Room Status</Text>
+                <QuickCounts bookingsData={normalizedBookings} roomsData={normalizedRooms} isLoading={isLoading} />
+            </div>
 
+            {/* Row 2: Recent Activity, Tasks, and Room Status */}
             <Row gutter={16}>
-                {/* Row 2: Recent Activity Feed */}
-                <Col span={12}>
-                    <ActivityFeed />
+                <Col span={8}>
+                    <ActivityFeed bookingsData={normalizedBookings} isLoading={isLoading} />
                 </Col>
-
-                {/* Row 3: Occupancy Chart/Table */}
-                <Col span={12}>
-                    <OccupancyChart />
+                <Col span={8}>
+                    <UpcomingTasks roomsData={normalizedRooms} bookingsData={normalizedBookings} isLoading={isLoading} />
+                </Col>
+                <Col span={8}>
+                    <Card title="Room Status Summary" variant="borderless" style={{ height: '100%' }}>
+                        <Flex vertical gap="small">
+                            {['Clean', 'Dirty', 'Occupied', 'OutOfOrder'].map(status => {
+                                const count = normalizedRooms.filter(r => r.status === status).length;
+                                return (
+                                    <div key={status}>
+                                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                                            <Text>{status}</Text>
+                                            <Tag color={
+                                                status === 'Clean' ? 'green' :
+                                                status === 'Dirty' ? 'orange' :
+                                                status === 'Occupied' ? 'blue' : 'red'
+                                            }>
+                                                {count}
+                                            </Tag>
+                                        </Space>
+                                    </div>
+                                );
+                            })}
+                        </Flex>
+                    </Card>
                 </Col>
             </Row>
 
-            <Title level={4}>Reservation Overview</Title>
-            <Text type="secondary">
-                This is the central view summarizing key system metrics.
-                Data for all widgets is now being fetched and managed by TanStack Query.
-            </Text>
+            {/* Row 4: Occupancy Trend */}
+            <Row gutter={16}>
+                <Col span={24}>
+                    <OccupancyChart bookingsData={normalizedBookings} roomsData={normalizedRooms} isLoading={isLoading} />
+                </Col>
+            </Row>
         </Space>
     );
 };
