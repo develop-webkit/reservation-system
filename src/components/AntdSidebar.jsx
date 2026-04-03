@@ -1,7 +1,7 @@
 // src/components/AntdSidebar.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Input, Tag } from 'antd';
+import { Menu, Input } from 'antd';
 import { navConfig } from '../data/navConfig';
 import {
     HomeOutlined,
@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import useAuthStore from '../store/authStore';
 import { PERMISSIONS } from '../constants/permissions';
-import { ROLES, ROLE_NAMES, ROLE_COLORS } from '../constants/roles';
+import { ROLES } from '../constants/roles';
 
 // Roles that have full admin privileges
 const ADMIN_ROLES = [ROLES.SUPER_ADMIN, ROLES.MANAGER];
@@ -71,7 +71,7 @@ const mapNavToAntd = (navItems) => {
 const AntdSidebar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, role, hasPermission } = useAuthStore();
+    const { role, hasPermission } = useAuthStore();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [openKeys, setOpenKeys] = useState([]);
@@ -283,19 +283,6 @@ const AntdSidebar = () => {
                 items={antdMenuItems}
                 style={{ flexGrow: 1, borderRight: 0 }}
             />
-
-            {/* Footer with User Info */}
-            <div style={{ padding: '16px', color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                <p style={{ margin: 0, fontWeight: 'bold', color: '#fff' }}>RMS Billing</p>
-                <div style={{ marginTop: '8px' }}>
-                    User: {user?.name || 'Unknown'}<br />
-                    {role && (
-                        <Tag color={ROLE_COLORS[role]} style={{ marginTop: '4px', fontSize: '10px' }}>
-                            {ROLE_NAMES[role]}
-                        </Tag>
-                    )}
-                </div>
-            </div>
         </div>
     );
 };

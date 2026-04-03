@@ -1,12 +1,13 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Layout, Checkbox, Input, Badge, Table, Tag, Row, Col, Typography, Select, Button, Space } from 'antd';
+import { Layout, Checkbox, Input, Badge, Table, Tag, Row, Col, Typography, Select, Button, Space, Spin } from 'antd';
 import { SearchOutlined, FilterOutlined, MenuOutlined, CloseOutlined } from '@ant-design/icons';
-import { rooms } from '../data/rooms';
-import { reservations } from '../data/reservations';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import { useRooms } from '../hooks/useRooms';
+import { useBookings } from '../hooks/useBookings';
+import { useHousekeepingAssignments } from '../hooks/useHousekeeping';
 
 dayjs.extend(isBetween);
 dayjs.extend(isSameOrAfter);
@@ -89,50 +90,59 @@ const CleanScreen = () => {
     const [selectedCleanStatuses, setSelectedCleanStatuses] = useState(['Dirty', 'Inspect']);
     const [selectedRoomTypes, setSelectedRoomTypes] = useState([]);
 
+    // --- API Hooks ---
+    const { data: roomsFromApi = [], isLoading: roomsLoading } = useRooms();
+    const { data: bookingsFromApi = [], isLoading: bookingsLoading } = useBookings();
+    const { data: assignments = [], isLoading: assignmentsLoading } = useHousekeepingAssignments(dayjs().format('YYYY-MM-DD'));
+
+    // Normalize data
+    const rooms = useMemo(() => {
+        if (!roomsFromApi) return [];
+        return Array.isArray(roomsFromApi) ? roomsFromApi : (roomsFromApi.data || []);
+    }, [roomsFromApi]);
+
+    const bookings = useMemo(() => {
+        if (!bookingsFromApi) return [];
+        return Array.isArray(bookingsFromApi) ? bookingsFromApi : (bookingsFromApi.data || []);
+    }, [bookingsFromApi]);
+
     // --- Data Processing (Calculate Statuses) ---
     const roomData = useMemo(() => {
-        // Ideally we use a fixed date like in previous tasks, but for "Real-time" housekeeping, today is better.
-        // However, since our mock data spreads around Dec 2025/Jan 2026, let's pick a date within that range to show meaningful data if today is not matching.
-        // Let's stick to "Today" being roughly start of Jan 2026 for the mock context, OR just use system today.
-        // The user prompts don't specify a "Simulation Date", but previous tasks treated Dec 31 2025 as "Today".
-        // Let's use Dec 31 2025 as our reference "Today" to match recent data work.
-        const effectiveToday = dayjs('2025-12-31');
+        // Use today's date (not hardcoded)
+        const effectiveToday = dayjs();
 
         return rooms.map(room => {
-            // 1. Find Active Reservations (Arrived) or Maintenance (Out of Order)
-            const activeRes = reservations.find(r =>
-                (r.roomId === room.id) &&
-                dayjs(effectiveToday).isBetween(r.checkIn, r.checkOut, 'day', '[)') && // [) inc start, exc end
-                (r.status === 'Arrived' || r.status === 'Out of Order')
+            // 1. Find Active Bookings (Checked In / Occupied)
+            const activeBooking = bookings.find(b =>
+                (b.roomId === room._id || b.room?._id === room._id || b.room === room._id) &&
+                effectiveToday.isBetween(dayjs(b.checkIn), dayjs(b.checkOut), 'day', '[)') &&
+                (b.status === 'Checked In' || b.status === 'Arrived')
             );
 
             // 2. Find Next Arrival
-            // Filter future reservations for this room
-            const futureRes = reservations
-                .filter(r => r.roomId === room.id && dayjs(r.checkIn).isSameOrAfter(effectiveToday))
+            const futureBooking = bookings
+                .filter(b => (b.roomId === room._id || b.room?._id === room._id || b.room === room._id) && dayjs(b.checkIn).isSameOrAfter(effectiveToday))
                 .sort((a, b) => dayjs(a.checkIn).valueOf() - dayjs(b.checkIn).valueOf())[0];
 
-            let occupancyStatus = 'Vacant'; // Default derived occupancy
-            if (activeRes) {
-                if (activeRes.status === 'Out of Order') {
-                    occupancyStatus = 'Out of Order';
-                } else if (activeRes.status === 'Arrived') {
-                    occupancyStatus = 'Occupied';
-                }
+            let occupancyStatus = 'Vacant'; // Default
+            if (activeBooking) {
+                occupancyStatus = 'Occupied';
+            } else if (room.status === 'Out of Order' || room.outOfOrder) {
+                occupancyStatus = 'Out of Order';
             }
 
             // Create a composite object
             return {
                 ...room,
-                key: room.id,
-                computedStatus: room.defaultCleanStatus, // The actual clean state (Clean/Dirty)
+                key: room._id,
+                computedStatus: room.status || 'Clean', // Use real room status from API
                 occupancyStatus: occupancyStatus,
-                activeRes: activeRes,
-                nextArrive: futureRes ? futureRes.checkIn : null,
-                nextArriveRes: futureRes
+                activeRes: activeBooking,
+                nextArrive: futureBooking ? futureBooking.checkIn : null,
+                nextArriveRes: futureBooking
             };
         });
-    }, []);
+    }, [rooms, bookings]);
 
     // --- Statistics ---
     const stats = useMemo(() => {
@@ -161,7 +171,7 @@ const CleanScreen = () => {
         return counts;
     }, [roomData]);
 
-    const uniqueRoomTypes = [...new Set(rooms.map(r => r.category).filter(Boolean))];
+    const uniqueRoomTypes = [...new Set(rooms.map(r => r.category || r.type).filter(Boolean))];
 
     // --- Filtering ---
     const filteredData = useMemo(() => {
@@ -253,7 +263,30 @@ const CleanScreen = () => {
             title: 'Task Status',
             key: 'taskStatus',
             width: columnWidths.taskStatus,
-            render: () => <span style={{ color: '#888' }}>(No Tasks)</span>
+            render: (_, record) => {
+                // Find tasks assigned to this room
+                const roomTasks = assignments.filter(t =>
+                    t.room?._id === record._id ||
+                    t.room?.name === record.name ||
+                    t.room === record._id
+                );
+                if (roomTasks.length === 0) {
+                    return <span style={{ color: '#888' }}>(No Tasks)</span>;
+                }
+                return (
+                    <div>
+                        {roomTasks.map((task, idx) => (
+                            <Tag
+                                key={idx}
+                                color={task.status === 'Completed' ? 'green' : task.status === 'Assigned' ? 'blue' : 'orange'}
+                                style={{ marginBottom: '4px' }}
+                            >
+                                {task.type.substring(0, 20)} {/* Shorten long task types */}
+                            </Tag>
+                        ))}
+                    </div>
+                );
+            }
         },
         { title: 'Verified', key: 'verified', width: columnWidths.verified },
         { title: 'HouseKeeper Res Status', key: 'hkStatus', width: columnWidths.hkStatus },
@@ -396,6 +429,7 @@ const CleanScreen = () => {
                         size="small"
                         scroll={{ x: 'max-content' }}
                         bordered
+                        loading={roomsLoading || bookingsLoading || assignmentsLoading}
                         components={{
                             header: {
                                 cell: ResizableTitle,
