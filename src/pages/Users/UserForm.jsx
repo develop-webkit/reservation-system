@@ -8,14 +8,18 @@ import { ROLES, ROLE_NAMES } from '../../constants/roles';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const UserForm = () => {
+const UserForm = ({ role = 'customer' }) => {
     const { id } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [form] = Form.useForm();
-    
+
     const isEditMode = !!id && id !== 'new';
     const isViewMode = searchParams.get('mode') === 'view';
+
+    // Map role to internal role value
+    const roleMap = { customer: ROLES.CUSTOMER, employee: ROLES.EMPLOYEE };
+    const defaultRole = roleMap[role] || ROLES.CUSTOMER;
 
     const { data: user, isLoading: isFetching } = useUser(isEditMode ? id : null);
     const createUserMutation = useCreateUser();
@@ -26,16 +30,18 @@ const UserForm = () => {
             form.setFieldsValue(user);
         } else {
             form.resetFields();
-            form.setFieldsValue({ role: ROLES.CUSTOMER }); // Default role
+            form.setFieldsValue({ role: defaultRole }); // Default role based on prop
         }
-    }, [user, form]);
+    }, [user, form, defaultRole]);
 
     const onFinish = (values) => {
+        const backUrl = `/users/${role}s`;
+        console.log('[UserForm] Form values being submitted:', values, 'Expected role:', defaultRole);
         if (isEditMode) {
             updateUserMutation.mutate({ id, userData: values }, {
                 onSuccess: () => {
                     message.success('User updated successfully');
-                    navigate('/users/customers');
+                    navigate(backUrl);
                 },
                 onError: (err) => message.error('Update failed: ' + err.message)
             });
@@ -43,7 +49,7 @@ const UserForm = () => {
             createUserMutation.mutate(values, {
                 onSuccess: () => {
                     message.success('User created successfully');
-                    navigate('/users/customers');
+                    navigate(backUrl);
                 },
                 onError: (err) => message.error('Creation failed: ' + err.message)
             });
@@ -61,9 +67,9 @@ const UserForm = () => {
     return (
         <Card>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/users/customers')} style={{ marginRight: '16px' }} />
+                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/users/${role}s`)} style={{ marginRight: '16px' }} />
                 <Title level={3} style={{ margin: 0 }}>
-                    {isViewMode ? 'User Details' : isEditMode ? 'Edit User' : 'Create New User'}
+                    {isViewMode ? (role === 'employee' ? 'Employee Details' : 'User Details') : isEditMode ? `Edit ${role === 'employee' ? 'Employee' : 'Customer'}` : `Create New ${role === 'employee' ? 'Employee' : 'Customer'}`}
                 </Title>
             </div>
 
@@ -74,7 +80,7 @@ const UserForm = () => {
                 layout="vertical"
                 onFinish={onFinish}
                 disabled={isViewMode}
-                initialValues={{ role: ROLES.CUSTOMER }}
+                initialValues={{ role: defaultRole }}
             >
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <Form.Item

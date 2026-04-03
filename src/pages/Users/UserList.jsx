@@ -6,10 +6,22 @@ import { useUsers, useDeleteUser } from '../../hooks/useUsers';
 
 const { Title } = Typography;
 
-const UserList = () => {
+const UserList = ({ role = 'customer' }) => {
     const navigate = useNavigate();
-    const { data: users, isLoading } = useUsers();
+    const { data: allUsers, isLoading } = useUsers();
     const deleteUserMutation = useDeleteUser();
+
+    // Filter users by role
+    const users = React.useMemo(() => {
+        if (!allUsers) return [];
+        const roleMap = { customer: 'user', employee: 'housekeeper' };
+        const targetRole = roleMap[role] || role;
+        const filtered = Array.isArray(allUsers)
+            ? allUsers.filter(u => u.role === targetRole)
+            : allUsers.data?.filter(u => u.role === targetRole) || [];
+        console.log(`[UserList] Role: ${role}, Target: ${targetRole}, All Users:`, allUsers, 'Filtered:', filtered);
+        return filtered;
+    }, [allUsers, role]);
 
     const handleDelete = (id) => {
         Modal.confirm({
@@ -64,18 +76,18 @@ const UserList = () => {
             key: 'actions',
             render: (_, record) => (
                 <Space size="middle">
-                    <Button 
-                        icon={<EyeOutlined />} 
+                    <Button
+                        icon={<EyeOutlined />}
                         size="small"
-                        onClick={() => navigate(`/users/customers/${record._id || record.id}?mode=view`)}
+                        onClick={() => navigate(`/users/${role}s/${record._id || record.id}?mode=view`)}
                     >
                         View
                     </Button>
-                    <Button 
-                        icon={<EditOutlined />} 
-                        type="primary" 
+                    <Button
+                        icon={<EditOutlined />}
+                        type="primary"
                         size="small"
-                        onClick={() => navigate(`/users/customers/${record._id || record.id}`)}
+                        onClick={() => navigate(`/users/${role}s/${record._id || record.id}`)}
                     >
                         Edit
                     </Button>
@@ -93,13 +105,15 @@ const UserList = () => {
     return (
         <Card>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <Title level={3} style={{ margin: 0 }}>Users / Customers</Title>
-                <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />} 
-                    onClick={() => navigate('/users/customers/new')}
+                <Title level={3} style={{ margin: 0 }}>
+                    {role === 'employee' ? 'Employees / Cleaners' : 'Users / Customers'}
+                </Title>
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate(`/users/${role}s/new`)}
                 >
-                    Create User
+                    Create {role === 'employee' ? 'Employee' : 'Customer'}
                 </Button>
             </div>
             <Table 

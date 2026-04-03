@@ -13,8 +13,17 @@ const usersApi = {
         if (API_CONFIG.USE_MOCK_API) {
             return mockApi.users.getAll();
         }
-        const response = await apiClient.get(API_CONFIG.ENDPOINTS.USER);
-        return response.data;
+        try {
+            // Try /user/all endpoint first
+            const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.USER}/all`);
+            console.log('[UsersAPI] getAll response:', response.data);
+            return Array.isArray(response.data) ? response.data : [response.data];
+        } catch (error) {
+            console.warn('[UsersAPI] /user/all failed, falling back to /user');
+            const response = await apiClient.get(API_CONFIG.ENDPOINTS.USER);
+            console.log('[UsersAPI] fallback getAll response:', response.data);
+            return Array.isArray(response.data) ? response.data : [response.data];
+        }
     },
 
     /**

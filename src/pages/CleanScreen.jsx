@@ -1,11 +1,11 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Layout, Checkbox, Input, Badge, Table, Tag, Row, Col, Typography, Select, Button, Space, Spin } from 'antd';
+import { Layout, Checkbox, Input, Badge, Table, Tag, Row, Col, Typography, Select, Button, Space, Spin, message } from 'antd';
 import { SearchOutlined, FilterOutlined, MenuOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import { useRooms } from '../hooks/useRooms';
+import { useRooms, useUpdateRoomStatus } from '../hooks/useRooms';
 import { useBookings } from '../hooks/useBookings';
 import { useHousekeepingAssignments } from '../hooks/useHousekeeping';
 
@@ -94,6 +94,7 @@ const CleanScreen = () => {
     const { data: roomsFromApi = [], isLoading: roomsLoading } = useRooms();
     const { data: bookingsFromApi = [], isLoading: bookingsLoading } = useBookings();
     const { data: assignments = [], isLoading: assignmentsLoading } = useHousekeepingAssignments(dayjs().format('YYYY-MM-DD'));
+    const updateRoomStatus = useUpdateRoomStatus();
 
     // Normalize data
     const rooms = useMemo(() => {
@@ -258,6 +259,34 @@ const CleanScreen = () => {
                     </Tag>
                 );
             }
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            width: 160,
+            render: (_, record) => (
+                <Select
+                    value={record.computedStatus}
+                    size="small"
+                    style={{ width: 150 }}
+                    loading={updateRoomStatus.isPending}
+                    onChange={(newStatus) => {
+                        updateRoomStatus.mutate(
+                            { id: record._id, status: newStatus },
+                            {
+                                onSuccess: () => message.success(`Room ${record.name} set to ${newStatus}`),
+                                onError: (err) => message.error('Failed: ' + (err.response?.data?.message || err.message))
+                            }
+                        );
+                    }}
+                    options={[
+                        { value: 'Clean', label: '🟢 Clean' },
+                        { value: 'Dirty', label: '🔴 Dirty' },
+                        { value: 'Out of Order', label: '🟣 Out of Order' },
+                        { value: 'Inspect', label: '🟠 Inspect' },
+                    ]}
+                />
+            )
         },
         {
             title: 'Task Status',

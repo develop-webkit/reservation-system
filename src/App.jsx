@@ -87,9 +87,12 @@ function App() {
                   <Route path="/housekeeping/clean-screen" element={<CleanScreen />} />
                   <Route path="/housekeeping/roster" element={<HousekeepingRoster />} />
                   <Route path="/charts/bookingchart" element={<BookingChart />} />
-                  <Route path="/users/customers" element={<UserList />} />
-                  <Route path="/users/customers/new" element={<UserForm />} />
-                  <Route path="/users/customers/:id" element={<UserForm />} />
+                  <Route path="/users/customers" element={<UserList role="customer" />} />
+                  <Route path="/users/customers/new" element={<UserForm role="customer" />} />
+                  <Route path="/users/customers/:id" element={<UserForm role="customer" />} />
+                  <Route path="/users/employees" element={<UserList role="employee" />} />
+                  <Route path="/users/employees/new" element={<UserForm role="employee" />} />
+                  <Route path="/users/employees/:id" element={<UserForm role="employee" />} />
                   <Route path="/users/management" element={<UserManagementTabs />} />
                   <Route path="/clients" element={<ClientList />} />
                   <Route path="/clients/new" element={<ClientForm />} />

@@ -8,10 +8,15 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 let mockRooms = [...roomsData];
 let mockBookings = [...bookingsData];
 let mockReservations = [];
+let mockUsers = [
+    { _id: '1', fullName: 'Admin User', username: 'admin', email: 'admin@hotel.com', phone: '1234567890', clientNumber: 'ADM001', role: 'admin' },
+    { _id: '2', fullName: 'John Customer', username: 'john', email: 'john@example.com', phone: '1234567891', clientNumber: 'CUS001', role: 'user' },
+];
 
 // Helper to generate IDs
 let nextBookingId = Math.max(...mockBookings.map(b => b.id), 0) + 1;
 let nextReservationId = 1;
+let nextUserId = 3;
 
 /**
  * Mock API implementation
@@ -191,6 +196,68 @@ export const mockApi = {
             }
             const deleted = mockReservations.splice(index, 1)[0];
             return { data: deleted };
+        },
+    },
+
+    // ========== USERS ==========
+    users: {
+        getAll: async (filters = {}) => {
+            await delay(API_CONFIG.MOCK_DELAY);
+
+            let result = [...mockUsers];
+
+            // Apply filters
+            if (filters.role) {
+                result = result.filter(u => u.role === filters.role);
+            }
+
+            return result;
+        },
+
+        getById: async (id) => {
+            await delay(API_CONFIG.MOCK_DELAY);
+            const user = mockUsers.find(u => u._id === id);
+            if (!user) {
+                throw new Error('User not found');
+            }
+            return user;
+        },
+
+        create: async (userData) => {
+            await delay(API_CONFIG.MOCK_DELAY);
+            const newUser = {
+                ...userData,
+                _id: String(nextUserId++),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            mockUsers.push(newUser);
+            console.log('[MockAPI] User created:', newUser);
+            return newUser;
+        },
+
+        update: async (id, userData) => {
+            await delay(API_CONFIG.MOCK_DELAY);
+            const index = mockUsers.findIndex(u => u._id === id);
+            if (index === -1) {
+                throw new Error('User not found');
+            }
+            mockUsers[index] = {
+                ...mockUsers[index],
+                ...userData,
+                updatedAt: new Date().toISOString(),
+            };
+            return mockUsers[index];
+        },
+
+        delete: async (id) => {
+            await delay(API_CONFIG.MOCK_DELAY);
+            const index = mockUsers.findIndex(u => u._id === id);
+            if (index === -1) {
+                throw new Error('User not found');
+            }
+            const deleted = mockUsers.splice(index, 1)[0];
+            return deleted;
         },
     },
 };
