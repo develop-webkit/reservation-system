@@ -19,12 +19,14 @@ import {
     UserSwitchOutlined,
     CaretDownOutlined,
     EllipsisOutlined,
-    ArrowLeftOutlined
+    ArrowLeftOutlined,
+    FilePdfOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { message } from 'antd';
-import { useRooms } from '../hooks/useRooms';
+import InvoiceModal from '../components/InvoiceModal';
+import { useRooms, useUpdateRoomStatus } from '../hooks/useRooms';
 import { useReservation, useUpdateReservation, useReservations } from '../hooks/useReservations';
 import { useBookings } from '../hooks/useBookings';
 import { useClients } from '../hooks/useClients';
@@ -251,6 +253,7 @@ const ReservationEditPage = () => {
     const { data: bookingsFromApi } = useBookings();
 
     const updateReservationMutation = useUpdateReservation();
+    const updateRoomStatusMutation = useUpdateRoomStatus();
 
     // Normalize rooms, clients, etc.
     const allRooms = useMemo(() => {
@@ -332,6 +335,7 @@ const ReservationEditPage = () => {
 
     const [selectedTab, setSelectedTab] = useState('Reservation');
     const [smartSearch, setSmartSearch] = useState({ isOpen: false, term: '' });
+    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
     // Populate form from API data when reservation loads
     useEffect(() => {
@@ -605,8 +609,28 @@ const ReservationEditPage = () => {
             {
                 onSuccess: (data) => {
                     console.log('[SUCCESS] Reservation updated:', data);
-                    message.success('Reservation updated successfully!');
-                    navigate(-1);
+
+                    // If status is "Departed", mark room as dirty
+                    if (clientData.status === 'Departed' && selectedRoom) {
+                        updateRoomStatusMutation.mutate({
+                            id: selectedRoom._id || selectedRoom.id,
+                            status: 'Dirty'
+                        }, {
+                            onSuccess: () => {
+                                console.log('Room marked as Dirty');
+                                message.success('Reservation updated successfully!');
+                                navigate(-1);
+                            },
+                            onError: (err) => {
+                                console.error('Failed to update room status:', err);
+                                message.success('Reservation updated successfully!');
+                                navigate(-1);
+                            }
+                        });
+                    } else {
+                        message.success('Reservation updated successfully!');
+                        navigate(-1);
+                    }
                 },
                 onError: (err) => {
                     console.error('[ERROR] Update failed:', err);
@@ -615,6 +639,71 @@ const ReservationEditPage = () => {
                 }
             }
         );
+    };
+
+    // Invoice data memo
+    const invoiceData = useMemo(() => ({
+        resNo: clientData.resNo,
+        guestName: `${clientData.given} ${clientData.surname}`.trim(),
+        clientNo: clientData.clientNo,
+        company: clientData.company,
+        area: clientData.area,
+        roomType: clientData.roomType,
+        arrive: clientData.arrive ? dayjs(clientData.arrive).format('ddd, D MMM YYYY h:mm A') : '',
+        depart: clientData.depart ? dayjs(clientData.depart).format('ddd, D MMM YYYY h:mm A') : '',
+        nights: clientData.nights,
+        baseTariff: parseFloat(clientData.baseTariff.split(' / ')[0]) || 0,
+        package: parseFloat(clientData.package.split(' / ')[0]) || 0,
+        totalTariff: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
+        accomm: parseFloat(clientData.accomm) || 0,
+        ar: parseFloat(clientData.ar) || 0,
+        accountNo: clientData.accountNo,
+        generatedDate: dayjs().format('D MMM YYYY'),
+    }), [clientData]);
+
+    // Invoice handlers
+    const handleGenerateInvoice = () => {
+        if (!reservationId || clientData.resNo === '(New Reservation)') {
+            message.warning('Please save the reservation first.');
+            return;
+        }
+        setIsInvoiceModalOpen(true);
+    };
+
+    const handleConfirmInvoice = () => {
+        const doUpdate = clientData.status === 'Unconfirmed' && reservationId;
+        if (doUpdate) {
+            // Build update payload with required fields
+            const updatePayload = {
+                status: 'Confirmed',
+                guestName: `${clientData.given} ${clientData.surname}`.trim(),
+                checkIn: clientData.arrive.toISOString(),
+                checkOut: clientData.depart.toISOString(),
+            };
+
+            updateReservationMutation.mutate(
+                { id: reservationId, data: updatePayload },
+                {
+                    onSuccess: () => {
+                        setClientData(prev => ({ ...prev, status: 'Confirmed' }));
+                        message.success('Reservation confirmed and invoice generated.');
+                        setIsInvoiceModalOpen(false);
+                        // Print the PDF iframe
+                        setTimeout(() => {
+                            const iframe = document.querySelector('.invoice-pdf-viewer iframe');
+                            if (iframe) iframe.contentWindow.print();
+                        }, 500);
+                    },
+                    onError: (err) => message.error('Failed: ' + (err.response?.data?.message || err.message))
+                }
+            );
+        } else {
+            setIsInvoiceModalOpen(false);
+            setTimeout(() => {
+                const iframe = document.querySelector('.invoice-pdf-viewer iframe');
+                if (iframe) iframe.contentWindow.print();
+            }, 500);
+        }
     };
 
     const sidebarItems = [
@@ -778,6 +867,15 @@ const ReservationEditPage = () => {
                         <Text strong style={{ fontSize: '16px' }}>Account</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <Button type="text" size="small" icon={<CopyOutlined />} />
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<FilePdfOutlined />}
+                                onClick={handleGenerateInvoice}
+                                disabled={!reservationId || clientData.resNo === '(New Reservation)'}
+                            >
+                                Invoice
+                            </Button>
                             <Button type="text" size="small" icon={<MoreOutlined />} />
                         </div>
                     </div>
@@ -792,6 +890,14 @@ const ReservationEditPage = () => {
                     <FormField label="Active Accounts" field="activeAccounts" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={['(None)', 'Account1', 'Account2']} />
                 </div>
             </div>
+
+            <InvoiceModal
+                open={isInvoiceModalOpen}
+                onClose={() => setIsInvoiceModalOpen(false)}
+                onConfirm={handleConfirmInvoice}
+                invoiceData={invoiceData}
+                isConfirming={updateReservationMutation.isPending}
+            />
         </div>
     );
 };

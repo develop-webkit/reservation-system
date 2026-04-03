@@ -27,6 +27,7 @@ import { message } from 'antd'; // Added message import
 import InvoiceModal from '../components/InvoiceModal';
 import { useRooms } from '../hooks/useRooms';
 import { useCreateReservation, useUpdateReservation, useReservations } from '../hooks/useReservations';
+import { useUpdateRoomStatus } from '../hooks/useRooms';
 import { useBookings } from '../hooks/useBookings';
 import { useClients } from '../hooks/useClients';
 import { useCompanies } from '../hooks/useCompanies';
@@ -291,6 +292,7 @@ const ReservationsListPage = () => {
     const { data: bookingsFromApi } = useBookings();
     const createReservationMutation = useCreateReservation();
     const updateReservationMutation = useUpdateReservation();
+    const updateRoomStatusMutation = useUpdateRoomStatus();
 
     // --- Data Normalization ---
     const allRooms = useMemo(() => {
@@ -706,6 +708,22 @@ const ReservationsListPage = () => {
                 // Update clientData with the actual resNo that was saved
                 const savedResNo = payload.resNo;
                 setClientData(prev => ({ ...prev, resNo: savedResNo }));
+
+                // If status is "Departed", mark room as dirty
+                if (clientData.status === 'Departed' && selectedRoom) {
+                    updateRoomStatusMutation.mutate({
+                        id: selectedRoom._id || selectedRoom.id,
+                        status: 'Dirty'
+                    }, {
+                        onSuccess: () => {
+                            console.log('Room marked as Dirty');
+                        },
+                        onError: (err) => {
+                            console.error('Failed to update room status:', err);
+                        }
+                    });
+                }
+
                 message.success('Reservation created successfully!');
             },
             onError: (err) => {
