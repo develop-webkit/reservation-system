@@ -256,11 +256,11 @@ const Login = () => {
                                 <Button
                                     size="small"
                                     block
-                                    onClick={() => quickLogin('1001', 'admin', 'password123')}
+                                    onClick={() => quickLogin('CL-ADMIN', 'admin', 'password123')}
                                     style={{ borderColor: ROLE_COLORS[ROLES.SUPER_ADMIN] }}
                                 >
                                     <Tag color={ROLE_COLORS[ROLES.SUPER_ADMIN]}>Admin</Tag>
-                                    1001 / admin / password123
+                                    CL-ADMIN / admin / password123
                                 </Button>
                             </Space>
                         </div>
