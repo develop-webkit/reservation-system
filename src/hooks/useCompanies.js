@@ -24,3 +24,16 @@ export const useCreateCompany = () => {
         },
     });
 };
+
+export const useUpdateCompany = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }) => {
+            const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['companies'] });
+        },
+    });
+};

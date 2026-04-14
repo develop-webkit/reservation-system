@@ -24,3 +24,16 @@ export const useCreateVoucher = () => {
         },
     });
 };
+
+export const useUpdateVoucher = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }) => {
+            const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.VOUCHERS}/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vouchers'] });
+        },
+    });
+};
