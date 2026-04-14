@@ -37,3 +37,16 @@ export const useUpdateVoucher = () => {
         },
     });
 };
+
+export const useDeleteVoucher = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.VOUCHERS}/${id}`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vouchers'] });
+        },
+    });
+};

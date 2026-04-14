@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Tabs, Table, Button, Form, Input, Card, Space, message, InputNumber, Switch, DatePicker, Select, Typography, Modal } from 'antd';
 import { PlusOutlined, DeleteOutlined, GiftOutlined, TeamOutlined, ShopOutlined, EditOutlined } from '@ant-design/icons';
-import { useCompanies, useCreateCompany, useUpdateCompany } from '../../hooks/useCompanies';
-import { useGroups, useCreateGroup, useUpdateGroup } from '../../hooks/useGroups';
-import { useVouchers, useCreateVoucher, useUpdateVoucher } from '../../hooks/useVouchers';
+import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany } from '../../hooks/useCompanies';
+import { useGroups, useCreateGroup, useUpdateGroup, useDeleteGroup } from '../../hooks/useGroups';
+import { useVouchers, useCreateVoucher, useUpdateVoucher, useDeleteVoucher } from '../../hooks/useVouchers';
 
 const { Title, Text } = Typography;
 
@@ -28,14 +28,17 @@ const UserManagementTabs = () => {
     const { data: companiesData, isLoading: companiesLoading } = useCompanies();
     const createCompanyMutation = useCreateCompany();
     const updateCompanyMutation = useUpdateCompany();
+    const deleteCompanyMutation = useDeleteCompany();
 
     const { data: groupsData, isLoading: groupsLoading } = useGroups();
     const createGroupMutation = useCreateGroup();
     const updateGroupMutation = useUpdateGroup();
+    const deleteGroupMutation = useDeleteGroup();
 
     const { data: vouchersData, isLoading: vouchersLoading } = useVouchers();
     const createVoucherMutation = useCreateVoucher();
     const updateVoucherMutation = useUpdateVoucher();
+    const deleteVoucherMutation = useDeleteVoucher();
 
     // --- Form Handlers ---
     const [companyForm] = Form.useForm();
@@ -121,6 +124,55 @@ const UserManagementTabs = () => {
         );
     };
 
+    // --- Delete Handlers ---
+    const handleDeleteCompany = (id, name) => {
+        Modal.confirm({
+            title: 'Delete Company',
+            content: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+            okText: 'Delete',
+            okType: 'danger',
+            cancelText: 'Cancel',
+            onOk: () => {
+                deleteCompanyMutation.mutate(id, {
+                    onSuccess: () => message.success('Company deleted successfully'),
+                    onError: (err) => message.error('Failed to delete company: ' + err.message)
+                });
+            },
+        });
+    };
+
+    const handleDeleteGroup = (id, name) => {
+        Modal.confirm({
+            title: 'Delete Group',
+            content: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+            okText: 'Delete',
+            okType: 'danger',
+            cancelText: 'Cancel',
+            onOk: () => {
+                deleteGroupMutation.mutate(id, {
+                    onSuccess: () => message.success('Group deleted successfully'),
+                    onError: (err) => message.error('Failed to delete group: ' + err.message)
+                });
+            },
+        });
+    };
+
+    const handleDeleteVoucher = (id, code) => {
+        Modal.confirm({
+            title: 'Delete Voucher',
+            content: `Are you sure you want to delete voucher "${code}"? This action cannot be undone.`,
+            okText: 'Delete',
+            okType: 'danger',
+            cancelText: 'Cancel',
+            onOk: () => {
+                deleteVoucherMutation.mutate(id, {
+                    onSuccess: () => message.success('Voucher deleted successfully'),
+                    onError: (err) => message.error('Failed to delete voucher: ' + err.message)
+                });
+            },
+        });
+    };
+
     // --- Filter & Search Functions ---
     const filteredCompanies = React.useMemo(() => {
         let data = Array.isArray(companiesData) ? companiesData : (companiesData?.data || []);
@@ -181,6 +233,7 @@ const UserManagementTabs = () => {
             render: (_, record) => (
                 <Space size="small">
                     <Button icon={<EditOutlined />} size="small" onClick={() => setEditingCompany(record)}>Edit</Button>
+                    <Button icon={<DeleteOutlined />} size="small" danger onClick={() => handleDeleteCompany(record._id, record.name)}>Delete</Button>
                 </Space>
             ),
         },
@@ -196,6 +249,7 @@ const UserManagementTabs = () => {
             render: (_, record) => (
                 <Space size="small">
                     <Button icon={<EditOutlined />} size="small" onClick={() => setEditingGroup(record)}>Edit</Button>
+                    <Button icon={<DeleteOutlined />} size="small" danger onClick={() => handleDeleteGroup(record._id, record.clientAssociation)}>Delete</Button>
                 </Space>
             ),
         },
@@ -212,6 +266,7 @@ const UserManagementTabs = () => {
             render: (_, record) => (
                 <Space size="small">
                     <Button icon={<EditOutlined />} size="small" onClick={() => setEditingVoucher(record)}>Edit</Button>
+                    <Button icon={<DeleteOutlined />} size="small" danger onClick={() => handleDeleteVoucher(record._id, record.code)}>Delete</Button>
                 </Space>
             ),
         },
