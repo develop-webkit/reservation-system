@@ -15,7 +15,7 @@ const clientsApi = {
         return response.data;
     },
     update: async (id, data) => {
-        const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.CLIENTS}/${id}`, data);
+        const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.CLIENTS}/${id}`, data);
         return response.data;
     },
     delete: async (id) => {
