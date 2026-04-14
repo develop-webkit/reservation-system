@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -lat d:/projects/Rms-Backend-main/src/modules/*/*.ts)",
+      "Read(//d/projects/reservation-system/**)",
+      "Bash(grep -r \"/all\\\\|getAll\" d:/projects/Rms-Backend-main/src/modules/user* --include=\"*.ts\")"
+    ]
+  }
+}

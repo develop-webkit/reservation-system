@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Layout, Table, DatePicker, Typography, Space, Button, Modal, Row, Col, Card, Spin, Empty, Tag, message } from 'antd';
+import { Layout, Table, DatePicker, Typography, Space, Button, Modal, Row, Col, Card, Spin, Empty, Tag, message, Input, Select } from 'antd';
 import dayjs from 'dayjs';
-import { TeamOutlined, PrinterOutlined, ReloadOutlined, CloseOutlined, SwapOutlined, CheckOutlined } from '@ant-design/icons';
+import { TeamOutlined, PrinterOutlined, ReloadOutlined, CloseOutlined, SwapOutlined, CheckOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import {
     useRosterSuggestions,
     useHousekeepingAssignments,
@@ -110,6 +110,10 @@ const HousekeepingRoster = () => {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedHousekeeper, setSelectedHousekeeper] = useState(null);
+
+    // Search & Filter State
+    const [housekeeperSearch, setHousekeeperSearch] = useState('');
+    const [pageSize, setPageSize] = useState(10);
 
     // API Hooks
     const { data: suggestions = [], isLoading: suggestionsLoading } = useRosterSuggestions(selectedDate.format('YYYY-MM-DD'));
@@ -241,8 +245,16 @@ const HousekeepingRoster = () => {
         [assignments, selectedHousekeeper]
     );
 
+    // Filter housekeepers based on search
+    const filteredStaffData = useMemo(() => {
+        if (!housekeeperSearch) return staffData;
+        return staffData.filter(staff =>
+            staff.name?.toLowerCase().includes(housekeeperSearch.toLowerCase())
+        );
+    }, [staffData, housekeeperSearch]);
+
     const columns = [
-        { title: 'Housekeeper', dataIndex: 'name', key: 'name', width: 200 },
+        { title: 'Housekeeper', dataIndex: 'name', key: 'name', width: 150, sorter: (a, b) => a.name.localeCompare(b.name) },
         { title: 'Emp Type', dataIndex: 'empType', key: 'empType', width: 100 },
         { title: 'Available (Min)', dataIndex: 'availableMin', key: 'availableMin', width: 120 },
         { title: 'Tasks', dataIndex: 'tasks', key: 'tasks', width: 80 },
@@ -251,6 +263,23 @@ const HousekeepingRoster = () => {
         { title: 'Stay Over Clean', dataIndex: 'stayOver', key: 'stayOver', width: 120 },
         { title: 'Departure', dataIndex: 'departure', key: 'departure', width: 100 },
         { title: 'Holdover Clean', dataIndex: 'holdOver', key: 'holdOver', width: 120 },
+        {
+            title: 'Actions',
+            key: 'actions',
+            width: 120,
+            render: (_, record) => (
+                <Space size="small">
+                    <Button
+                        icon={<EditOutlined />}
+                        size="small"
+                        onClick={() => handleRowDoubleClick(record)}
+                        title="Allocate Tasks"
+                    >
+                        Allocate
+                    </Button>
+                </Space>
+            ),
+        },
     ];
 
     const taskTableColumns = (showCompleteButton) => [
@@ -296,21 +325,41 @@ const HousekeepingRoster = () => {
             `}</style>
 
             {/* Header Section (Hidden in Print) */}
-            <div className="no-print" style={{ padding: '16px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <Title level={4} style={{ margin: 0 }}>Housekeeping Roster</Title>
-                    <Text type="secondary">({housekeepers.length} Housekeepers)</Text>
-                    <DatePicker
-                        value={selectedDate}
-                        onChange={setSelectedDate}
-                        format="DD-MMM-YYYY"
-                        allowClear={false}
+            <div className="no-print" style={{ padding: '16px 24px', borderBottom: '1px solid #f0f0f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <Title level={4} style={{ margin: 0 }}>Housekeeping Roster</Title>
+                        <Text type="secondary">({housekeepers.length} Housekeepers)</Text>
+                        <DatePicker
+                            value={selectedDate}
+                            onChange={setSelectedDate}
+                            format="DD-MMM-YYYY"
+                            allowClear={false}
+                        />
+                    </div>
+                    <Space size="large">
+                        <PrinterOutlined style={{ fontSize: 18, cursor: 'pointer', color: 'blue' }} onClick={handlePrint} title="Print Report" />
+                        <ReloadOutlined style={{ fontSize: 18, cursor: 'pointer' }} title="Refresh" />
+                    </Space>
+                </div>
+
+                {/* Search and Filter Controls */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '12px' }}>
+                    <Input
+                        placeholder="Search by housekeeper name..."
+                        value={housekeeperSearch}
+                        onChange={(e) => setHousekeeperSearch(e.target.value)}
+                    />
+                    <Select
+                        value={pageSize}
+                        onChange={setPageSize}
+                        options={[
+                            { label: '10', value: 10 },
+                            { label: '20', value: 20 },
+                            { label: '30', value: 30 },
+                        ]}
                     />
                 </div>
-                <Space size="large">
-                    <PrinterOutlined style={{ fontSize: 18, cursor: 'pointer', color: 'blue' }} onClick={handlePrint} title="Print Report" />
-                    <ReloadOutlined style={{ fontSize: 18, cursor: 'pointer' }} title="Refresh" />
-                </Space>
             </div>
 
             <Content className="no-print" style={{ padding: 24, overflow: 'auto' }}>
@@ -321,13 +370,12 @@ const HousekeepingRoster = () => {
                 ) : (
                     <Table
                         columns={columns}
-                        dataSource={staffData}
-                        pagination={false}
+                        dataSource={filteredStaffData}
+                        pagination={{ pageSize: pageSize, pageSizeOptions: ['10', '20', '30'], showSizeChanger: true }}
                         size="small"
                         bordered
                         loading={allocateTasks.isPending}
                         onRow={(record) => ({
-                            onDoubleClick: () => handleRowDoubleClick(record),
                             style: { cursor: 'pointer' }
                         })}
                         summary={() => (

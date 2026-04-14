@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { Form, Input, Button, Select, Card, Typography, Space, message, Spin, Divider } from 'antd';
+import { Form, Input, Button, Select, Card, Typography, Space, message, Spin, Divider, Tag } from 'antd';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useUser, useCreateUser, useUpdateUser } from '../../hooks/useUsers';
 import { ROLES, ROLE_NAMES } from '../../constants/roles';
+import useAuthStore from '../../store/authStore';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -13,6 +14,7 @@ const UserForm = ({ role = 'customer' }) => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [form] = Form.useForm();
+    const authUser = useAuthStore(state => state.user);
 
     const isEditMode = !!id && id !== 'new';
     const isViewMode = searchParams.get('mode') === 'view';
@@ -20,6 +22,30 @@ const UserForm = ({ role = 'customer' }) => {
     // Map role to internal role value
     const roleMap = { customer: ROLES.CUSTOMER, employee: ROLES.EMPLOYEE };
     const defaultRole = roleMap[role] || ROLES.CUSTOMER;
+
+    // Get default clientNumber from multiple sources
+    const getClientNumber = () => {
+        // Try 1: Auth store
+        if (authUser?.clientNumber) return authUser.clientNumber;
+
+        // Try 2: LocalStorage (where auth store persists)
+        try {
+            const stored = localStorage.getItem('rms-auth-storage');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed.state?.user?.clientNumber) {
+                    return parsed.state.user.clientNumber;
+                }
+            }
+        } catch (e) {
+            console.log('Failed to parse localStorage:', e);
+        }
+
+        return '';
+    };
+
+    const defaultClientNumber = getClientNumber();
+    console.log('[UserForm] Getting clientNumber:', defaultClientNumber, 'authUser:', authUser);
 
     const { data: user, isLoading: isFetching } = useUser(isEditMode ? id : null);
     const createUserMutation = useCreateUser();
@@ -30,15 +56,26 @@ const UserForm = ({ role = 'customer' }) => {
             form.setFieldsValue(user);
         } else {
             form.resetFields();
-            form.setFieldsValue({ role: defaultRole }); // Default role based on prop
+            form.setFieldsValue({
+                role: defaultRole,
+                clientNumber: defaultClientNumber,
+            });
         }
-    }, [user, form, defaultRole]);
+    }, [user, form, defaultRole, defaultClientNumber]);
 
     const onFinish = (values) => {
         const backUrl = `/users/${role}s`;
-        console.log('[UserForm] Form values being submitted:', values, 'Expected role:', defaultRole);
+
+        // Ensure clientNumber and role are set (for disabled fields)
+        const payload = {
+            ...values,
+            clientNumber: defaultClientNumber,
+            role: defaultRole,
+        };
+
+        console.log('[UserForm] Form values being submitted:', payload);
         if (isEditMode) {
-            updateUserMutation.mutate({ id, userData: values }, {
+            updateUserMutation.mutate({ id, userData: payload }, {
                 onSuccess: () => {
                     message.success('User updated successfully');
                     navigate(backUrl);
@@ -46,7 +83,7 @@ const UserForm = ({ role = 'customer' }) => {
                 onError: (err) => message.error('Update failed: ' + err.message)
             });
         } else {
-            createUserMutation.mutate(values, {
+            createUserMutation.mutate(payload, {
                 onSuccess: () => {
                     message.success('User created successfully');
                     navigate(backUrl);
@@ -128,38 +165,44 @@ const UserForm = ({ role = 'customer' }) => {
                     </Form.Item>
 
                     <Form.Item
-                        label="Client Number"
+                        label={<>Client Number <Text type="secondary" style={{ fontSize: '12px' }}>(Auto-filled or edit)</Text></>}
                         name="clientNumber"
-                        rules={[{ required: true, message: 'Please enter client number' }]}
+                        initialValue={defaultClientNumber}
+                        rules={[{ required: true, message: 'Client Number is required' }]}
                     >
-                        <Input placeholder="asd2asd" />
+                        <Input placeholder="Auto-filled from your login or enter manually" />
                     </Form.Item>
 
                     <Form.Item
-                        label="Role"
+                        label={<>Role {role === 'employee' && <Tag color="orange" style={{ marginLeft: '8px' }}>Fixed</Tag>}</>}
                         name="role"
-                        rules={[{ required: true, message: 'Please select a role' }]}
                     >
-                        <Select placeholder="Select role">
-                            {Object.entries(ROLE_NAMES).map(([value, label]) => (
-                                <Option key={value} value={value}>{label}</Option>
-                            ))}
-                        </Select>
+                        {role === 'employee' ? (
+                            <Input disabled value="Housekeeper / Cleaner" />
+                        ) : role === 'customer' ? (
+                            <Input disabled value="User / Customer" />
+                        ) : (
+                            <Select placeholder="Select role">
+                                {Object.entries(ROLE_NAMES).map(([value, label]) => (
+                                    <Option key={value} value={value}>{label}</Option>
+                                ))}
+                            </Select>
+                        )}
                     </Form.Item>
                 </div>
 
                 {!isViewMode && (
                     <Form.Item style={{ marginTop: '24px' }}>
                         <Space>
-                            <Button 
-                                type="primary" 
-                                htmlType="submit" 
+                            <Button
+                                type="primary"
+                                htmlType="submit"
                                 icon={<SaveOutlined />}
                                 loading={createUserMutation.isLoading || updateUserMutation.isLoading}
                             >
                                 {isEditMode ? 'Update User' : 'Save User'}
                             </Button>
-                            <Button onClick={() => navigate('/users/customers')}>
+                            <Button onClick={() => navigate(`/users/${role}s`)}>
                                 Cancel
                             </Button>
                         </Space>
