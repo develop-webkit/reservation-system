@@ -13,6 +13,17 @@ const UserManagementTabs = () => {
     const [editingGroup, setEditingGroup] = useState(null);
     const [editingVoucher, setEditingVoucher] = useState(null);
 
+    // --- Pagination & Search/Filter State ---
+    const [companyPageSize, setCompanyPageSize] = useState(10);
+    const [companySearch, setCompanySearch] = useState('');
+    const [companyCreditHoldFilter, setCompanyCreditHoldFilter] = useState(null);
+
+    const [groupPageSize, setGroupPageSize] = useState(10);
+    const [groupSearch, setGroupSearch] = useState('');
+
+    const [voucherPageSize, setVoucherPageSize] = useState(10);
+    const [voucherSearch, setVoucherSearch] = useState('');
+
     // --- Hooks ---
     const { data: companiesData, isLoading: companiesLoading } = useCompanies();
     const createCompanyMutation = useCreateCompany();
@@ -109,6 +120,53 @@ const UserManagementTabs = () => {
             }
         );
     };
+
+    // --- Filter & Search Functions ---
+    const filteredCompanies = React.useMemo(() => {
+        let data = Array.isArray(companiesData) ? companiesData : (companiesData?.data || []);
+
+        if (companySearch) {
+            data = data.filter(c =>
+                (c.name?.toLowerCase().includes(companySearch.toLowerCase())) ||
+                (c.tradingAs?.toLowerCase().includes(companySearch.toLowerCase())) ||
+                (c.email?.toLowerCase().includes(companySearch.toLowerCase())) ||
+                (c.phone?.toLowerCase().includes(companySearch.toLowerCase()))
+            );
+        }
+
+        if (companyCreditHoldFilter !== null) {
+            data = data.filter(c => c.creditHold === companyCreditHoldFilter);
+        }
+
+        return data;
+    }, [companiesData, companySearch, companyCreditHoldFilter]);
+
+    const filteredGroups = React.useMemo(() => {
+        let data = Array.isArray(groupsData) ? groupsData : (groupsData?.data || []);
+
+        if (groupSearch) {
+            data = data.filter(g =>
+                (g.clientAssociation?.toLowerCase().includes(groupSearch.toLowerCase())) ||
+                (g.primaryContactName?.toLowerCase().includes(groupSearch.toLowerCase())) ||
+                (g.primaryContactEmail?.toLowerCase().includes(groupSearch.toLowerCase()))
+            );
+        }
+
+        return data;
+    }, [groupsData, groupSearch]);
+
+    const filteredVouchers = React.useMemo(() => {
+        let data = Array.isArray(vouchersData) ? vouchersData : (vouchersData?.data || []);
+
+        if (voucherSearch) {
+            data = data.filter(v =>
+                (v.code?.toLowerCase().includes(voucherSearch.toLowerCase())) ||
+                (v.description?.toLowerCase().includes(voucherSearch.toLowerCase()))
+            );
+        }
+
+        return data;
+    }, [vouchersData, voucherSearch]);
 
     // --- Table Columns ---
     const companyColumns = [
@@ -215,12 +273,38 @@ const UserManagementTabs = () => {
                         children: (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px' }}>
                                 <div>
-                                    <Table 
-                                        dataSource={Array.isArray(companiesData) ? companiesData : companiesData?.data} 
-                                        columns={companyColumns} 
-                                        rowKey="_id" 
-                                        size="small" 
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 150px', gap: '12px', marginBottom: '16px' }}>
+                                        <Input
+                                            placeholder="Search by name, trading as, email, or phone..."
+                                            value={companySearch}
+                                            onChange={(e) => setCompanySearch(e.target.value)}
+                                        />
+                                        <Select
+                                            placeholder="Filter by Credit Hold"
+                                            allowClear
+                                            value={companyCreditHoldFilter}
+                                            onChange={setCompanyCreditHoldFilter}
+                                        >
+                                            <Select.Option value={true}>On Hold</Select.Option>
+                                            <Select.Option value={false}>Active</Select.Option>
+                                        </Select>
+                                        <Select
+                                            value={companyPageSize}
+                                            onChange={setCompanyPageSize}
+                                            options={[
+                                                { label: '10', value: 10 },
+                                                { label: '20', value: 20 },
+                                                { label: '30', value: 30 },
+                                            ]}
+                                        />
+                                    </div>
+                                    <Table
+                                        dataSource={filteredCompanies}
+                                        columns={companyColumns}
+                                        rowKey="_id"
+                                        size="small"
                                         loading={companiesLoading}
+                                        pagination={{ pageSize: companyPageSize, pageSizeOptions: ['10', '20', '30'], showSizeChanger: true }}
                                     />
                                 </div>
                                 <Card title="Create New Company" size="small" type="inner">
@@ -246,12 +330,29 @@ const UserManagementTabs = () => {
                         children: (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px' }}>
                                 <div>
-                                    <Table 
-                                        dataSource={Array.isArray(groupsData) ? groupsData : groupsData?.data} 
-                                        columns={groupColumns} 
-                                        rowKey="_id" 
-                                        size="small" 
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '12px', marginBottom: '16px' }}>
+                                        <Input
+                                            placeholder="Search by association, contact name, or email..."
+                                            value={groupSearch}
+                                            onChange={(e) => setGroupSearch(e.target.value)}
+                                        />
+                                        <Select
+                                            value={groupPageSize}
+                                            onChange={setGroupPageSize}
+                                            options={[
+                                                { label: '10', value: 10 },
+                                                { label: '20', value: 20 },
+                                                { label: '30', value: 30 },
+                                            ]}
+                                        />
+                                    </div>
+                                    <Table
+                                        dataSource={filteredGroups}
+                                        columns={groupColumns}
+                                        rowKey="_id"
+                                        size="small"
                                         loading={groupsLoading}
+                                        pagination={{ pageSize: groupPageSize, pageSizeOptions: ['10', '20', '30'], showSizeChanger: true }}
                                     />
                                 </div>
                                 <Card title="Create New Group" size="small" type="inner">
@@ -272,12 +373,29 @@ const UserManagementTabs = () => {
                         children: (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px' }}>
                                 <div>
-                                    <Table 
-                                        dataSource={Array.isArray(vouchersData) ? vouchersData : vouchersData?.data} 
-                                        columns={voucherColumns} 
-                                        rowKey="_id" 
-                                        size="small" 
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '12px', marginBottom: '16px' }}>
+                                        <Input
+                                            placeholder="Search by code or description..."
+                                            value={voucherSearch}
+                                            onChange={(e) => setVoucherSearch(e.target.value)}
+                                        />
+                                        <Select
+                                            value={voucherPageSize}
+                                            onChange={setVoucherPageSize}
+                                            options={[
+                                                { label: '10', value: 10 },
+                                                { label: '20', value: 20 },
+                                                { label: '30', value: 30 },
+                                            ]}
+                                        />
+                                    </div>
+                                    <Table
+                                        dataSource={filteredVouchers}
+                                        columns={voucherColumns}
+                                        rowKey="_id"
+                                        size="small"
                                         loading={vouchersLoading}
+                                        pagination={{ pageSize: voucherPageSize, pageSizeOptions: ['10', '20', '30'], showSizeChanger: true }}
                                     />
                                 </div>
                                 <Card title="Create New Voucher" size="small" type="inner">
