@@ -92,14 +92,14 @@ const ClientForm = () => {
                         name="clientNo"
                         rules={[{ required: true, message: 'Required' }]}
                     >
-                        <Input placeholder="12345" />
+                        <Input placeholder="e.g. CL-1001" />
                     </Form.Item>
 
                     <Form.Item
                         label="Group Name"
                         name="groupName"
                     >
-                        <Input placeholder="Corporate Partners" />
+                        <Input placeholder="e.g. Corporate Partners" />
                     </Form.Item>
 
                     <Form.Item
@@ -107,7 +107,7 @@ const ClientForm = () => {
                         name="clientName"
                         rules={[{ required: true, message: 'Required' }]}
                     >
-                        <Input placeholder="Lifetime Fitness" />
+                        <Input placeholder="e.g. Acme Pty Ltd" />
                     </Form.Item>
 
                     <Form.Item
@@ -115,14 +115,14 @@ const ClientForm = () => {
                         name="surname"
                         rules={[{ required: true, message: 'Required' }]}
                     >
-                        <Input placeholder="Smith" />
+                        <Input placeholder="e.g. Smith" />
                     </Form.Item>
 
                     <Form.Item
                         label="Given Name"
                         name="given"
                     >
-                        <Input placeholder="John" />
+                        <Input placeholder="e.g. John" />
                     </Form.Item>
 
                     <Form.Item
@@ -153,28 +153,28 @@ const ClientForm = () => {
                         label="Address"
                         name="address"
                     >
-                        <Input placeholder="100 Merchants Ave" />
+                        <Input placeholder="e.g. 123 Sample Street, Sydney NSW 2000" />
                     </Form.Item>
 
                     <Form.Item
                         label="Mobile"
                         name="mobile"
                     >
-                        <Input placeholder="+123456780" />
+                        <Input placeholder="e.g. 04XX XXX XXX" />
                     </Form.Item>
 
                     <Form.Item
                         label="After Hours Phone"
                         name="phoneAH"
                     >
-                        <Input placeholder="+123456781" />
+                        <Input placeholder="e.g. 02 XXXX XXXX" />
                     </Form.Item>
 
                     <Form.Item
                         label="Business Hours Phone"
                         name="phoneBH"
                     >
-                        <Input placeholder="+123456782" />
+                        <Input placeholder="e.g. 02 XXXX XXXX" />
                     </Form.Item>
 
                     <Form.Item
@@ -182,7 +182,7 @@ const ClientForm = () => {
                         name="email"
                         rules={[{ type: 'email', message: 'Invalid email' }]}
                     >
-                        <Input placeholder="client@example.com" />
+                        <Input placeholder="e.g. name@example.com.au" />
                     </Form.Item>
 
                     <Form.Item
@@ -201,7 +201,7 @@ const ClientForm = () => {
                         label="Import ID"
                         name="importId"
                     >
-                        <Input placeholder="IMPORT-CLIENT-01" />
+                        <Input placeholder="e.g. IMPORT-001" />
                     </Form.Item>
                 </div>
 

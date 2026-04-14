@@ -7,7 +7,8 @@
       "Bash(curl -s http://localhost:7000/api/v1/swagger/documentation/json)",
       "Bash(python -c ':*)",
       "Bash(node -e ':*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(grep -n \"| null\\\\|| undefined\" /d/office/Rms-Backend-main/src/schemas/*.schema.ts)"
     ]
   }
 }
