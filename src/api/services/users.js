@@ -9,11 +9,11 @@ const usersApi = {
     /**
      * Get all users
      */
-    getAll: async () => {
+    getAll: async (params = {}) => {
         if (API_CONFIG.USE_MOCK_API) {
             return mockApi.users.getAll();
         }
-        const response = await apiClient.get(API_CONFIG.ENDPOINTS.USER);
+        const response = await apiClient.get(API_CONFIG.ENDPOINTS.USER, { params });
         console.log('[UsersAPI] getAll response:', response.data);
         return Array.isArray(response.data) ? response.data : [response.data];
     },

@@ -108,15 +108,19 @@ export const useHousekeepers = () => {
         queryKey: ['users', 'housekeepers'],
         queryFn: async () => {
             try {
-                const response = await usersApi.getAll({ role: 'housekeeper' });
-                const users = Array.isArray(response) ? response : (response.data || []);
-                return users;
-            } catch (error) {
-                // Fallback: fetch all users and filter client-side
-                console.warn('Failed to fetch housekeepers with role filter, fetching all users...');
+                // Try to fetch all users first
                 const response = await usersApi.getAll();
-                const users = Array.isArray(response) ? response : (response.data || []);
-                return users.filter(u => u.role === 'housekeeper');
+                let users = Array.isArray(response) ? response : (response.data || []);
+                console.log('[useHousekeepers] All users:', users);
+
+                // Filter for housekeeper role
+                const housekeepers = users.filter(u => u.role === 'housekeeper');
+                console.log('[useHousekeepers] Filtered housekeepers:', housekeepers);
+
+                return housekeepers.length > 0 ? housekeepers : users;
+            } catch (error) {
+                console.error('[useHousekeepers] Error fetching housekeepers:', error);
+                return [];
             }
         },
         staleTime: 1000 * 60 * 30, // 30 minutes — housekeepers don't change often
