@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layout, Table, DatePicker, Typography, Space, Button, Modal, Row, Col, Card, Spin, Empty, Tag, message, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { TeamOutlined, PrinterOutlined, ReloadOutlined, CloseOutlined, SwapOutlined, CheckOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -104,8 +105,14 @@ const HousekeepingPrintView = ({ date, groupedByHousekeeper }) => {
 
 
 const HousekeepingRoster = () => {
-    // Default date: tomorrow
-    const [selectedDate, setSelectedDate] = useState(dayjs().add(1, 'day'));
+    // Read ?date= from query params
+    const [searchParams] = useSearchParams();
+    const dateParam = searchParams.get('date');
+
+    // Default date: tomorrow, or from query param
+    const [selectedDate, setSelectedDate] = useState(
+        dateParam ? dayjs(dateParam) : dayjs().add(1, 'day')
+    );
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -142,14 +149,11 @@ const HousekeepingRoster = () => {
             return {
                 key: hk._id,
                 name: hk.name || hk.username,
-                empType: hk.role || 'Housekeeper',
-                availableMin: 0,
-                tasks: tasksCount,
-                allocatedMin: allocatedMin,
                 preArrival: preArrivalCount,
                 stayOver: stayOverCount,
                 departure: departureCount,
                 holdOver: holdOverCount,
+                total: preArrivalCount + stayOverCount + departureCount + holdOverCount,
                 _id: hk._id
             };
         });
@@ -157,7 +161,6 @@ const HousekeepingRoster = () => {
         // Calculate totals
         const totals = {
             tasks: assignments.length,
-            allocatedMin: assignments.reduce((sum, t) => sum + (t.timeRequired || 0), 0),
             preArrival: assignments.filter(t => t.type === 'Pre Arrival Check').length,
             stayOver: assignments.filter(t => t.type === 'Stay Over Clean').length,
             departure: assignments.filter(t => t.type === 'Departure Clean').length,
@@ -167,7 +170,6 @@ const HousekeepingRoster = () => {
         const unassigned = suggestions.filter(t => !assignments.find(a => a._id === t._id));
         const totalAll = {
             tasks: suggestions.length,
-            allocatedMin: suggestions.reduce((sum, t) => sum + (t.timeRequired || 0), 0),
             preArrival: suggestions.filter(t => t.type === 'Pre Arrival Check').length,
             stayOver: suggestions.filter(t => t.type === 'Stay Over Clean').length,
             departure: suggestions.filter(t => t.type === 'Departure Clean').length,
@@ -176,7 +178,6 @@ const HousekeepingRoster = () => {
 
         const remaining = {
             tasks: unassigned.length,
-            allocatedMin: unassigned.reduce((sum, t) => sum + (t.timeRequired || 0), 0),
             preArrival: unassigned.filter(t => t.type === 'Pre Arrival Check').length,
             stayOver: unassigned.filter(t => t.type === 'Stay Over Clean').length,
             departure: unassigned.filter(t => t.type === 'Departure Clean').length,
@@ -254,39 +255,18 @@ const HousekeepingRoster = () => {
     }, [staffData, housekeeperSearch]);
 
     const columns = [
-        { title: 'Housekeeper', dataIndex: 'name', key: 'name', width: 150, sorter: (a, b) => a.name.localeCompare(b.name) },
-        { title: 'Emp Type', dataIndex: 'empType', key: 'empType', width: 100 },
-        { title: 'Available (Min)', dataIndex: 'availableMin', key: 'availableMin', width: 120 },
-        { title: 'Tasks', dataIndex: 'tasks', key: 'tasks', width: 80 },
-        { title: 'Allocated (Min)', dataIndex: 'allocatedMin', key: 'allocatedMin', width: 120 },
-        { title: 'Pre Arrival Check', dataIndex: 'preArrival', key: 'preArrival', width: 120 },
-        { title: 'Stay Over Clean', dataIndex: 'stayOver', key: 'stayOver', width: 120 },
-        { title: 'Departure', dataIndex: 'departure', key: 'departure', width: 100 },
-        { title: 'Holdover Clean', dataIndex: 'holdOver', key: 'holdOver', width: 120 },
-        {
-            title: 'Actions',
-            key: 'actions',
-            width: 120,
-            render: (_, record) => (
-                <Space size="small">
-                    <Button
-                        icon={<EditOutlined />}
-                        size="small"
-                        onClick={() => handleRowDoubleClick(record)}
-                        title="Allocate Tasks"
-                    >
-                        Allocate
-                    </Button>
-                </Space>
-            ),
-        },
+        { title: 'Housekeeper', dataIndex: 'name', key: 'name', width: 160, sorter: (a, b) => a.name.localeCompare(b.name) },
+        { title: 'Pre Arrival Check', dataIndex: 'preArrival', key: 'preArrival', width: 140, align: 'center' },
+        { title: 'Stay Over Clean', dataIndex: 'stayOver', key: 'stayOver', width: 130, align: 'center' },
+        { title: 'Departure Clean', dataIndex: 'departure', key: 'departure', width: 130, align: 'center' },
+        { title: 'Holdover Clean', dataIndex: 'holdOver', key: 'holdOver', width: 130, align: 'center' },
+        { title: 'Total', dataIndex: 'total', key: 'total', width: 80, align: 'center' },
     ];
 
     const taskTableColumns = (showCompleteButton) => [
-        { title: 'Area', dataIndex: ['room', 'name'], key: 'room', width: 80 },
-        { title: 'Task Type', dataIndex: 'type', key: 'type', width: 150 },
-        { title: 'Booking Ref', dataIndex: ['booking', 'resNo'], key: 'resNo', width: 100 },
-        { title: 'Time (Min)', dataIndex: 'timeRequired', key: 'timeRequired', width: 80, align: 'right' },
+        { title: 'Area', dataIndex: ['room', 'name'], key: 'room', width: 100 },
+        { title: 'Task Type', dataIndex: 'type', key: 'type', width: 180 },
+        { title: 'Booking Ref', dataIndex: ['booking', 'resNo'], key: 'resNo', width: 120 },
         showCompleteButton && {
             title: 'Action',
             key: 'action',
@@ -344,20 +324,11 @@ const HousekeepingRoster = () => {
                 </div>
 
                 {/* Search and Filter Controls */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                     <Input
                         placeholder="Search by housekeeper name..."
                         value={housekeeperSearch}
                         onChange={(e) => setHousekeeperSearch(e.target.value)}
-                    />
-                    <Select
-                        value={pageSize}
-                        onChange={setPageSize}
-                        options={[
-                            { label: '10', value: 10 },
-                            { label: '20', value: 20 },
-                            { label: '30', value: 30 },
-                        ]}
                     />
                 </div>
             </div>
@@ -365,8 +336,6 @@ const HousekeepingRoster = () => {
             <Content className="no-print" style={{ padding: 24, overflow: 'auto' }}>
                 {isLoading ? (
                     <Spin tip="Loading housekeeping data..." />
-                ) : suggestions.length === 0 && assignments.length === 0 ? (
-                    <Empty description="No tasks for the selected date" />
                 ) : (
                     <Table
                         columns={columns}
@@ -376,36 +345,34 @@ const HousekeepingRoster = () => {
                         bordered
                         loading={allocateTasks.isPending}
                         onRow={(record) => ({
+                            onDoubleClick: () => handleRowDoubleClick(record),
                             style: { cursor: 'pointer' }
                         })}
                         summary={() => (
                             <>
                                 <Table.Summary.Row style={{ backgroundColor: '#fff' }}>
-                                    <Table.Summary.Cell index={0} colSpan={3} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Tasks</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={3}>{totalStats.totalAll.tasks}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={4}>{totalStats.totalAll.allocatedMin}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={5}>{totalStats.totalAll.preArrival}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={6}>{totalStats.totalAll.stayOver}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={7}>{totalStats.totalAll.departure}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={8}>{totalStats.totalAll.holdOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={0} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Available</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={1}>{totalStats.totalAll.preArrival}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={2}>{totalStats.totalAll.stayOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={3}>{totalStats.totalAll.departure}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={4}>{totalStats.totalAll.holdOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={5}>{totalStats.totalAll.tasks}</Table.Summary.Cell>
                                 </Table.Summary.Row>
                                 <Table.Summary.Row style={{ backgroundColor: '#fff' }}>
-                                    <Table.Summary.Cell index={0} colSpan={3} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Allocated</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={3}>{totalStats.totals.tasks}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={4}>{totalStats.totals.allocatedMin}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={5}>{totalStats.totals.preArrival}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={6}>{totalStats.totals.stayOver}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={7}>{totalStats.totals.departure}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={8}>{totalStats.totals.holdOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={0} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Allocated</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={1}>{totalStats.totals.preArrival}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={2}>{totalStats.totals.stayOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={3}>{totalStats.totals.departure}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={4}>{totalStats.totals.holdOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={5}>{totalStats.totals.tasks}</Table.Summary.Cell>
                                 </Table.Summary.Row>
                                 <Table.Summary.Row style={{ backgroundColor: '#fff' }}>
-                                    <Table.Summary.Cell index={0} colSpan={3} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Remaining</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={3}>{totalStats.remaining.tasks}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={4}>{totalStats.remaining.allocatedMin}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={5}>{totalStats.remaining.preArrival}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={6}>{totalStats.remaining.stayOver}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={7}>{totalStats.remaining.departure}</Table.Summary.Cell>
-                                    <Table.Summary.Cell index={8}>{totalStats.remaining.holdOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={0} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total Remaining</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={1}>{totalStats.remaining.preArrival}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={2}>{totalStats.remaining.stayOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={3}>{totalStats.remaining.departure}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={4}>{totalStats.remaining.holdOver}</Table.Summary.Cell>
+                                    <Table.Summary.Cell index={5}>{totalStats.remaining.tasks}</Table.Summary.Cell>
                                 </Table.Summary.Row>
                                 <style>{`
                                     .ant-table-summary tr:nth-child(1) td { border-top: 2px solid #52c41a !important; }
