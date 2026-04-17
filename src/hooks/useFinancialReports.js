@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import financialReportsApi from '../api/services/financialReports';
+
+dayjs.extend(isoWeek);
 
 const reportKeys = {
     all: ['financial-reports'],

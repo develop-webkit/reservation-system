@@ -1,18 +1,18 @@
 import React, { useState, useRef } from 'react';
 import {
     Tabs, Card, Row, Col, Statistic, Table, DatePicker, Select, Space, Tag, Button,
-    Typography, Spin, Empty, Segmented, Divider, Alert,
+    Typography, Spin, Empty, Segmented,
 } from 'antd';
 import {
     DollarOutlined, HomeOutlined, RiseOutlined, TeamOutlined,
-    PrinterOutlined, FileTextOutlined, BarChartOutlined,
+    PrinterOutlined, BarChartOutlined,
 } from '@ant-design/icons';
 import { Line, Column, Pie } from '@ant-design/charts';
 import dayjs from 'dayjs';
 import {
     useReportReservations, useReportAccounting, useReportRooms,
     useRevenueSummary, useRevenueTrend, useRevenueByRoom,
-    useRevenueBySource, useGuestPayments, useExpenseSummary,
+    useRevenueBySource, useGuestPayments,
 } from '../hooks/useFinancialReports';
 
 const { RangePicker } = DatePicker;
@@ -46,8 +46,6 @@ const FinancialReports = () => {
     const byRoom = useRevenueByRoom(reservationsData, startDate, endDate);
     const bySource = useRevenueBySource(reservationsData, startDate, endDate);
     const guestPayments = useGuestPayments(reservationsData, accountingData, startDate, endDate);
-    const expenses = useExpenseSummary(accountingData, startDate, endDate);
-
     const handlePrint = () => {
         window.print();
     };
@@ -101,16 +99,6 @@ const FinancialReports = () => {
                             title="Bookings"
                             value={summary.bookingsCount}
                             prefix={<TeamOutlined />}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="Avg Room Rate"
-                            value={summary.avgRate}
-                            prefix={<DollarOutlined />}
-                            precision={2}
                         />
                     </Card>
                 </Col>
@@ -404,112 +392,6 @@ const FinancialReports = () => {
         );
     };
 
-    // --- Expenses Tab ---
-    const ExpensesTab = () => {
-        const typeColumns = [
-            { title: 'Type', dataIndex: 'type', key: 'type' },
-            {
-                title: 'Total',
-                dataIndex: 'total',
-                key: 'total',
-                render: (v) => formatCurrency(v),
-                sorter: (a, b) => a.total - b.total,
-                defaultSortOrder: 'descend',
-            },
-            { title: 'Count', dataIndex: 'count', key: 'count' },
-        ];
-
-        const entryColumns = [
-            {
-                title: 'Date',
-                dataIndex: 'entryDate',
-                key: 'entryDate',
-                render: (v) => v ? dayjs(v).format('DD MMM YYYY') : '-',
-                sorter: (a, b) => dayjs(a.entryDate).unix() - dayjs(b.entryDate).unix(),
-            },
-            {
-                title: 'Type',
-                dataIndex: 'type',
-                key: 'type',
-                render: (t) => {
-                    const colorMap = { Invoice: 'blue', Payment: 'green', Credit: 'orange', Adjustment: 'purple' };
-                    return <Tag color={colorMap[t] || 'default'}>{t}</Tag>;
-                },
-            },
-            { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
-            {
-                title: 'Amount',
-                dataIndex: 'amount',
-                key: 'amount',
-                render: (v) => formatCurrency(v),
-                sorter: (a, b) => a.amount - b.amount,
-            },
-            { title: 'Reference', dataIndex: 'referenceNo', key: 'referenceNo' },
-        ];
-
-        return (
-            <div>
-                <Row gutter={[24, 24]}>
-                    <Col xs={24} lg={10}>
-                        <Card title="Summary by Type">
-                            <Table
-                                dataSource={expenses.byType}
-                                columns={typeColumns}
-                                rowKey="type"
-                                pagination={false}
-                                size="small"
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} lg={14}>
-                        <Card title="Monthly Trend">
-                            {expenses.monthlyTrend.length > 0 ? (
-                                <Column
-                                    data={expenses.monthlyTrend}
-                                    xField="period"
-                                    yField="total"
-                                    height={300}
-                                    axis={{
-                                        y: { labelFormatter: (v) => `$${Number(v).toLocaleString()}` },
-                                    }}
-                                />
-                            ) : (
-                                <Empty description="No accounting entries" />
-                            )}
-                        </Card>
-                    </Col>
-                </Row>
-
-                <Card title="All Accounting Entries" style={{ marginTop: 24 }}>
-                    <Table
-                        dataSource={expenses.entries}
-                        columns={entryColumns}
-                        rowKey="_id"
-                        size="small"
-                        pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `${t} entries` }}
-                    />
-                </Card>
-            </div>
-        );
-    };
-
-    // --- Staff Wages Tab ---
-    const StaffWagesTab = () => (
-        <Card>
-            <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                    <div>
-                        <Title level={4} style={{ marginBottom: 8 }}>Staff Wages - Coming Soon</Title>
-                        <Text type="secondary">
-                            This module will include wage calculations, timesheets, and payroll summaries.
-                        </Text>
-                    </div>
-                }
-            />
-        </Card>
-    );
-
     // --- Tab items ---
     const tabItems = [
         {
@@ -526,16 +408,6 @@ const FinancialReports = () => {
             key: 'payments',
             label: <span><DollarOutlined /> Guest Payments</span>,
             children: <GuestPaymentsTab />,
-        },
-        {
-            key: 'expenses',
-            label: <span><FileTextOutlined /> Expenses</span>,
-            children: <ExpensesTab />,
-        },
-        {
-            key: 'wages',
-            label: <span><TeamOutlined /> Staff Wages</span>,
-            children: <StaffWagesTab />,
         },
     ];
 
