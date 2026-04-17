@@ -37,6 +37,7 @@ export const navConfig = [
         path: '/reports',
         children: [
             { name: 'Financial Reports', path: '/reports/financial' },
+            { name: 'Guest Debtors', path: '/reports/debtors' },
         ]
     },
     { name: 'Asset Maintenance', icon: 'bi-tools', path: '/asset-maintenance' },

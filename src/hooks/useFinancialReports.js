@@ -222,6 +222,70 @@ export const useGuestPayments = (reservationsData, accountingData, startDate, en
     }, [reservationsData, accountingData, startDate, endDate]);
 };
 
+// Guest Debtors: group reservations by guest, aggregate tariff/balance and rooms
+export const useGuestDebtors = (reservationsData, accountingData, startDate, endDate) => {
+    return useMemo(() => {
+        const reservations = filterByDateRange(toArray(reservationsData), startDate, endDate);
+        const entries = toArray(accountingData);
+
+        // Index payments per reservation ID
+        const paymentsByRes = {};
+        entries.forEach((e) => {
+            if (e.type !== 'Payment') return;
+            const resId = e.reservation?._id || e.reservation;
+            if (!resId) return;
+            const key = String(resId);
+            paymentsByRes[key] = (paymentsByRes[key] || 0) + (Number(e.amount) || 0);
+        });
+
+        const grouped = {};
+        reservations.forEach((r) => {
+            const clientName = (r.clientName || r.guestName || r.createdBy || 'Unknown').trim();
+            const createdBy = r.createdBy || '-';
+            const key = clientName.toLowerCase();
+
+            if (!grouped[key]) {
+                grouped[key] = {
+                    clientName,
+                    createdBy,
+                    clientNo: r.client?.clientNo || r.clientNo || '-',
+                    rooms: new Set(),
+                    bookingsCount: 0,
+                    totalTariff: 0,
+                    totalPaid: 0,
+                    totalBalance: 0,
+                    reservations: [],
+                    lastCheckIn: null,
+                    sources: new Set(),
+                };
+            }
+
+            const roomName = r.roomId || r.room?.name || r.room?.importId || 'Unknown';
+            grouped[key].rooms.add(roomName);
+            grouped[key].bookingsCount += 1;
+            grouped[key].totalTariff += Number(r.totalTariff) || 0;
+            grouped[key].totalBalance += Number(r.balance) || 0;
+            grouped[key].totalPaid += paymentsByRes[String(r._id)] || 0;
+            grouped[key].reservations.push(r);
+            if (r.bookingSource) grouped[key].sources.add(r.bookingSource);
+
+            const checkIn = r.checkIn ? dayjs(r.checkIn) : null;
+            if (checkIn && (!grouped[key].lastCheckIn || checkIn.isAfter(grouped[key].lastCheckIn))) {
+                grouped[key].lastCheckIn = checkIn;
+            }
+        });
+
+        return Object.values(grouped)
+            .map((g) => ({
+                ...g,
+                rooms: Array.from(g.rooms).sort(),
+                sources: Array.from(g.sources),
+                lastCheckIn: g.lastCheckIn ? g.lastCheckIn.toDate() : null,
+            }))
+            .sort((a, b) => b.totalBalance - a.totalBalance);
+    }, [reservationsData, accountingData, startDate, endDate]);
+};
+
 // Expense Summary: filter accounting entries by type
 export const useExpenseSummary = (accountingData, startDate, endDate) => {
     return useMemo(() => {

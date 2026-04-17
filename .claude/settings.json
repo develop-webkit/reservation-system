@@ -49,7 +49,9 @@
       "Bash(ls d:/projects/Rms-Backend-main/*seed*.js)",
       "Bash(ls d:/projects/Rms-Backend-main/*booking*.js)",
       "Bash(node fix-tariffs.js)",
-      "Bash(node clear-bookings.js)"
+      "Bash(node clear-bookings.js)",
+      "Bash(tasklist //FI \"PID eq 22332\")",
+      "Bash(curl -s \"http://localhost:7000/api/v1/Reservations\" -H \"Accept: application/json\")"
     ]
   }
 }
