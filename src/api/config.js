@@ -23,6 +23,7 @@ export const API_CONFIG = {
         VOUCHERS: '/vouchers',
         TASKS: '/tasks',
         DASHBOARD_STATS: '/dashboard/stats',
+        ACCOUNTING: '/accounting',
     },
     
     // Request timeout
