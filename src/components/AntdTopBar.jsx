@@ -11,7 +11,7 @@ const { Text } = Typography;
 const { useToken } = theme;
 
 const AntdTopBar = ({ onLogout }) => {
-    const location = useLocation();
+    const location = useLocation(); 
     const { token } = useToken();
     const { user, role } = useAuthStore();
 
