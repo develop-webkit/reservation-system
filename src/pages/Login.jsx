@@ -179,8 +179,12 @@ const Login = () => {
             clearLoginAttempts();
 
             // Synchronize the global authStore with user details.
-            // Includes a fallback mechanism if the API returns a flattened user object.
-            login(response.user || { name: data.username, ...response });
+            // Ensure clientNumber is always included (from login form data)
+            const userData = response.user || response;
+            login({
+                ...userData,
+                clientNumber: data.clientNumber, // Always include the clientNumber from login
+            });
 
             // Navigate the user to the application's home/dashboard.
             navigate('/');

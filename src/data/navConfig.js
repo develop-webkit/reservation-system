@@ -31,6 +31,14 @@ export const navConfig = [
             { name: 'Housekeeping Roster', path: '/housekeeping/roster' },
         ]
     },
-    { name: 'Reports', icon: 'bi-file-earmark-bar-graph-fill', path: '/reports' },
+    {
+        name: 'Reports',
+        icon: 'bi-file-earmark-bar-graph-fill',
+        path: '/reports',
+        children: [
+            { name: 'Financial Reports', path: '/reports/financial' },
+            { name: 'Guest Debtors', path: '/reports/debtors' },
+        ]
+    },
     { name: 'Asset Maintenance', icon: 'bi-tools', path: '/asset-maintenance' },
 ];

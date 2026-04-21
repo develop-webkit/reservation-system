@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Typography, Card, Tag, Modal, message } from 'antd';
+import { Table, Button, Space, Typography, Card, Tag, Modal, message, Alert, Empty } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useUsers, useDeleteUser } from '../../hooks/useUsers';
@@ -116,9 +116,32 @@ const UserList = ({ role = 'customer' }) => {
                     Create {role === 'employee' ? 'Employee' : 'Customer'}
                 </Button>
             </div>
-            <Table 
-                columns={columns} 
-                dataSource={users} 
+
+            {isLoading && <p>Loading users...</p>}
+
+            {!isLoading && !allUsers && (
+                <Alert
+                    message="No data loaded"
+                    description="Could not fetch users from the API. Check your connection and try refreshing the page."
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: '16px' }}
+                />
+            )}
+
+            {!isLoading && allUsers && users.length === 0 && (
+                <Alert
+                    message={role === 'employee' ? "No Employees Found" : "No Customers Found"}
+                    description={`There are currently no ${role === 'employee' ? 'employees/cleaners' : 'customers/users'} in the system. Click "Create" to add one.`}
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: '16px' }}
+                />
+            )}
+
+            <Table
+                columns={columns}
+                dataSource={users}
                 rowKey={(record) => record._id || record.id}
                 loading={isLoading}
                 pagination={{ pageSize: 10 }}

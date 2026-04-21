@@ -610,8 +610,8 @@ const ReservationEditPage = () => {
                 onSuccess: (data) => {
                     console.log('[SUCCESS] Reservation updated:', data);
 
-                    // If status is "Departed", mark room as dirty
-                    if (clientData.status === 'Departed' && selectedRoom) {
+                    // If status is "Departed" or "Checked In", mark room as dirty
+                    if ((clientData.status === 'Departed' || clientData.status === 'Checked In') && selectedRoom) {
                         updateRoomStatusMutation.mutate({
                             id: selectedRoom._id || selectedRoom.id,
                             status: 'Dirty'

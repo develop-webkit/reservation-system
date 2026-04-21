@@ -24,3 +24,29 @@ export const useCreateGroup = () => {
         },
     });
 };
+
+export const useUpdateGroup = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }) => {
+            const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.GROUPS}/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+        },
+    });
+};
+
+export const useDeleteGroup = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.GROUPS}/${id}`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+        },
+    });
+};

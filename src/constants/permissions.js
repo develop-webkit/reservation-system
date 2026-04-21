@@ -6,8 +6,8 @@ export const PERMISSIONS = {
   EDIT_EMPLOYEE: 'edit:employee',
   DELETE_EMPLOYEE: 'delete:employee',
   VIEW_EMPLOYEES: 'view:employees',
-  
-  // User Management - Customers
+   
+  // User Management - Customers 
   CREATE_CUSTOMER: 'create:customer',
   EDIT_CUSTOMER: 'edit:customer',
   DELETE_CUSTOMER: 'delete:customer',

@@ -15,7 +15,7 @@ const companiesApi = {
         return response.data;
     },
     update: async (id, data) => {
-        const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, data);
+        const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, data);
         return response.data;
     },
     delete: async (id) => {

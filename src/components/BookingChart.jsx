@@ -449,6 +449,14 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
             } else {
                 console.warn('[EDIT BOOKING] No booking data available');
             }
+        } else if (action === 'assign_housekeeping') {
+            // Navigate to housekeeping roster with the booking's checkout date pre-filled
+            if (contextMenu.booking) {
+                const checkoutDate = contextMenu.booking?.checkOut || contextMenu.booking?.endDate;
+                const date = checkoutDate ? dayjs(checkoutDate).format('YYYY-MM-DD') : contextMenu.date;
+                console.log('[ASSIGN HOUSEKEEPING] Navigating to housekeeping with date:', date);
+                navigate(`/housekeeping?date=${date}`);
+            }
         }
         handleCloseContextMenu();
     };
@@ -542,6 +550,9 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                             </div>
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('edit_booking')}>
                                 Open in Reservations
+                            </div>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('assign_housekeeping')}>
+                                Assign Housekeeping Task
                             </div>
                             <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
