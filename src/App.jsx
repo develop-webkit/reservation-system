@@ -16,7 +16,7 @@ import BookingChart from './pages/BookingChart';
 import ReservationsListPage from './pages/ReservationsListPage';
 import ReservationEditPage from './pages/ReservationEditPage';
 import CleanScreen from './pages/CleanScreen';
-import HousekeepingRoster from './pages/HousekeepingRoster';
+import HousekeepingRoster from './pages/HousekeepingRoster'; 
 import BookingsByDate from './pages/BookingsByDate';
 import UserList from './pages/Users/UserList';
 import UserForm from './pages/Users/UserForm';
