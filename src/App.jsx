@@ -11,7 +11,7 @@ import useAuthStore from './store/authStore';
 // Import all pages      
 import Login from './pages/Login'; 
 import Dashboard from './pages/Dashboard';  
-import Reservations from './pages/Reservations';
+import Reservations from './pages/Reservations'; 
 import BookingChart from './pages/BookingChart';
 import ReservationsListPage from './pages/ReservationsListPage';
 import ReservationEditPage from './pages/ReservationEditPage';
