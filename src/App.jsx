@@ -8,12 +8,12 @@ import AntdSidebar from './components/AntdSidebar';
 import AntdTopBar from './components/AntdTopBar';
 import useAuthStore from './store/authStore';
 
-// Import all pages      
+// Import all pages       
 import Login from './pages/Login'; 
 import Dashboard from './pages/Dashboard';  
 import Reservations from './pages/Reservations'; 
 import BookingChart from './pages/BookingChart';
-import ReservationsListPage from './pages/ReservationsListPage';
+import ReservationsListPage from './pages/ReservationsListPage'; 
 import ReservationEditPage from './pages/ReservationEditPage';
 import CleanScreen from './pages/CleanScreen';
 import HousekeepingRoster from './pages/HousekeepingRoster'; 
