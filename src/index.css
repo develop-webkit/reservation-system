@@ -1,625 +1,246 @@
-/* src/index.css */
-/* src/index.css */
-
-
-/* Simple CSS Reset for consistent cross-browser display */
-html,
-body,
-#root {
-    height: 100%;
-    /* Important for full-height AntD layout */
-    margin: 0;
-    /* Removes default browser margins */
-    padding: 0;
-    /* Removes default browser padding */
+:root {
+  color-scheme: light;
+  --page-bg: #f3efe7;
+  --panel-bg: rgba(255, 255, 255, 0.78);
+  --panel-border: rgba(13, 92, 99, 0.12);
+  --text-primary: #162126;
+  --text-secondary: #53636a;
+  --hero-accent: #0d5c63;
+  --hero-accent-soft: #d7ebe9;
 }
 
-/* Ensure all elements inherit box-sizing for predictable layout */
 *,
 *::before,
 *::after {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
-/* Optional: Set the default Ant Design font */
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    line-height: 1.5;
-    background-color: #f0f2f5;
-    /* Matches AntD default background */
+  background:
+    radial-gradient(circle at top left, rgba(13, 92, 99, 0.15), transparent 28%),
+    radial-gradient(circle at top right, rgba(194, 142, 66, 0.16), transparent 26%),
+    linear-gradient(180deg, #f7f2e8 0%, #f0ece2 100%);
+  color: var(--text-primary);
 }
 
-
-:root {
-    --sidebar-width: 250px;
-    --topbar-height: 50px;
-    --sidebar-bg-color: #0b1a2d;
-    /* A dark blue close to the image */
+a {
+  color: inherit;
 }
 
-/* ------------------------------------
-   1. Sidebar Styling
-   ------------------------------------ */
-#sidebar-wrapper {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: var(--sidebar-width);
-    height: 100vh;
-    background-color: var(--sidebar-bg-color);
-    color: white;
-    z-index: 1000;
-    overflow-y: auto;
+.full-width {
+  width: 100%;
 }
 
-.sidebar-header {
-    padding: 10px 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    height: var(--topbar-height);
-    display: flex;
-    align-items: center;
+.top-gap {
+  margin-top: 16px;
 }
 
-.components {
-    padding: 15px 0;
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.components li {
-    padding: 0;
-    margin: 0;
+.app-shell {
+  min-height: 100vh;
+  background: transparent;
 }
 
-.sidebar-link {
-    padding: 8px 15px;
-    color: #c9d6e4;
-    display: block;
-    text-decoration: none;
-    transition: all 0.3s;
+.sidebar-inner {
+  height: 100%;
+  padding: 20px 14px;
+  border-right: 1px solid rgba(22, 33, 38, 0.08);
+  background: rgba(252, 250, 246, 0.92);
+  backdrop-filter: blur(12px);
 }
 
-.sidebar-link:hover,
-.components li.active-link .sidebar-link {
-    color: white;
-    background: rgba(255, 255, 255, 0.1);
-    border-left: 5px solid #007bff;
-    /* Highlight border */
-    padding-left: 10px;
-    /* Adjust padding due to border */
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding: 10px 8px 18px;
 }
 
-.sidebar-footer {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.1);
+.app-logo-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0d5c63, #1a8b95);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
 }
 
-/* ------------------------------------
-   2. TopBar Styling
-   ------------------------------------ */
-.topbar {
-    position: fixed;
-    top: 0;
-    left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width));
-    height: var(--topbar-height);
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    z-index: 999;
+.app-logo-title.ant-typography {
+  margin: 0;
 }
 
-.topbar .icon-group i {
-    font-size: 1.2rem;
-    cursor: pointer;
-    color: #555;
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  height: auto;
+  padding: 18px 24px;
+  background: transparent;
 }
 
-/* ------------------------------------
-   3. Main Content Wrapper
-   ------------------------------------ */
-#content-wrapper {
-    margin-left: var(--sidebar-width);
-    padding-top: var(--topbar-height);
-    /* Space for the fixed topbar */
-    min-height: 100vh;
-    background-color: #f8f9fa;
-    /* Light background for main area */
-    width: 100%;
+.header-title.ant-typography {
+  margin: 0;
 }
 
-/* ------------------------------------
-   5. Login Page Styling
-   ------------------------------------ */
-.login-wrapper {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* Gradient based on the image */
-    background: linear-gradient(135deg, #4c66ff 0%, #a453e0 100%);
+.header-user {
+  display: flex;
+  flex-direction: column;
 }
 
-.login-card {
-    width: 100%;
-    max-width: 380px;
-    /* Standard login card width */
-    background-color: white;
-    border-radius: 12px;
+.app-content {
+  padding: 0 24px 24px;
 }
 
-.login-logo {
-    width: 60px;
-    /* Sizing the logo */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 8px 2px;
 }
 
-/* Bootstrap Icon adjustments for the form */
-.input-group-text {
-    background-color: #f8f9fa;
-    /* Light grey background */
-    border-right: none;
+.page-title.ant-typography {
+  margin-bottom: 4px;
 }
 
-.form-control {
-    border-left: none;
+.page-subtitle.ant-typography {
+  max-width: 760px;
+  margin-bottom: 0;
+  color: var(--text-secondary);
 }
 
-
-/* ------------------------------------
-   6. Booking Chart Styling
-   ------------------------------------ */
-.booking-chart-container {
-    width: 100%;
-    overflow-x: hidden;
-    /* Fixes the "Items all over the place" scroll issue */
-    background-color: #fff;
+.section-card.ant-card,
+.stat-card.ant-card {
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 45px rgba(83, 99, 106, 0.08);
 }
 
-.chart-grid-wrapper {
-    overflow-x: auto;
-    /* Allows horizontal scrolling of the chart area */
-    overflow-y: hidden;
+.filter-bar {
+  width: 100%;
 }
 
-/* Base Grid Row Style */
-.chart-row {
-    display: grid;
-    /* Grid gap is 1px for the day separators */
-    grid-gap: 1px;
-    background-color: #dee2e6;
-    /* Light grey for grid lines */
-    align-items: center;
+.switch-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 1px solid rgba(22, 33, 38, 0.08);
+  border-radius: 10px;
+  background: #fff;
 }
 
-/* Room/Date Header Styling */
-.chart-date-header {
-    background-color: #f8f9fa;
-    /* Lighter header background */
-    position: sticky;
-    /* Sticky header when scrolling down */
-    top: 0;
-    z-index: 50;
-    border-bottom: 2px solid #dee2e6;
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  overflow: hidden;
 }
 
-.date-cell {
-    height: 40px;
-    display: flex;
+.login-background {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(13, 92, 99, 0.95), rgba(13, 92, 99, 0.68)),
+    linear-gradient(45deg, rgba(194, 142, 66, 0.5), transparent 45%);
+}
+
+.login-layout {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, 100%);
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a9d9dd;
+}
+
+.login-hero-title.ant-typography,
+.login-hero-copy.ant-typography {
+  color: #fff;
+}
+
+.login-hero-title.ant-typography {
+  max-width: 560px;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 1.02;
+}
+
+.login-hero-copy.ant-typography {
+  max-width: 540px;
+  font-size: 18px;
+}
+
+.login-card.ant-card {
+  border: 0;
+  border-radius: 24px;
+  background: rgba(255, 251, 245, 0.96);
+  box-shadow: 0 34px 90px rgba(8, 39, 42, 0.3);
+}
+
+.login-card-header {
+  margin-bottom: 20px;
+}
+
+.login-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.login-footer-note {
+  margin-top: 18px;
+}
+
+.allocation-block {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid rgba(13, 92, 99, 0.14);
+  border-radius: 14px;
+  background: rgba(245, 250, 249, 0.8);
+}
+
+@media (max-width: 991px) {
+  .app-header,
+  .page-header {
     flex-direction: column;
-    justify-content: center;
-    background-color: white;
-    border: 1px solid #cecece;
-    border-bottom: 0;
-    border-left: 0px;
-    text-align: center;
-}
-
-.date-cell.weekend {
-    background-color: #fff3cd;
-    /* Light yellow background for weekends */
-}
-
-/* Room Type Grouping Header */
-.room-type-header {
-    background-color: #e9ecef;
-    font-weight: bold;
-    cursor: pointer;
-    padding-left: 10px !important;
-    grid-column: 1 / -1;
-    /* Spans the entire width */
-    height: 30px;
-    display: flex;
-    align-items: center;
-}
-
-.room-type-header.collapsed {
-    background-color: #e0e0e0;
-}
-
-
-/* Individual Room Row Styling */
-.room-data-row {
-    height: 40px;
-    background-color: white;
-    /* Room rows themselves are white */
-}
-
-.room-name-cell {
-    background-color: #f8f9fa;
-    /* Separates the room column visually */
-    border-right: 1px solid #dee2e6;
-    height: 100%;
-}
-
-/* Reservation Bar Styling */
-.reservation-bar {
-    z-index: 10;
-    height: 70%;
-    border-radius: 3px;
-    cursor: pointer;
-    overflow: hidden;
-    line-height: 1.5;
-    white-space: nowrap;
-
-    /* Custom colors from image */
-    &.bg-success {
-        background-color: #28a745 !important;
-    }
-
-    &.bg-info {
-        background-color: #17a2b8 !important;
-    }
-
-    &.bg-warning {
-        background-color: #ffc107 !important;
-        color: #333 !important;
-    }
-
-    /* Warning bar is dark text */
-    &.bg-danger {
-        background-color: #dc3545 !important;
-    }
-}
-
-/* Placeholder for the floating hover/context menus */
-.hover-info-popup,
-.context-menu {
-    position: absolute;
-    z-index: 2000;
-    background: white;
-    border: 1px solid #ccc;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    padding: 10px;
-    border-radius: 4px;
-}
-
-/* Update base link hover/active styles */
-.sidebar-link {
-    /* ... existing styles ... */
-    cursor: pointer;
-    /* Ensure non-link parents are clickable */
-}
-
-/* Base Active/Hover Style for Parent and Child */
-.sidebar-link:hover,
-.components li.active-link .sidebar-link,
-.components li.active-link-sub .sidebar-link,
-.sidebar-link.active-link {
-    /* Style for parent when clicked */
-    color: white !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-left: 3px solid #007bff;
-    padding-left: 12px;
-}
-
-/* Sub-Menu Styles */
-.sub-menu {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0;
-    margin-left: 0;
-    list-style: none;
-}
-
-.sub-menu .sidebar-link.sub-link {
-    padding-left: 30px;
-    /* Indent sub-items */
-    font-size: 0.95rem;
-    color: #c9d6e4;
-    border-left: none !important;
-}
-
-.sub-menu li.active-link-sub .sidebar-link.sub-link {
-    font-weight: bold;
-    color: white !important;
-    background: rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Accordion Chevron Animation */
-.chevron-icon {
-    transition: transform 0.3s ease;
-}
-
-.chevron-icon.open {
-    transform: rotate(90deg);
-}
-
-/* Custom CSS for the 'collapse' class for accordion functionality */
-.collapse:not(.show) {
-    display: none;
-}
-
-.collapse.show {
-    display: block;
-}
-
-/* ------------------------------------
-   7. Reservation Tooltip Styling (Hover Popup)
-   ------------------------------------ */
-.reservation-tooltip-popup {
-    /* Based on the image: Dark blue header, black/dark background for body */
-    background-color: #2c3e50;
-    /* Dark background for the body */
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
-    width: 300px;
-    z-index: 5000;
-    /* Ensure it's on top of everything */
-    pointer-events: none;
-    /* Crucial: Allows clicking through to elements underneath */
-    transition: opacity 0.2s ease-in-out;
-}
-
-.reservation-tooltip-popup .tooltip-header {
-    background-color: #1f3044;
-    /* Slightly darker header */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.reservation-tooltip-popup .tooltip-body {
-    padding-top: 5px;
-    padding-bottom: 5px;
-}
-
-.reservation-tooltip-popup .tooltip-detail {
-    margin-bottom: 2px;
-}
-
-/* Highlighted green/text-success color for Arrive/Depart/Status */
-.reservation-tooltip-popup .tooltip-detail .text-success {
-    color: #4CAF50 !important;
-    /* Custom green that matches the image */
-}
-
-/* ------------------------------------
-   8. User Dropdown Styling
-   ------------------------------------ */
-.user-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.user-dropdown .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    /* Position right below the button */
-    right: 0;
-    min-width: 280px;
-    /* Width based on the image */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border: none;
-    padding: 0;
-    border-radius: 4px;
-    z-index: 1050;
-    /* Above TopBar elements */
-}
-
-.user-dropdown .dropdown-header {
-    background-color: #0b1a2d;
-    /* Dark blue background from sidebar */
-    color: white;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-}
-
-.user-dropdown .dropdown-item {
-    padding: 10px 15px;
-    font-size: 0.95rem;
-    color: #333;
-}
-
-.user-dropdown .dropdown-item:hover {
-    background-color: #f1f1f1;
-    color: #007bff;
-}
-
-
-/* Add to src/index.css */
-
-.profile-nav li {
-    cursor: pointer;
-    margin-bottom: 3px;
-    transition: background-color 0.2s;
-}
-
-.profile-nav li:hover:not(.active-profile-tab) {
-    background-color: #e9ecef;
-    /* Light hover effect */
-}
-
-/* Ensure 'cursor-pointer' is defined if not using a utility library */
-.cursor-pointer {
-    cursor: pointer;
-}
-
-
-/* src/index.css (Add these definitions) */
-
-/* ... (previous CSS reset) ... */
-
-/* --- CORE CHART STYLES (REQUIRED FOR CSS GRID) --- */
-
-/* This container must be a grid to align RoomRow and ChartHeader */
-.chart-grid-wrapper {
-    /* Set the chart wrapper to be a vertical flex container to stack header and body */
-    display: flex;
-    flex-direction: column;
-    /* The overflowY: auto is already on the inline style in BookingChart.jsx */
-}
-
-/* This is the container that holds all the RoomRows and the Room Type Headers. */
-.chart-body {
-    /* Crucial: We use display: contents to let the children (RoomRow grids) 
-       be direct children of the chart-grid-wrapper in terms of grid flow, 
-       even though they are conceptually stacked here.
-       Alternatively, just a simple div if the rows manage their own grid flow.
-       We will stick to stacking rows for simplicity:
-    */
-    display: flex;
-    flex-direction: column;
-    /* Stack Room Rows vertically */
-}
-
-/* The RoomRow grid and the ChartHeader grid rows must use the same grid-template-columns. 
-   This is set inline in ChartHeader.jsx and RoomRow.jsx using ROOM_COL_WIDTH and dateGridColumns.
-   The CSS Grid is defined directly on the elements themselves: 
-   .chart-date-header and .chart-row-grid.
-*/
-
-/* --- END CORE CHART STYLES --- */
-
-.modal-dialog.modal-xl {
-    background-color: #fff;
-}
-
-
-/* ADD THIS CONTENT TO YOUR GLOBAL CSS FILE (e.g., src/index.css) */
-
-/* --- Main Chart Container (Card Body) --- */
-.booking-chart-container {
-    overflow-x: auto;
-    min-width: 1350px;
-    padding-bottom: 20px;
-}
-
-/* --- Header Row Structure --- */
-.chart-header {
-    display: grid;
-    grid-template-columns: 150px 1fr;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background-color: #fff;
-
-}
-
-.chart-header>.room-label {
-    padding: 8px;
-    font-weight: bold;
-    min-width: 150px;
-    color: #141414;
-    border: 1px solid #cecece;
-}
-
-.date-cell-container {
-    display: grid;
-    /* Use dynamic columns and flexible width */
-    grid-template-columns: repeat(var(--visible-days, 30), var(--cell-width, 40px));
-    width: 100%;
-    /* Fill the available space */
-    border-bottom: 1px solid #cecece;
-}
-
-/* --- Room Row Structure (NEW STRUCTURE) --- */
-.chart-row-grid {
-    display: grid;
-    grid-template-columns: 150px 1fr;
-    /* Label is fixed, grid is flexible */
-    width: 100%;
-    position: relative;
-    height: 50px;
-    border-bottom: 1px solid #cecece;
-}
-
-.chart-row-grid:hover {
-    background-color: #f8f8f8;
-}
-
-.room-label-col {
-    grid-column: 1;
-    padding-left: 8px;
-    background-color: #fff;
-    color: #141414;
-    min-width: 150px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border: 1px solid #cecece;
-    border-bottom: 0;
-    border-top: 0;
-}
-
-
-/* --- Booking Grid Area (The Grid that holds the blocks) --- */
-.reservation-grid-area {
-    grid-column: 2;
-    /* Use dynamic columns and flexible width */
-    grid-template-columns: repeat(var(--visible-days), 1fr);
-    display: grid;
-    width: 100%;
-    /* Must be 100% to fill the parent container */
-    position: relative;
-}
-
-.daily-cell {
-    border-right: 1px solid #f0f0f0;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-/* --- Booking Item (The Blocks) --- */
-.booking-item {
-    position: relative;
-    height: 30px;
-    margin-top: 10px;
-    border-radius: 4px;
-    padding: 0 10px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    cursor: grab;
-    transition: opacity 0.2s;
-    grid-row: 1;
-    z-index: 5;
-    align-items: center;
-    display: flex;
-
-}
-
-.booking-item:active {
-    cursor: grabbing;
-}
-
-/* --- Resizing Handle Style --- */
-.booking-item .resizer-handle {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 8px;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.3);
-    cursor: ew-resize;
-    z-index: 10;
-}
-
-.booking-item:hover {
-    opacity: 0.9;
-    z-index: 10;
-}
-
-.booking-item:hover .resizer-handle {
-    background: rgba(255, 255, 255, 0.5);
+    align-items: flex-start;
+  }
+
+  .app-content {
+    padding: 0 16px 16px;
+  }
+
+  .login-page {
+    padding: 20px;
+  }
 }

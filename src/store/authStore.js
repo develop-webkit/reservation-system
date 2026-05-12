@@ -1,63 +1,43 @@
-// src/store/authStore.js
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getPermissionsForRole } from '../constants/roles';
 
-// Define the structure of the store
+const initialState = {
+  token: null,
+  expiresIn: null,
+  user: null,
+  client: null,
+  isAuthenticated: false,
+};
+
 const useAuthStore = create(
-    persist(
-        (set, get) => ({
-            isAuthenticated: false,
-            user: null,
-            role: null,
-            permissions: [],
-
-            // Action to handle successful login
-            login: (userData) => {
-                const permissions = getPermissionsForRole(userData.role);
-                set({ 
-                    isAuthenticated: true, 
-                    user: userData,
-                    role: userData.role,
-                    permissions,
-                });
-            },
-
-            // Action to handle logout
-            logout: () => {
-                localStorage.removeItem('authToken');
-                set({ 
-                    isAuthenticated: false, 
-                    user: null,
-                    role: null,
-                    permissions: [],
-                });
-            },
-            
-            // Check if user has a specific permission
-            hasPermission: (permission) => {
-                const { permissions } = get();
-                return permissions.includes(permission);
-            },
-            
-            // Check if user has a specific role
-            hasRole: (role) => {
-                const { role: userRole } = get();
-                return userRole === role;
-            },
-            
-            // Check if user can access a route
-            canAccessRoute: (requiredPermission) => {
-                if (!requiredPermission) return true;
-                const { permissions } = get();
-                return permissions.includes(requiredPermission);
-            },
+  persist(
+    (set) => ({
+      ...initialState,
+      login: (payload) =>
+        set({
+          token: payload.access_token,
+          expiresIn: payload.expiresIn ?? null,
+          user: payload.user ?? null,
+          client: payload.client ?? null,
+          isAuthenticated: Boolean(payload.access_token),
         }),
-        {
-            name: 'rms-auth-storage',
-            getStorage: () => localStorage,
-        }
-    )
+      logout: () => set({ ...initialState }),
+    }),
+    {
+      name: 'rms-auth',
+      partialize: (state) => ({
+        token: state.token,
+        expiresIn: state.expiresIn,
+        user: state.user,
+        client: state.client,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    },
+  ),
 );
+
+export const selectCurrentUser = (state) => state.user;
+export const selectCurrentRole = (state) => state.user?.role ?? null;
+export const selectCurrentClient = (state) => state.client;
 
 export default useAuthStore;

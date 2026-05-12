@@ -1,56 +1,24 @@
-import apiClient from '../config';
+import http from '../http.js';
+import { unwrapResponse } from '../utils.js';
 
-/**
- * Housekeeping API Service
- * Handles task generation, allocation, assignment tracking, and completion
- */
+export async function getRoster(date) {
+  const response = await http.get('/housekeeping/roster', {
+    params: { date },
+  });
+  return unwrapResponse(response);
+}
 
-const housekeepingApi = {
-    /**
-     * Get auto-generated task suggestions for a specific date
-     * These are not yet allocated/saved — just suggestions based on departures and long-stays
-     * @param {string} date - YYYY-MM-DD format
-     * @returns {Promise} Array of suggested tasks
-     */
-    getRoster: (date) =>
-        apiClient.get('/housekeeping/roster', { params: { date } }),
+export async function getAssignments(params) {
+  const response = await http.get('/housekeeping/assignments', { params });
+  return unwrapResponse(response);
+}
 
-    /**
-     * Save and allocate tasks to a specific housekeeper
-     * @param {object} data - { housekeeperId, date, tasks: [{type, roomId, bookingId}] }
-     * @returns {Promise} { message, assignedCount, tasks }
-     */
-    allocate: (data) =>
-        apiClient.post('/housekeeping/allocate', data),
+export async function allocateHousekeeping(payload) {
+  const response = await http.post('/housekeeping/allocate', payload);
+  return unwrapResponse(response);
+}
 
-    /**
-     * Fetch saved task assignments for a given date (and optionally filter by housekeeper)
-     * @param {string} date - YYYY-MM-DD format
-     * @param {string} housekeeperId - Optional user ObjectId to filter by specific housekeeper
-     * @returns {Promise} Array of saved Task documents
-     */
-    getAssignments: (date, housekeeperId = null) => {
-        const params = { date };
-        if (housekeeperId) params.housekeeperId = housekeeperId;
-        return apiClient.get('/housekeeping/assignments', { params });
-    },
-
-    /**
-     * Mark a task as complete
-     * This automatically updates the linked room's status to "Clean" and sets lastCleanDate
-     * @param {string} id - Task ObjectId
-     * @returns {Promise} Updated Task document
-     */
-    completeTask: (id) =>
-        apiClient.patch(`/housekeeping/tasks/${id}/complete`),
-
-    /**
-     * Get printable roster grouped by housekeeper for a specific date
-     * @param {string} date - YYYY-MM-DD format
-     * @returns {Promise} { date, groupedByHousekeeper: { "Housekeeper Name": [tasks] } }
-     */
-    getPrint: (date) =>
-        apiClient.get('/housekeeping/print', { params: { date } }),
-};
-
-export default housekeepingApi;
+export async function completeHousekeepingTask(id, payload) {
+  const response = await http.patch(`/housekeeping/tasks/${id}/complete`, payload);
+  return unwrapResponse(response);
+}

@@ -1,0 +1,21 @@
+export const queryKeys = {
+  dashboard: ['dashboard'],
+  bookings: ['bookings'],
+  bookingChart: (params) => ['booking-chart', params],
+  reservations: ['reservations'],
+  clients: ['clients'],
+  rooms: ['rooms'],
+  users: ['users'],
+  tasks: ['tasks'],
+  availableTasks: (filters) => ['tasks', 'available', filters],
+  housekeepingRoster: (date) => ['housekeeping', 'roster', date],
+  housekeepingAssignments: (date, housekeeperId) => [
+    'housekeeping',
+    'assignments',
+    date,
+    housekeeperId,
+  ],
+  accounting: ['accounting'],
+  vouchers: ['vouchers'],
+  companies: ['companies'],
+};

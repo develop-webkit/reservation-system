@@ -1,27 +1,17 @@
-import apiClient from '../client';
-import API_CONFIG from '../config';
+import http from '../http.js';
+import { unwrapResponse } from '../utils.js';
 
-const vouchersApi = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get(API_CONFIG.ENDPOINTS.VOUCHERS, { params });
-        return response.data;
-    },
-    getById: async (id) => {
-        const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.VOUCHERS}/${id}`);
-        return response.data;
-    },
-    create: async (data) => {
-        const response = await apiClient.post(API_CONFIG.ENDPOINTS.VOUCHERS, data);
-        return response.data;
-    },
-    update: async (id, data) => {
-        const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.VOUCHERS}/${id}`, data);
-        return response.data;
-    },
-    delete: async (id) => {
-        const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.VOUCHERS}/${id}`);
-        return response.data;
-    }
-};
+export async function getVouchers() {
+  const response = await http.get('/vouchers');
+  return unwrapResponse(response);
+}
 
-export default vouchersApi;
+export async function createVoucher(payload) {
+  const response = await http.post('/vouchers', payload);
+  return unwrapResponse(response);
+}
+
+export async function updateVoucher(id, payload) {
+  const response = await http.patch(`/vouchers/${id}`, payload);
+  return unwrapResponse(response);
+}

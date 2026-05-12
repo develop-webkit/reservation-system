@@ -1,41 +1,12 @@
-import apiClient from '../client';
-import API_CONFIG from '../config';
+import http from '../http.js';
+import { unwrapResponse } from '../utils.js';
 
-const authApi = {
-    /**
-     * Login with credentials
-     * @param {Object} credentials - { clientNumber, username, password }
-     */
-    login: async (credentials) => {
-        const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.AUTH}/login`, credentials);
-        return response.data;
-    },
+export async function login(payload) {
+  const response = await http.post('/auth/login', payload);
+  return unwrapResponse(response) || response.data;
+}
 
-    /**
-     * Request password reset via email
-     * @param {Object} data - { email }
-     */
-    forgotPassword: async (data) => {
-        const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.AUTH}/forgot-password`, data);
-        return response.data;
-    },
-
-    /**
-     * Reset password with reset token
-     * @param {Object} data - { token, password }
-     */
-    resetPassword: async (data) => {
-        const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.AUTH}/reset-password`, data);
-        return response.data;
-    },
-
-    /**
-     * Logout (clear token)
-     */
-    logout: async () => {
-        const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.AUTH}/logout`);
-        return response.data;
-    }
-};
-
-export default authApi;
+export async function forgotPassword(payload) {
+  const response = await http.post('/auth/forgot-password', payload);
+  return unwrapResponse(response) || response.data;
+}

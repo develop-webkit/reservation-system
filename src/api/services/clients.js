@@ -1,27 +1,17 @@
-import apiClient from '../client';
-import API_CONFIG from '../config';
+import http from '../http.js';
+import { unwrapResponse } from '../utils.js';
 
-const clientsApi = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get(API_CONFIG.ENDPOINTS.CLIENTS, { params });
-        return response.data;
-    },
-    getById: async (id) => {
-        const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.CLIENTS}/${id}`);
-        return response.data;
-    },
-    create: async (data) => {
-        const response = await apiClient.post(API_CONFIG.ENDPOINTS.CLIENTS, data);
-        return response.data;
-    },
-    update: async (id, data) => {
-        const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.CLIENTS}/${id}`, data);
-        return response.data;
-    },
-    delete: async (id) => {
-        const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.CLIENTS}/${id}`);
-        return response.data;
-    }
-};
+export async function getClients(params) {
+  const response = await http.get('/clients', { params });
+  return unwrapResponse(response);
+}
 
-export default clientsApi;
+export async function createClient(payload) {
+  const response = await http.post('/clients', payload);
+  return unwrapResponse(response);
+}
+
+export async function updateClient(id, payload) {
+  const response = await http.patch(`/clients/${id}`, payload);
+  return unwrapResponse(response);
+}
