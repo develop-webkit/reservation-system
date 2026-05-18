@@ -23,6 +23,9 @@ function LoginPage() {
     try {
       const response = await login(values);
       loginStore(response);
+      if (response?.access_token) {
+        localStorage.setItem('authToken', response.access_token);
+      }
       message.success('Welcome back.');
       const redirect = location.state?.from?.pathname || '/dashboard';
       navigate(redirect, { replace: true });

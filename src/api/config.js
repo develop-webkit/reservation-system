@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-    // Base URL - will be used when VITE_USE_MOCK_API is false
-    BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+    // Keep every API client aligned to the active backend.
+    BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:7000/api/v1',
     
     // Use mock API - set to false when backend is ready
     USE_MOCK_API: import.meta.env.VITE_USE_MOCK_API !== 'false',
@@ -13,7 +13,7 @@ export const API_CONFIG = {
     ENDPOINTS: {
         BOOKINGS: '/bookings',
         ROOMS: '/rooms',
-        RESERVATIONS: '/Reservations', // Note: Case sensitive based on user request
+        RESERVATIONS: '/reservations',
         USERS: '/users',
         USER: '/user',
         AUTH: '/auth',
