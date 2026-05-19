@@ -95,7 +95,7 @@ export const useUpdateBookingChart = () => {
     const queryClient = useQueryClient();
     
     return useMutation({
-        mutationFn: (data) => bookingsApi.updateChart(data),
+        mutationFn: ({ id, data }) => bookingsApi.updateChart(id, data),
         onSuccess: () => {
              // Invalidate list and chart queries
             queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });

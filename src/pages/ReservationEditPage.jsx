@@ -348,8 +348,15 @@ const ReservationEditPage = () => {
             ...prev,
             resNo: res.resNo || prev.resNo,
             masterResNo: res.masterResNo || prev.masterResNo,
-            given: res.guestName ? res.guestName.split(' ')[0] : prev.given,
-            surname: res.guestName ? res.guestName.split(' ').slice(1).join(' ') : prev.surname,
+            smartSearch: res.client?.clientName || prev.smartSearch,
+            clientNo: res.client?.clientNo || prev.clientNo,
+            given: res.guestName ? res.guestName.split(' ')[0] : (res.client?.given || prev.given),
+            surname: res.guestName ? res.guestName.split(' ').slice(1).join(' ') : (res.client?.surname || prev.surname),
+            title: res.client?.title || prev.title,
+            email: res.client?.email || prev.email,
+            phoneAH: res.client?.phoneAH || prev.phoneAH,
+            mobile: res.client?.mobile || prev.mobile,
+            clientType: res.client?.clientType || prev.clientType,
             arrive: res.checkIn ? new Date(res.checkIn) : prev.arrive,
             depart: res.checkOut ? new Date(res.checkOut) : prev.depart,
             status: res.status || prev.status,
@@ -362,10 +369,24 @@ const ReservationEditPage = () => {
             fixed: res.isFixed ? 'Yes' : 'No',
             voucherNo: res.voucherNo || '',
             groupname: res.groupName || '',
+            roomType: res.room?.category || prev.roomType,
+            area: res.room?.name || prev.area,
+            company:
+              res.company?.name ||
+              res.company?.tradingAs ||
+              res.client?.company?.name ||
+              res.client?.companyName ||
+              prev.company,
             confirmedBy: res.confirmedBy || '',
             confirmedDate: res.confirmedDate ? dayjs(res.confirmedDate).format('YYYY-MM-DD') : '',
             clientId: res.client?._id || res.client || '',
             companyId: res.company?._id || res.company || '',
+            dateCreated: res.client?.createdAt ? dayjs(res.client.createdAt).format('DD MMM YYYY') : prev.dateCreated,
+            dateModified: res.client?.updatedAt ? dayjs(res.client.updatedAt).format('DD MMM YYYY') : prev.dateModified,
+            nights:
+              res.checkIn && res.checkOut
+                ? Math.max(1, dayjs(res.checkOut).startOf('day').diff(dayjs(res.checkIn).startOf('day'), 'day'))
+                : prev.nights,
         }));
     }, [reservationData]);
 
@@ -439,18 +460,23 @@ const ReservationEditPage = () => {
     const handleSelectClient = (client) => {
         setClientData(prev => ({
             ...prev,
+            smartSearch: client.clientName || `${client.given || ''} ${client.surname || ''}`.trim(),
             clientId: client._id || client.id,
             clientNo: client.clientNo || '',
             groupname: client.groupName || '',
-            surname: client.lastName || '',
-            given: client.firstName || '',
+            surname: client.surname || client.lastName || '',
+            given: client.given || client.firstName || '',
             title: client.title || '',
             email: client.email || '',
             phoneAH: client.phoneAH || '',
             mobile: client.mobile || '',
             email2: client.email2 || '',
             clientType: client.clientType || '',
-            company: client.company?.name || '',
+            company:
+              client.company?.name ||
+              client.company?.tradingAs ||
+              client.companyName ||
+              '',
             companyId: client.company?._id || client.company || '',
             dateCreated: client.createdAt ? dayjs(client.createdAt).format('DD MMM YYYY') : '',
             dateModified: client.updatedAt ? dayjs(client.updatedAt).format('DD MMM YYYY') : ''
@@ -496,9 +522,16 @@ const ReservationEditPage = () => {
         const newDepartDate = departDate.format('YYYY-MM-DD');
 
         // Double-booking check (exclude current reservation being edited)
-        const conflictingBookings = allBookings.filter(booking => {
+        const isCanceledReservation = `${clientData.status || ''}`.toLowerCase().includes('cancel');
+
+        const conflictingBookings = isCanceledReservation ? [] : allBookings.filter(booking => {
             // Skip the current reservation being edited
-            if (booking.reservationId === reservationId || booking._id === reservationId) {
+            if (
+                booking.id === reservationId ||
+                booking._id === reservationId ||
+                booking.reservationId === reservationId ||
+                booking.resNo === clientData.resNo
+            ) {
                 return false;
             }
 
@@ -725,7 +758,7 @@ const ReservationEditPage = () => {
     const dynamicRoomOptions = useMemo(() => {
         return allRooms.map(room => ({
             name: room.name || room.roomNumber,
-            status: room.status || 'Available',
+            status: room.status || 'Clean',
             description: room.description || room.category || '',
             resCount: room.resNo || '-',
             outOrder: room.outOrder || false,

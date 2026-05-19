@@ -9,6 +9,12 @@ function ClientsTable({ data, loading, onEdit }) {
     { title: 'Mobile', dataIndex: 'mobile', key: 'mobile', render: (value) => value || '-' },
     { title: 'Type', dataIndex: 'clientType', key: 'clientType', render: (value) => value || '-' },
     {
+      title: 'Company',
+      dataIndex: 'company',
+      key: 'company',
+      render: (_, record) => record.company?.name || record.companyName || '-',
+    },
+    {
       title: 'Rate',
       dataIndex: 'rate',
       key: 'rate',

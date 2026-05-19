@@ -1,9 +1,9 @@
 // src/components/BookingChart.jsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Tooltip, Popover, Card, Spin, Alert } from 'antd';
+import { Typography, Tooltip, Popover, Card, Spin, Alert, message } from 'antd';
 import dayjs from 'dayjs';
-import { useBookingChart } from '../hooks/useBookings';
+import { useBookingChart, useUpdateBookingChart } from '../hooks/useBookings';
 import { useRooms } from '../hooks/useRooms';
 //import { useRooms } from '../hooks/useRooms'; // This hook likely needs to be updated or we bypass it for now as requested
 import { rooms as roomsFromData } from '../data/rooms';
@@ -34,6 +34,8 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
 
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null });
+    const [resizeDraft, setResizeDraft] = useState(null);
+    const updateBookingChartMutation = useUpdateBookingChart();
 
     // Fetch chart data with date range
     const { data: chartData, isLoading: chartLoading, error: chartError } = useBookingChart({
@@ -76,6 +78,109 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
             isVisible: !((startCol + duration) <= 1 || startCol > visibleDays)
         };
     }, [dateRange, visibleDays]);
+
+    const getDisplayedBookingDates = useCallback((booking) => {
+        if (resizeDraft?.bookingId === booking.id) {
+            return {
+                checkIn: resizeDraft.startDate,
+                checkOut: resizeDraft.endDate,
+            };
+        }
+
+        return {
+            checkIn: booking.checkIn || booking.startDate,
+            checkOut: booking.checkOut || booking.endDate,
+        };
+    }, [resizeDraft]);
+
+    const handleResizeStart = useCallback((event, booking, edge) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const grid = event.currentTarget.closest('[data-booking-grid="true"]');
+        if (!grid) {
+            return;
+        }
+
+        const gridRect = grid.getBoundingClientRect();
+        const cellWidth = gridRect.width / visibleDays;
+        const originalStart = dayjs(booking.checkIn || booking.startDate).startOf('day');
+        const originalEnd = dayjs(booking.checkOut || booking.endDate).startOf('day');
+        const originalDraft = {
+            bookingId: booking.id,
+            startDate: originalStart.format('YYYY-MM-DD'),
+            endDate: originalEnd.format('YYYY-MM-DD'),
+        };
+
+        let nextStart = originalStart;
+        let nextEnd = originalEnd;
+
+        setResizeDraft(originalDraft);
+
+        const handleMouseMove = (moveEvent) => {
+            const deltaDays = Math.round((moveEvent.clientX - event.clientX) / cellWidth);
+
+            if (edge === 'start') {
+                nextStart = originalStart.add(deltaDays, 'day');
+                if (!nextStart.isBefore(originalEnd, 'day')) {
+                    nextStart = originalEnd.subtract(1, 'day');
+                }
+            } else {
+                nextEnd = originalEnd.add(deltaDays, 'day');
+                if (!nextEnd.isAfter(originalStart, 'day')) {
+                    nextEnd = originalStart.add(1, 'day');
+                }
+            }
+
+            setResizeDraft({
+                bookingId: booking.id,
+                startDate: nextStart.format('YYYY-MM-DD'),
+                endDate: nextEnd.format('YYYY-MM-DD'),
+            });
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+
+            const changed =
+                !nextStart.isSame(originalStart, 'day') ||
+                !nextEnd.isSame(originalEnd, 'day');
+
+            const finalDraft = {
+                bookingId: booking.id,
+                startDate: nextStart.format('YYYY-MM-DD'),
+                endDate: nextEnd.format('YYYY-MM-DD'),
+            };
+
+            setResizeDraft(null);
+
+            if (!changed) {
+                return;
+            }
+
+            updateBookingChartMutation.mutate(
+                {
+                    id: booking.id,
+                    data: {
+                        startDate: finalDraft.startDate,
+                        endDate: finalDraft.endDate,
+                    },
+                },
+                {
+                    onSuccess: () => {
+                        message.success('Booking dates updated.');
+                    },
+                    onError: (error) => {
+                        message.error(error.response?.data?.message || 'Failed to update booking dates.');
+                    },
+                },
+            );
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [updateBookingChartMutation, visibleDays]);
 
 
     // Group rooms by category
@@ -254,7 +359,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                         </Tooltip>
                     </div>
                 </Popover>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
+                <div data-booking-grid="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
                     {dateRange.map((date, idx) => {
                         const dayOfWeek = dayjs(date).day();
                         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -267,8 +372,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                         );
                     })}
                     {roomBookings.map(booking => {
-                        const checkIn = booking.checkIn || booking.startDate;
-                        const checkOut = booking.checkOut || booking.endDate;
+                        const { checkIn, checkOut } = getDisplayedBookingDates(booking);
                         const pos = getGridPosition(checkIn, checkOut);
                         if (!pos.isVisible) return null;
 
@@ -365,7 +469,33 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                                     top: isParkedRow ? `${topPosition}px` : 'auto',
                                     width: isParkedRow ? 'calc(100% - 4px)' : 'auto' // absolute items need explicit width if not stretched
                                 }}>
-                                    <Text ellipsis style={{ color: '#fff', fontSize: '10px' }}>{booking.clientName}</Text>
+                                    <div
+                                        onMouseDown={(event) => handleResizeStart(event, booking, 'start')}
+                                        style={{
+                                            position: 'absolute',
+                                            left: 0,
+                                            top: 0,
+                                            bottom: 0,
+                                            width: '8px',
+                                            cursor: 'ew-resize',
+                                            zIndex: 3,
+                                        }}
+                                    />
+                                    <Text ellipsis style={{ color: '#fff', fontSize: '10px', width: '100%', textAlign: 'center', padding: '0 8px' }}>
+                                        {booking.clientName}
+                                    </Text>
+                                    <div
+                                        onMouseDown={(event) => handleResizeStart(event, booking, 'end')}
+                                        style={{
+                                            position: 'absolute',
+                                            right: 0,
+                                            top: 0,
+                                            bottom: 0,
+                                            width: '8px',
+                                            cursor: 'ew-resize',
+                                            zIndex: 3,
+                                        }}
+                                    />
                                 </div>
                             </Popover>
                         );

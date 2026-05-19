@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Checkbox, Form, Input, Space, Typography } from 'antd';
+import { Alert, Button, Card, Checkbox, Form, Input, Typography } from 'antd';
 import {
   LockOutlined,
   NumberOutlined,
@@ -10,7 +10,7 @@ function LoginForm({ onSubmit, loading, onForgotPassword, isLocked }) {
   return (
     <Card className="login-card">
       <div className="login-card-header">
-        <Typography.Text className="eyebrow">RMS desktop reference</Typography.Text>
+        <Typography.Text className="eyebrow">RMS DESKTOP</Typography.Text>
         <Typography.Title level={2}>Login to property operations</Typography.Title>
         <Typography.Paragraph>
           Use your client number, username, and password to enter the tenant workspace.
@@ -67,12 +67,6 @@ function LoginForm({ onSubmit, loading, onForgotPassword, isLocked }) {
         </Button>
       </Form>
 
-      <Space direction="vertical" className="login-footer-note">
-        <Typography.Text strong>Reference-aligned details</Typography.Text>
-        <Typography.Text type="secondary">
-          This login flow follows the RMS desktop pattern while using your backend auth API.
-        </Typography.Text>
-      </Space>
     </Card>
   );
 }

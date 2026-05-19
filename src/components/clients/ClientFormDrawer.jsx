@@ -2,9 +2,18 @@ import { Button, Drawer, Form, Input, InputNumber, Select } from 'antd';
 
 function ClientFormDrawer({ open, onClose, onSubmit, loading, companies, initialValues }) {
   const [form] = Form.useForm();
+  const hasCompanies = Array.isArray(companies) && companies.length > 0;
 
   const mappedValues = initialValues
-    ? { ...initialValues, company: initialValues.company?._id || initialValues.company }
+    ? {
+        ...initialValues,
+        company: initialValues.company?._id || initialValues.company,
+        companyName:
+          initialValues.companyName ||
+          initialValues.company?.name ||
+          initialValues.company?.tradingAs ||
+          '',
+      }
     : {};
 
   return (
@@ -43,16 +52,22 @@ function ClientFormDrawer({ open, onClose, onSubmit, loading, companies, initial
         <Form.Item label="Client type" name="clientType">
           <Input />
         </Form.Item>
-        <Form.Item label="Company" name="company">
-          <Select
-            allowClear
-            showSearch
-            options={(companies || []).map((company) => ({
-              label: company.name || company.companyName || company._id,
-              value: company._id,
-            }))}
-          />
-        </Form.Item>
+        {hasCompanies ? (
+          <Form.Item label="Company" name="company">
+            <Select
+              allowClear
+              showSearch
+              options={(companies || []).map((company) => ({
+                label: company.name || company.companyName || company._id,
+                value: company._id,
+              }))}
+            />
+          </Form.Item>
+        ) : (
+          <Form.Item label="Company" name="companyName">
+            <Input placeholder="Enter company name" />
+          </Form.Item>
+        )}
         <Form.Item label="Rate" name="rate">
           <InputNumber min={0} className="full-width" />
         </Form.Item>

@@ -537,7 +537,7 @@ const ReservationsListPage = () => {
     const handleSelectClient = (client) => {
         setClientData(prev => ({
             ...prev,
-            smartSearch: client.clientName,
+            smartSearch: client.clientName || `${client.given || ''} ${client.surname || ''}`.trim(),
             clientNo: client.clientNo,
             masterResNo: client.clientNo, // Sourced from RMS SmartSearch per user request
             groupname: client.groupName,
@@ -550,7 +550,10 @@ const ReservationsListPage = () => {
             email2: '',
             blackList: 'No',
             clientType: client.clientType || 'Client',
-            company: typeof client.company === 'object' ? client.company?.name : client.company,
+            company:
+                typeof client.company === 'object'
+                    ? (client.company?.name || client.company?.tradingAs)
+                    : (client.company || client.companyName),
             companyId: typeof client.company === 'object' ? client.company?._id : client.company,
             clientId: client._id || client.id,
             dateCreated: client.createdAt ? dayjs(client.createdAt).format('DD MMM YYYY') : '05 Nov 2025',
@@ -601,7 +604,9 @@ const ReservationsListPage = () => {
         const newArriveDate = arriveDate.format('YYYY-MM-DD');
         const newDepartDate = departDate.format('YYYY-MM-DD');
 
-        const conflictingBookings = allBookings.filter(booking => {
+        const isCanceledReservation = `${clientData.status || ''}`.toLowerCase().includes('cancel');
+
+        const conflictingBookings = isCanceledReservation ? [] : allBookings.filter(booking => {
             // Check if it's the same room
             const bookingRoomId = booking.roomId || booking.room?._id || booking.room?.id || booking.room;
             const isSameRoom = bookingRoomId === selectedRoom._id ||
@@ -826,7 +831,16 @@ const ReservationsListPage = () => {
         { title: 'Client No', dataIndex: 'clientNo', key: 'clientNo', width: 80 },
         { title: 'Groupname', dataIndex: 'groupName', key: 'groupName', width: 120 },
         { title: 'Client Name', dataIndex: 'clientName', key: 'clientName', width: 150 },
-        { title: 'Company', dataIndex: 'company', key: 'company', width: 100, render: (company) => typeof company === 'object' ? company?.name : company },
+        {
+            title: 'Company',
+            dataIndex: 'company',
+            key: 'company',
+            width: 100,
+            render: (company, record) =>
+                typeof company === 'object'
+                    ? (company?.name || company?.tradingAs)
+                    : (company || record.companyName || '-')
+        },
         { title: 'Address', dataIndex: 'address', key: 'address', width: 150 },
         { title: 'Mobile', dataIndex: 'mobile', key: 'mobile', width: 100 },
         { title: 'Phone AH', dataIndex: 'phoneAH', key: 'phoneAH', width: 100 },
