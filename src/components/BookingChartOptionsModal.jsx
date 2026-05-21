@@ -1,40 +1,70 @@
-import React, { useState } from 'react';
-import { Modal, Row, Col, Switch, Select, Input, Typography, Button, Space, Divider } from 'antd';
+import React, { useState, useCallback } from 'react';
+import { Modal, Switch, Select, Input, Typography, Button, Space, message } from 'antd';
 import { SaveOutlined, ReloadOutlined, CloseOutlined } from '@ant-design/icons';
 
 const { Text, Title } = Typography;
 const { Option } = Select;
 
-const BookingChartOptionsModal = ({ visible, onClose }) => {
-    // Mock state for the UI demo
-    const [settings, setSettings] = useState({
-        allowHorizontalMove: false,
-        excludeReservationTimes: false,
-        repositionChart: false,
-        showAreaDescription: false,
-        showElectricityIndicator: false,
-        showHousekeepingStatus: true,
-        showRoomTypeDescription: true,
-        showSpecialEventRow: true,
-        showTariffPeriodColors: false,
-        showPropertyOccupancyRow: false,
-        showRateCreatingReservation: true,
-        showPaxRow: false,
-        showUnallocatedReservation: false,
-        hideOutOfOrderArea: false,
-        areaHeight: 'Small',
-        areaWidth: '125',
-        colorBy: 'Reservation Status',
-        columnViewBy: 'Day',
-        dayView: '30',
-        viewBy: 'Area (by Room Type Display Order)',
-        hourStart: '0:00',
-        hourEnd: '24:00',
-        textLabel: 'Surname'
-    });
+const STORAGE_KEY = 'rms_booking_chart_options';
 
-    const handleChange = (key, value) => {
+const DEFAULT_SETTINGS = {
+    allowHorizontalMove: false,
+    excludeReservationTimes: false,
+    repositionChart: false,
+    showAreaDescription: true,
+    showElectricityIndicator: false,
+    showHousekeepingStatus: true,
+    showRoomTypeDescription: true,
+    showSpecialEventRow: true,
+    showTariffPeriodColors: false,
+    showPropertyOccupancyRow: false,
+    showRateCreatingReservation: true,
+    showPaxRow: false,
+    showUnallocatedReservation: false,
+    hideOutOfOrderArea: false,
+    areaHeight: 'Small',
+    areaWidth: '125',
+    colorBy: 'Reservation Status',
+    columnViewBy: 'Day',
+    dayView: '30',
+    viewBy: 'Area (by Room Type Display Order)',
+    hourStart: '0:00',
+    hourEnd: '24:00',
+    textLabel: 'Surname',
+};
+
+const loadSettings = () => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : { ...DEFAULT_SETTINGS };
+    } catch {
+        return { ...DEFAULT_SETTINGS };
+    }
+};
+
+export const getBookingChartOptions = () => loadSettings();
+
+const BookingChartOptionsModal = ({ visible, onClose }) => {
+    const [settings, setSettings] = useState(() => loadSettings());
+
+    const handleChange = useCallback((key, value) => {
         setSettings(prev => ({ ...prev, [key]: value }));
+    }, []);
+
+    const handleSave = () => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            message.success('Settings saved');
+            onClose();
+        } catch {
+            message.error('Failed to save settings');
+        }
+    };
+
+    const handleRestore = () => {
+        setSettings({ ...DEFAULT_SETTINGS });
+        localStorage.removeItem(STORAGE_KEY);
+        message.info('Settings restored to defaults');
     };
 
     const ToggleItem = ({ label, valueKey }) => (
@@ -67,12 +97,12 @@ const BookingChartOptionsModal = ({ visible, onClose }) => {
         <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             backgroundColor: '#001529', color: 'white', padding: '12px 24px',
-            margin: '-20px -24px 0 -24px', borderRadius: '4px 4px 0 0' // Compensate for Modal padding if needed, but styling bodyStyle is better
+            margin: '-20px -24px 0 -24px', borderRadius: '4px 4px 0 0'
         }}>
             <Title level={5} style={{ color: 'white', margin: 0 }}>Booking Chart Options</Title>
             <Space size="large">
-                <Button type="text" icon={<SaveOutlined style={{ color: 'white', fontSize: '18px' }} />} />
-                <Button type="text" icon={<ReloadOutlined style={{ color: 'white', fontSize: '18px' }} />} />
+                <Button type="text" onClick={handleSave} icon={<SaveOutlined style={{ color: 'white', fontSize: '18px' }} />} />
+                <Button type="text" onClick={handleRestore} icon={<ReloadOutlined style={{ color: 'white', fontSize: '18px' }} />} />
                 <Button type="text" onClick={onClose} icon={<CloseOutlined style={{ color: 'white', fontSize: '18px' }} />} />
             </Space>
         </div>

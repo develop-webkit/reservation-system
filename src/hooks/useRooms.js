@@ -45,14 +45,30 @@ export const useRoom = (id) => {
  */
 export const useUpdateRoomStatus = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: ({ id, status }) => roomsApi.updateStatus(id, status),
         onSuccess: (data, variables) => {
-            // Update the specific room in cache
             queryClient.setQueryData(roomKeys.detail(variables.id), data);
-            // Invalidate lists to refetch
             queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });
+        },
+    });
+};
+
+/**
+ * Hook to set a room as Out Of Service or Out Of Order
+ * @returns {MutationResult}
+ */
+export const useUpdateRoomServiceStatus = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, type, description }) =>
+            roomsApi.updateServiceStatus(id, type, description),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });
         },
     });
 };

@@ -26,10 +26,16 @@ export async function deleteRoom(id) {
   return unwrapResponse(response);
 }
 
+export async function updateRoomServiceStatus(id, type, description) {
+  const response = await http.patch(`/rooms/${id}/service-status`, { type, description });
+  return unwrapResponse(response);
+}
+
 const roomsApi = {
   getAll: getRooms,
   getById: getRoomById,
   updateStatus: updateRoomStatus,
+  updateServiceStatus: updateRoomServiceStatus,
   update: updateRoom,
   delete: deleteRoom,
 };

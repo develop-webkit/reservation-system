@@ -1,23 +1,28 @@
 // src/components/BookingChart.jsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Tooltip, Popover, Card, Spin, Alert, message } from 'antd';
+import { Typography, Tooltip, Popover, Card, Spin, Alert, message, Modal, Input } from 'antd';
 import dayjs from 'dayjs';
 import { useBookingChart, useUpdateBookingChart } from '../hooks/useBookings';
-import { useRooms } from '../hooks/useRooms';
-//import { useRooms } from '../hooks/useRooms'; // This hook likely needs to be updated or we bypass it for now as requested
+import { useRooms, useUpdateRoomServiceStatus, useUpdateRoomStatus } from '../hooks/useRooms';
 import { rooms as roomsFromData } from '../data/rooms';
 
 
 const { Text } = Typography;
 
 const STATUS_COLORS = {
-    'Unconfirmed': '#faad14',      // Orange
+    'Unconfirmed': '#faad14',      // Orange/Yellow
     'Confirmed': '#52c41a',        // Green
     'Arrived': '#1890ff',          // Blue
+    'Checked In': '#1890ff',       // Blue
     'Pre Check In': '#13c2c2',     // Cyan
     'Departed': '#eb2f96',         // Pink
+    'Checked Out': '#eb2f96',      // Pink
+    'Canceled': '#d9d9d9',         // Grey - cancelled
+    'Cancelled': '#d9d9d9',        // Grey - cancelled
+    'Requested': '#8c8c8c',        // Grey - requested to admin
     'Out of Order': '#722ed1',     // Purple
+    'Out of Service': '#003a8c',   // Dark Blue
 };
 
 const ROOM_STATUS_COLORS = {
@@ -28,14 +33,15 @@ const ROOM_STATUS_COLORS = {
 };
 
 const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {} }) => {
-    // Fetch bookings and rooms using TanStack Query hooks
-    // const { data: bookingsResponse, isLoading: bookingsLoading, error: bookingsError } = useBookings(); // Not used directly anymore
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
 
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null });
     const [resizeDraft, setResizeDraft] = useState(null);
+    const [serviceModal, setServiceModal] = useState({ visible: false, type: null, roomId: null, description: '' });
     const updateBookingChartMutation = useUpdateBookingChart();
+    const updateRoomServiceStatusMutation = useUpdateRoomServiceStatus();
+    const updateRoomStatusMutation = useUpdateRoomStatus();
 
     // Fetch chart data with date range
     const { data: chartData, isLoading: chartLoading, error: chartError } = useBookingChart({
@@ -230,8 +236,16 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         const rowHeight = isParkedRow ? '60px' : '30px';
 
         const cleanStatus = room.status || room.defaultCleanStatus || 'Clean';
-        const statusColor = room.outOfOrder ? ROOM_STATUS_COLORS['OOO'] : (ROOM_STATUS_COLORS[cleanStatus.toUpperCase()] || ROOM_STATUS_COLORS['CLEAN']);
-        const roomStatusText = room.outOfOrder ? 'Out of Order' : cleanStatus;
+        const statusColor = room.outOfService
+            ? '#003a8c'
+            : room.outOfOrder
+                ? ROOM_STATUS_COLORS['OOO']
+                : (ROOM_STATUS_COLORS[cleanStatus.toUpperCase()] || ROOM_STATUS_COLORS['CLEAN']);
+        const roomStatusText = room.outOfService
+            ? `Out of Service${room.serviceDescription ? ': ' + room.serviceDescription : ''}`
+            : room.outOfOrder
+                ? `Out of Order${room.serviceDescription ? ': ' + room.serviceDescription : ''}`
+                : cleanStatus;
 
         const RoomInfoContent = (
             <div style={{ width: '300px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
@@ -532,6 +546,42 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         setContextMenu({ ...contextMenu, visible: false });
     };
 
+    const handleOpenServiceModal = (type) => {
+        const roomId = contextMenu.room?._id || contextMenu.room?.id;
+        if (!roomId) { message.error('Room ID not found'); return; }
+        setServiceModal({ visible: true, type, roomId, description: '' });
+        handleCloseContextMenu();
+    };
+
+    const handleConfirmServiceStatus = () => {
+        const { roomId, type, description } = serviceModal;
+        updateRoomServiceStatusMutation.mutate(
+            { id: roomId, type, description },
+            {
+                onSuccess: () => {
+                    message.success(type === 'out_of_service' ? 'Room marked as Out Of Service' : 'Room marked as Out Of Order');
+                    setServiceModal({ visible: false, type: null, roomId: null, description: '' });
+                },
+                onError: (err) => {
+                    message.error(err.response?.data?.message || 'Failed to update room status');
+                },
+            }
+        );
+    };
+
+    const handleChangeRoomStatus = (status) => {
+        const roomId = contextMenu.room?._id || contextMenu.room?.id;
+        if (!roomId) { message.error('Room ID not found'); return; }
+        handleCloseContextMenu();
+        updateRoomStatusMutation.mutate(
+            { id: roomId, status },
+            {
+                onSuccess: () => message.success(`Room marked as ${status}`),
+                onError: (err) => message.error(err.response?.data?.message || 'Failed to update room status'),
+            }
+        );
+    };
+
     const handleMenuItemClick = (action) => {
         console.log(`[MENU CLICK] Context menu action: ${action}`, contextMenu);
 
@@ -691,11 +741,68 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                         <>
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
                             <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                            <div
+                                className="context-menu-item"
+                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#003a8c', fontWeight: 500 }}
+                                onClick={() => handleOpenServiceModal('out_of_service')}
+                            >
+                                Out Of Service
+                            </div>
+                            <div
+                                className="context-menu-item"
+                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#722ed1', fontWeight: 500 }}
+                                onClick={() => handleOpenServiceModal('out_of_order')}
+                            >
+                                Out Of Order
+                            </div>
+                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                            <div style={{ padding: '4px 16px', fontSize: '11px', color: '#8c8c8c', fontWeight: 600, letterSpacing: '0.5px' }}>
+                                CHANGE ROOM STATUS
+                            </div>
+                            {[
+                                { label: 'Clean', color: '#52c41a' },
+                                { label: 'Dirty', color: '#f5222d' },
+                                { label: 'Inspect', color: '#fa8c16' },
+                            ].map(({ label, color }) => (
+                                <div
+                                    key={label}
+                                    className="context-menu-item"
+                                    style={{ padding: '6px 24px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 8 }}
+                                    onClick={() => handleChangeRoomStatus(label)}
+                                >
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, display: 'inline-block', flexShrink: 0 }} />
+                                    {label}
+                                </div>
+                            ))}
+                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
                         </>
                     )}
                 </div>
             )}
+
+            {/* Out Of Service / Out Of Order description modal */}
+            <Modal
+                title={serviceModal.type === 'out_of_service' ? 'Mark Room as Out Of Service' : 'Mark Room as Out Of Order'}
+                open={serviceModal.visible}
+                onOk={handleConfirmServiceStatus}
+                onCancel={() => setServiceModal({ visible: false, type: null, roomId: null, description: '' })}
+                confirmLoading={updateRoomServiceStatusMutation.isPending}
+                okText="Confirm"
+            >
+                <p style={{ marginBottom: 8, color: '#595959' }}>
+                    Enter a description for why this room is{' '}
+                    {serviceModal.type === 'out_of_service' ? 'out of service' : 'out of order'}:
+                </p>
+                <Input.TextArea
+                    rows={3}
+                    placeholder="e.g. Mattress Clean, Maintenance Required..."
+                    value={serviceModal.description}
+                    onChange={(e) => setServiceModal(prev => ({ ...prev, description: e.target.value }))}
+                    maxLength={200}
+                    showCount
+                />
+            </Modal>
         </Card>
     );
 };

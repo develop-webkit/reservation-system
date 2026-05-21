@@ -1,4 +1,5 @@
 import { Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Switch } from 'antd';
+import { STATUS_OPTIONS } from '../../data/options';
 import dayjs from 'dayjs';
 
 function ReservationFormDrawer({
@@ -102,7 +103,11 @@ function ReservationFormDrawer({
           <DatePicker showTime className="full-width" />
         </Form.Item>
         <Form.Item label="Status" name="status">
-          <Input placeholder="Confirmed" />
+          <Select placeholder="Select status" allowClear>
+            {STATUS_OPTIONS.map((s) => (
+              <Select.Option key={s} value={s}>{s}</Select.Option>
+            ))}
+          </Select>
         </Form.Item>
         <Form.Item label="Booking source" name="bookingSource">
           <Input placeholder="Direct" />

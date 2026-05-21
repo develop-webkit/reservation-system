@@ -6,6 +6,7 @@ import {
   ScheduleOutlined,
   SolutionOutlined,
   TeamOutlined,
+  UserAddOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
 
@@ -18,4 +19,5 @@ export const navigationItems = [
   { key: '/accounting', label: 'Accounting', icon: DollarOutlined },
   { key: '/clients', label: 'Clients', icon: TeamOutlined },
   { key: '/vouchers', label: 'Vouchers', icon: WalletOutlined },
+  { key: '/users', label: 'Users', icon: UserAddOutlined },
 ];
