@@ -1,7 +1,7 @@
 // src/components/BookingChart.jsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Tooltip, Popover, Card, Spin, Alert, message, Modal, Input } from 'antd';
+import { Typography, Tooltip, Popover, Card, Spin, Alert, message, Modal, Input, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useBookingChart, useUpdateBookingChart } from '../hooks/useBookings';
 import { useRooms, useUpdateRoomServiceStatus, useUpdateRoomStatus } from '../hooks/useRooms';
@@ -32,13 +32,14 @@ const ROOM_STATUS_COLORS = {
     'OOO': '#722ed1',   // Out of Order (Purple)
 };
 
-const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {} }) => {
+const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightProp, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {}, chartOptions = {} }) => {
+    const rowHeight = rowHeightProp || 30;
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
 
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null });
     const [resizeDraft, setResizeDraft] = useState(null);
-    const [serviceModal, setServiceModal] = useState({ visible: false, type: null, roomId: null, description: '' });
+    const [serviceModal, setServiceModal] = useState({ visible: false, type: null, roomId: null, description: '', startDate: null, endDate: null });
     const updateBookingChartMutation = useUpdateBookingChart();
     const updateRoomServiceStatusMutation = useUpdateRoomServiceStatus();
     const updateRoomStatusMutation = useUpdateRoomStatus();
@@ -233,7 +234,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     // Helper to render a single room row
     const renderRoomRow = (room) => {
         const isParkedRow = room.id === 'PK01';
-        const rowHeight = isParkedRow ? '60px' : '30px';
+        const rowHeightPx = isParkedRow ? `${rowHeight * 2}px` : `${rowHeight}px`;
 
         const cleanStatus = room.status || room.defaultCleanStatus || 'Clean';
         const statusColor = room.outOfService
@@ -360,9 +361,12 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
         }
 
         return (
-            <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: rowHeight, borderBottom: '1px solid #f0f0f0' }}>
+            <div key={room.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr', height: rowHeightPx, borderBottom: '1px solid #f0f0f0' }}>
                 <Popover content={RoomInfoContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
-                    <div style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
+                    <div
+                        style={{ padding: '0 12px', borderRight: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}
+                        onContextMenu={(e) => handleContextMenu(e, room, null)}
+                    >
                         <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
                         <Tooltip title={roomStatusText}>
                             <div style={{
@@ -385,6 +389,61 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                             />
                         );
                     })}
+                    {/* Service block bar (Out Of Service / Out Of Order) */}
+                    {(room.outOfService || room.outOfOrder) && room.serviceStartDate && room.serviceEndDate && (() => {
+                        const servicePos = getGridPosition(room.serviceStartDate, room.serviceEndDate);
+                        if (!servicePos.isVisible) return null;
+                        const serviceColor = room.outOfService ? '#003a8c' : '#722ed1';
+                        const serviceLabel = room.outOfService
+                            ? `Out Of Service${room.serviceDescription ? ': ' + room.serviceDescription : ''}`
+                            : `Out Of Order${room.serviceDescription ? ': ' + room.serviceDescription : ''}`;
+                        const ServiceBlockContent = (
+                            <div style={{ width: 280 }}>
+                                <div style={{ backgroundColor: serviceColor, color: '#fff', padding: '10px 14px', margin: '-12px -16px 12px -16px', borderRadius: '4px 4px 0 0' }}>
+                                    <Text strong style={{ color: '#fff' }}>{room.outOfService ? 'Out Of Service' : 'Out Of Order'}</Text>
+                                </div>
+                                <div style={{ padding: '0 4px' }}>
+                                    {[
+                                        { label: 'Description', value: room.serviceDescription || '-' },
+                                        { label: 'From Date', value: dayjs(room.serviceStartDate).format('ddd DD MMM YYYY HH:mm') },
+                                        { label: 'To Date', value: dayjs(room.serviceEndDate).format('ddd DD MMM YYYY HH:mm') },
+                                        { label: 'Area', value: room.name },
+                                        { label: 'Status', value: room.outOfService ? 'Out Of Service' : 'Out Of Order' },
+                                    ].map((item, i) => (
+                                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: 8, marginBottom: 6 }}>
+                                            <Text strong style={{ fontSize: 12, textAlign: 'right' }}>{item.label}</Text>
+                                            <Text style={{ fontSize: 12 }}>{item.value}</Text>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                        return (
+                            <Popover key={`service-${room.id}`} content={ServiceBlockContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
+                                <div style={{
+                                    gridColumnStart: Math.max(1, servicePos.start),
+                                    gridColumnEnd: Math.min(visibleDays + 1, servicePos.end),
+                                    gridRow: 1,
+                                    zIndex: 2,
+                                    height: '22px',
+                                    backgroundColor: serviceColor,
+                                    borderRadius: '4px',
+                                    margin: '0 2px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: '#fff',
+                                    padding: '0 8px',
+                                    overflow: 'hidden',
+                                    cursor: 'default',
+                                    alignSelf: 'center',
+                                }}>
+                                    <Text ellipsis style={{ color: '#fff', fontSize: '10px', width: '100%', textAlign: 'center' }}>
+                                        {serviceLabel}
+                                    </Text>
+                                </div>
+                            </Popover>
+                        );
+                    })()}
                     {roomBookings.map(booking => {
                         const { checkIn, checkOut } = getDisplayedBookingDates(booking);
                         const pos = getGridPosition(checkIn, checkOut);
@@ -547,20 +606,31 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
     };
 
     const handleOpenServiceModal = (type) => {
-        const roomId = contextMenu.room?._id || contextMenu.room?.id;
-        if (!roomId) { message.error('Room ID not found'); return; }
-        setServiceModal({ visible: true, type, roomId, description: '' });
+        const room = contextMenu.room;
+        const roomId = room?._id || room?.id;
+        if (!room || !roomId) { message.error('Please right-click on a room row to use this option'); return; }
+        const defaultStart = contextMenu.date ? dayjs(contextMenu.date) : dayjs();
+        const defaultEnd = defaultStart.add(1, 'day');
+        setServiceModal({ visible: true, type, roomId, description: '', startDate: defaultStart, endDate: defaultEnd });
         handleCloseContextMenu();
     };
 
     const handleConfirmServiceStatus = () => {
-        const { roomId, type, description } = serviceModal;
+        const { roomId, type, description, startDate, endDate } = serviceModal;
+        if (!startDate || !endDate) { message.error('Please select a start and end date'); return; }
+        if (!dayjs(endDate).isAfter(dayjs(startDate))) { message.error('End date must be after start date'); return; }
         updateRoomServiceStatusMutation.mutate(
-            { id: roomId, type, description },
+            {
+                id: roomId,
+                type,
+                description,
+                startDate: dayjs(startDate).toISOString(),
+                endDate: dayjs(endDate).toISOString(),
+            },
             {
                 onSuccess: () => {
                     message.success(type === 'out_of_service' ? 'Room marked as Out Of Service' : 'Room marked as Out Of Order');
-                    setServiceModal({ visible: false, type: null, roomId: null, description: '' });
+                    setServiceModal({ visible: false, type: null, roomId: null, description: '', startDate: null, endDate: null });
                 },
                 onError: (err) => {
                     message.error(err.response?.data?.message || 'Failed to update room status');
@@ -596,27 +666,24 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
             }
             navigate(`/reservations/list?${params.toString()}`);
         } else if (action === 'edit_booking') {
-            console.log('[EDIT BOOKING] Opening booking in reservations:', contextMenu.booking);
-            // Edit booking - pre-fill the form with booking data
             if (contextMenu.booking) {
-                const params = new URLSearchParams();
                 const booking = contextMenu.booking;
+                const params = new URLSearchParams();
 
-                // Add reservationId (the MongoDB _id of the Reservation)
-                params.set('reservationId', booking.reservationId || '');
+                // reservationId drives edit mode in ReservationsListPage
+                if (booking.reservationId) params.set('reservationId', booking.reservationId);
 
-                // Pre-fill form fields from booking/reservation data
-                params.set('resNo', booking.resNo || '');
-                params.set('masterResNo', booking.masterResNo || '');
+                // Pre-fill all form fields
+                if (booking.resNo) params.set('resNo', booking.resNo);
+                if (booking.masterResNo) params.set('masterResNo', booking.masterResNo);
                 params.set('arrive', booking.checkIn || booking.startDate || '');
                 params.set('depart', booking.checkOut || booking.endDate || '');
                 params.set('area', booking.roomId || contextMenu.room?.name || '');
                 params.set('roomType', contextMenu.room?.category || '');
-                params.set('clientId', booking.clientId || booking.client || ''); // Pass client ID to auto-select from SmartSearch
+                if (booking.clientId || booking.client) params.set('clientId', booking.clientId || booking.client);
                 params.set('given', booking.clientName?.split(' ')[0] || '');
                 params.set('surname', booking.clientName?.split(' ').slice(1).join(' ') || '');
                 params.set('status', booking.status || 'Confirmed');
-                params.set('people', booking.people || '1A');
                 params.set('company', booking.company || '');
                 params.set('bkgSource', booking.bkgSource || '');
                 params.set('tariffType', booking.tariffType || 'Corporate');
@@ -624,10 +691,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 params.set('fixed', booking.isFixed ? 'Yes' : 'No');
                 params.set('groupname', booking.groupName || '');
 
-                console.log('[NAVIGATE] URL:', `/reservations/edit?${params.toString()}`);
-                navigate(`/reservations/edit?${params.toString()}`);
-            } else {
-                console.warn('[EDIT BOOKING] No booking data available');
+                navigate(`/reservations/list?${params.toString()}`);
             }
         } else if (action === 'assign_housekeeping') {
             // Navigate to housekeeping roster with the booking's checkout date pre-filled
@@ -740,40 +804,44 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                     ) : (
                         <>
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
-                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
-                            <div
-                                className="context-menu-item"
-                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#003a8c', fontWeight: 500 }}
-                                onClick={() => handleOpenServiceModal('out_of_service')}
-                            >
-                                Out Of Service
-                            </div>
-                            <div
-                                className="context-menu-item"
-                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#722ed1', fontWeight: 500 }}
-                                onClick={() => handleOpenServiceModal('out_of_order')}
-                            >
-                                Out Of Order
-                            </div>
-                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
-                            <div style={{ padding: '4px 16px', fontSize: '11px', color: '#8c8c8c', fontWeight: 600, letterSpacing: '0.5px' }}>
-                                CHANGE ROOM STATUS
-                            </div>
-                            {[
-                                { label: 'Clean', color: '#52c41a' },
-                                { label: 'Dirty', color: '#f5222d' },
-                                { label: 'Inspect', color: '#fa8c16' },
-                            ].map(({ label, color }) => (
-                                <div
-                                    key={label}
-                                    className="context-menu-item"
-                                    style={{ padding: '6px 24px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 8 }}
-                                    onClick={() => handleChangeRoomStatus(label)}
-                                >
-                                    <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, display: 'inline-block', flexShrink: 0 }} />
-                                    {label}
-                                </div>
-                            ))}
+                            {contextMenu.room && (
+                                <>
+                                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                                    <div
+                                        className="context-menu-item"
+                                        style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#003a8c', fontWeight: 500 }}
+                                        onClick={() => handleOpenServiceModal('out_of_service')}
+                                    >
+                                        Out Of Service
+                                    </div>
+                                    <div
+                                        className="context-menu-item"
+                                        style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#722ed1', fontWeight: 500 }}
+                                        onClick={() => handleOpenServiceModal('out_of_order')}
+                                    >
+                                        Out Of Order
+                                    </div>
+                                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                                    <div style={{ padding: '4px 16px', fontSize: '11px', color: '#8c8c8c', fontWeight: 600, letterSpacing: '0.5px' }}>
+                                        CHANGE ROOM STATUS
+                                    </div>
+                                    {[
+                                        { label: 'Clean', color: '#52c41a' },
+                                        { label: 'Dirty', color: '#f5222d' },
+                                        { label: 'Inspect', color: '#fa8c16' },
+                                    ].map(({ label, color }) => (
+                                        <div
+                                            key={label}
+                                            className="context-menu-item"
+                                            style={{ padding: '6px 24px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 8 }}
+                                            onClick={() => handleChangeRoomStatus(label)}
+                                        >
+                                            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, display: 'inline-block', flexShrink: 0 }} />
+                                            {label}
+                                        </div>
+                                    ))}
+                                </>
+                            )}
                             <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
                         </>
@@ -786,22 +854,46 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, collapsedCategories, on
                 title={serviceModal.type === 'out_of_service' ? 'Mark Room as Out Of Service' : 'Mark Room as Out Of Order'}
                 open={serviceModal.visible}
                 onOk={handleConfirmServiceStatus}
-                onCancel={() => setServiceModal({ visible: false, type: null, roomId: null, description: '' })}
+                onCancel={() => setServiceModal({ visible: false, type: null, roomId: null, description: '', startDate: null, endDate: null })}
                 confirmLoading={updateRoomServiceStatusMutation.isPending}
                 okText="Confirm"
             >
-                <p style={{ marginBottom: 8, color: '#595959' }}>
-                    Enter a description for why this room is{' '}
-                    {serviceModal.type === 'out_of_service' ? 'out of service' : 'out of order'}:
-                </p>
-                <Input.TextArea
-                    rows={3}
-                    placeholder="e.g. Mattress Clean, Maintenance Required..."
-                    value={serviceModal.description}
-                    onChange={(e) => setServiceModal(prev => ({ ...prev, description: e.target.value }))}
-                    maxLength={200}
-                    showCount
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div>
+                        <label style={{ fontSize: 13, color: '#595959', display: 'block', marginBottom: 4 }}>Description</label>
+                        <Input.TextArea
+                            rows={2}
+                            placeholder="e.g. Mattress Clean, Maintenance Required..."
+                            value={serviceModal.description}
+                            onChange={(e) => setServiceModal(prev => ({ ...prev, description: e.target.value }))}
+                            maxLength={200}
+                            showCount
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <div>
+                            <label style={{ fontSize: 13, color: '#595959', display: 'block', marginBottom: 4 }}>From Date</label>
+                            <DatePicker
+                                style={{ width: '100%' }}
+                                showTime
+                                format="DD MMM YYYY HH:mm"
+                                value={serviceModal.startDate}
+                                onChange={(date) => setServiceModal(prev => ({ ...prev, startDate: date }))}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 13, color: '#595959', display: 'block', marginBottom: 4 }}>To Date</label>
+                            <DatePicker
+                                style={{ width: '100%' }}
+                                showTime
+                                format="DD MMM YYYY HH:mm"
+                                value={serviceModal.endDate}
+                                disabledDate={(d) => serviceModal.startDate && d.isBefore(serviceModal.startDate, 'day')}
+                                onChange={(date) => setServiceModal(prev => ({ ...prev, endDate: date }))}
+                            />
+                        </div>
+                    </div>
+                </div>
             </Modal>
         </Card>
     );

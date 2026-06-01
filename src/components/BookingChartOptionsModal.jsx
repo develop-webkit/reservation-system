@@ -1,90 +1,64 @@
 import React, { useState, useCallback } from 'react';
 import { Modal, Switch, Select, Input, Typography, Button, Space, message } from 'antd';
 import { SaveOutlined, ReloadOutlined, CloseOutlined } from '@ant-design/icons';
+import { DEFAULT_CHART_OPTIONS } from '../hooks/useChartOptions';
 
 const { Text, Title } = Typography;
 const { Option } = Select;
 
-const STORAGE_KEY = 'rms_booking_chart_options';
+const SIDEBAR_TABS = ['Options', 'Room Type Defaults', 'Data Window'];
 
-const DEFAULT_SETTINGS = {
-    allowHorizontalMove: false,
-    excludeReservationTimes: false,
-    repositionChart: false,
-    showAreaDescription: true,
-    showElectricityIndicator: false,
-    showHousekeepingStatus: true,
-    showRoomTypeDescription: true,
-    showSpecialEventRow: true,
-    showTariffPeriodColors: false,
-    showPropertyOccupancyRow: false,
-    showRateCreatingReservation: true,
-    showPaxRow: false,
-    showUnallocatedReservation: false,
-    hideOutOfOrderArea: false,
-    areaHeight: 'Small',
-    areaWidth: '125',
-    colorBy: 'Reservation Status',
-    columnViewBy: 'Day',
-    dayView: '30',
-    viewBy: 'Area (by Room Type Display Order)',
-    hourStart: '0:00',
-    hourEnd: '24:00',
-    textLabel: 'Surname',
-};
+const BookingChartOptionsModal = ({ visible, onClose, settings, onSave, onRestore }) => {
+    const [localSettings, setLocalSettings] = useState(settings);
+    const [activeTab, setActiveTab] = useState('Options');
 
-const loadSettings = () => {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : { ...DEFAULT_SETTINGS };
-    } catch {
-        return { ...DEFAULT_SETTINGS };
-    }
-};
-
-export const getBookingChartOptions = () => loadSettings();
-
-const BookingChartOptionsModal = ({ visible, onClose }) => {
-    const [settings, setSettings] = useState(() => loadSettings());
+    // Sync local state when modal opens with fresh settings from parent
+    React.useEffect(() => {
+        if (visible) {
+            setLocalSettings(settings);
+            setActiveTab('Options');
+        }
+    }, [visible, settings]);
 
     const handleChange = useCallback((key, value) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
+        setLocalSettings(prev => ({ ...prev, [key]: value }));
     }, []);
 
     const handleSave = () => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-            message.success('Settings saved');
+        const success = onSave(localSettings);
+        if (success !== false) {
+            message.success('Chart settings saved');
             onClose();
-        } catch {
+        } else {
             message.error('Failed to save settings');
         }
     };
 
     const handleRestore = () => {
-        setSettings({ ...DEFAULT_SETTINGS });
-        localStorage.removeItem(STORAGE_KEY);
+        const defaults = { ...DEFAULT_CHART_OPTIONS };
+        setLocalSettings(defaults);
+        onRestore();
         message.info('Settings restored to defaults');
     };
 
     const ToggleItem = ({ label, valueKey }) => (
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
             <Switch
-                checked={settings[valueKey]}
+                checked={!!localSettings[valueKey]}
                 onChange={(checked) => handleChange(valueKey, checked)}
-                style={{ marginRight: '12px', backgroundColor: settings[valueKey] ? '#52c41a' : undefined }}
+                style={{ marginRight: '12px' }}
             />
             <Text style={{ fontSize: '13px', color: '#595959' }}>{label}</Text>
         </div>
     );
 
-    const SelectItem = ({ label, valueKey, options, width = '100%' }) => (
-        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+    const SelectItem = ({ label, valueKey, options, style }) => (
+        <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', alignItems: 'center', marginBottom: '12px' }}>
             <Text style={{ fontSize: '13px', color: '#595959' }}>{label}:</Text>
             <Select
-                value={settings[valueKey]}
+                value={localSettings[valueKey]}
                 onChange={(val) => handleChange(valueKey, val)}
-                style={{ width }}
+                style={style}
                 size="middle"
             >
                 {options.map(opt => <Option key={opt} value={opt}>{opt}</Option>)}
@@ -92,18 +66,168 @@ const BookingChartOptionsModal = ({ visible, onClose }) => {
         </div>
     );
 
-    // Custom Header
+    const renderContent = () => {
+        if (activeTab === 'Room Type Defaults') {
+            return (
+                <div style={{ flex: 1, padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center', color: '#8c8c8c' }}>
+                        <div style={{ fontSize: 40, marginBottom: 16 }}>🏨</div>
+                        <Title level={5} style={{ color: '#8c8c8c' }}>Room Type Defaults</Title>
+                        <Text style={{ color: '#bfbfbf', fontSize: 13 }}>
+                            Room type default settings will be available in a future update.
+                        </Text>
+                    </div>
+                </div>
+            );
+        }
+
+        if (activeTab === 'Data Window') {
+            return (
+                <div style={{ flex: 1, padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center', color: '#8c8c8c' }}>
+                        <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
+                        <Title level={5} style={{ color: '#8c8c8c' }}>Data Window</Title>
+                        <Text style={{ color: '#bfbfbf', fontSize: 13 }}>
+                            Data window configuration will be available in a future update.
+                        </Text>
+                    </div>
+                </div>
+            );
+        }
+
+        // Options tab
+        return (
+            <div style={{ flex: 1, padding: '24px', display: 'flex', gap: '40px', overflowY: 'auto' }}>
+                {/* Left Column: Toggles */}
+                <div style={{ flex: 1 }}>
+                    <ToggleItem label="Allow Horizontal Area Move" valueKey="allowHorizontalMove" />
+                    <ToggleItem label="Exclude Reservation Times" valueKey="excludeReservationTimes" />
+                    <ToggleItem label="Reposition Chart to Edited Reservation" valueKey="repositionChart" />
+                    <ToggleItem label="Show Area Description" valueKey="showAreaDescription" />
+                    <ToggleItem label="Show Electricity Indicator" valueKey="showElectricityIndicator" />
+                    <ToggleItem label="Show Housekeeping Status Indicator" valueKey="showHousekeepingStatus" />
+                    <ToggleItem label="Show Room Type Description" valueKey="showRoomTypeDescription" />
+                    <ToggleItem label="Show Special Event Row" valueKey="showSpecialEventRow" />
+                    <ToggleItem label="Show Tariff Period Colors" valueKey="showTariffPeriodColors" />
+                    <ToggleItem label="Show Property Occupancy Row" valueKey="showPropertyOccupancyRow" />
+                    <ToggleItem label="Show Rate when creating Reservation" valueKey="showRateCreatingReservation" />
+                    <ToggleItem label="Show Pax Row" valueKey="showPaxRow" />
+                    <ToggleItem label="Show Unallocated Reservation" valueKey="showUnallocatedReservation" />
+
+                    <div style={{ display: 'flex', alignItems: 'flex-start', marginTop: '12px' }}>
+                        <Switch
+                            checked={!!localSettings.hideOutOfOrderArea}
+                            onChange={(c) => handleChange('hideOutOfOrderArea', c)}
+                            style={{ marginRight: '12px', marginTop: '2px', flexShrink: 0 }}
+                        />
+                        <Text style={{ fontSize: '13px', color: '#595959', lineHeight: '1.4' }}>
+                            Hide Area from view when out-of-order Area cover the entire selected date range
+                        </Text>
+                    </div>
+                </div>
+
+                {/* Right Column: Selects & Inputs */}
+                <div style={{ width: '320px', flexShrink: 0 }}>
+                    <SelectItem
+                        label="Area Height"
+                        valueKey="areaHeight"
+                        options={['Small', 'Medium', 'Large']}
+                        style={{ width: '100%' }}
+                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                        <Text style={{ fontSize: '13px', color: '#595959' }}>Area Width:</Text>
+                        <Input
+                            value={localSettings.areaWidth}
+                            onChange={(e) => handleChange('areaWidth', e.target.value)}
+                        />
+                    </div>
+
+                    <SelectItem
+                        label="Color"
+                        valueKey="colorBy"
+                        options={['Reservation Status', 'Payment Status']}
+                        style={{ width: '100%' }}
+                    />
+                    <SelectItem
+                        label="Column View By"
+                        valueKey="columnViewBy"
+                        options={['Day', 'Week', 'Month']}
+                        style={{ width: '100%' }}
+                    />
+                    <SelectItem
+                        label="Day View"
+                        valueKey="dayView"
+                        options={['7', '14', '30', '60', '90']}
+                        style={{ width: '100%' }}
+                    />
+                    <SelectItem
+                        label="View By"
+                        valueKey="viewBy"
+                        options={['Area (by Room Type Display Order)', 'Category']}
+                        style={{ width: '100%' }}
+                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', alignItems: 'center', marginBottom: '12px' }}>
+                        <Text style={{ fontSize: '13px', color: '#595959' }}>Hour Display:</Text>
+                        <Space>
+                            <Select
+                                value={localSettings.hourStart}
+                                onChange={(v) => handleChange('hourStart', v)}
+                                style={{ width: 80 }}
+                                options={['0:00', '6:00', '8:00'].map(v => ({ label: v, value: v }))}
+                            />
+                            <Text style={{ fontSize: '12px' }}>till</Text>
+                            <Select
+                                value={localSettings.hourEnd}
+                                onChange={(v) => handleChange('hourEnd', v)}
+                                style={{ width: 80 }}
+                                options={['18:00', '20:00', '24:00'].map(v => ({ label: v, value: v }))}
+                            />
+                        </Space>
+                    </div>
+
+                    <SelectItem
+                        label="Text"
+                        valueKey="textLabel"
+                        options={['Surname', 'Reservation ID', 'Company']}
+                        style={{ width: '100%' }}
+                    />
+                </div>
+            </div>
+        );
+    };
+
     const customHeader = (
         <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            backgroundColor: '#001529', color: 'white', padding: '12px 24px',
-            margin: '-20px -24px 0 -24px', borderRadius: '4px 4px 0 0'
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            backgroundColor: '#001529',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: '4px 4px 0 0',
         }}>
             <Title level={5} style={{ color: 'white', margin: 0 }}>Booking Chart Options</Title>
             <Space size="large">
-                <Button type="text" onClick={handleSave} icon={<SaveOutlined style={{ color: 'white', fontSize: '18px' }} />} />
-                <Button type="text" onClick={handleRestore} icon={<ReloadOutlined style={{ color: 'white', fontSize: '18px' }} />} />
-                <Button type="text" onClick={onClose} icon={<CloseOutlined style={{ color: 'white', fontSize: '18px' }} />} />
+                <Button
+                    type="text"
+                    title="Save settings"
+                    onClick={handleSave}
+                    icon={<SaveOutlined style={{ color: 'white', fontSize: '18px' }} />}
+                />
+                <Button
+                    type="text"
+                    title="Restore defaults"
+                    onClick={handleRestore}
+                    icon={<ReloadOutlined style={{ color: 'white', fontSize: '18px' }} />}
+                />
+                <Button
+                    type="text"
+                    title="Close"
+                    onClick={onClose}
+                    icon={<CloseOutlined style={{ color: 'white', fontSize: '18px' }} />}
+                />
             </Space>
         </div>
     );
@@ -114,84 +238,51 @@ const BookingChartOptionsModal = ({ visible, onClose }) => {
             onCancel={onClose}
             footer={null}
             closable={false}
-            width={1200}
-            styles={{ body: { padding: 0, borderRadius: '4px' } }}
+            width={1000}
+            styles={{ body: { padding: 0 }, content: { padding: 0, borderRadius: '4px' } }}
             centered
         >
             {customHeader}
-            <div style={{ display: 'flex', minHeight: '500px', backgroundColor: '#fff' }}>
+            <div style={{ display: 'flex', minHeight: '480px', backgroundColor: '#fff' }}>
                 {/* Sidebar */}
-                <div style={{ width: '220px', backgroundColor: '#fafafa', borderRight: '1px solid #f0f0f0', padding: '20px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', padding: '8px 24px', cursor: 'pointer', borderLeft: '3px solid #1890ff', backgroundColor: '#e6f7ff' }}>
-                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#1890ff', marginRight: '8px' }}></div>
-                        <Text strong style={{ color: '#262626' }}>Options</Text>
-                    </div>
-                    <div style={{ padding: '12px 24px', cursor: 'pointer' }}>
-                        <Text style={{ color: '#8c8c8c' }}>Room Type Defaults</Text>
-                    </div>
-                    <div style={{ padding: '12px 24px', cursor: 'pointer' }}>
-                        <Text style={{ color: '#8c8c8c' }}>Data Window</Text>
-                    </div>
+                <div style={{ width: '200px', flexShrink: 0, backgroundColor: '#fafafa', borderRight: '1px solid #f0f0f0', padding: '16px 0' }}>
+                    {SIDEBAR_TABS.map(tab => {
+                        const isActive = activeTab === tab;
+                        return (
+                            <div
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '10px 20px',
+                                    cursor: 'pointer',
+                                    borderLeft: isActive ? '3px solid #1890ff' : '3px solid transparent',
+                                    backgroundColor: isActive ? '#e6f7ff' : 'transparent',
+                                    transition: 'all 0.15s',
+                                }}
+                            >
+                                {isActive && (
+                                    <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#1890ff', marginRight: 8, flexShrink: 0 }} />
+                                )}
+                                <Text
+                                    style={{
+                                        fontSize: '13px',
+                                        color: isActive ? '#262626' : '#8c8c8c',
+                                        fontWeight: isActive ? 600 : 400,
+                                        marginLeft: isActive ? 0 : 14,
+                                    }}
+                                >
+                                    {tab}
+                                </Text>
+                            </div>
+                        );
+                    })}
                 </div>
 
-                {/* Content */}
-                <div style={{ flex: 1, padding: '24px', display: 'flex', gap: '40px' }}>
-                    {/* Left Column: Toggles */}
-                    <div style={{ flex: 1 }}>
-                        <ToggleItem label="Allow Horizontal Area Move" valueKey="allowHorizontalMove" />
-                        <ToggleItem label="Exclude Reservation Times" valueKey="excludeReservationTimes" />
-                        <ToggleItem label="Reposition Chart to Edited Reservation" valueKey="repositionChart" />
-                        <ToggleItem label="Show Area Description" valueKey="showAreaDescription" />
-                        <ToggleItem label="Show Electricity Indicator" valueKey="showElectricityIndicator" />
-                        <ToggleItem label="Show Housekeeping Status Indicator" valueKey="showHousekeepingStatus" />
-                        <ToggleItem label="Show Room Type Description" valueKey="showRoomTypeDescription" />
-                        <ToggleItem label="Show Special Event Row" valueKey="showSpecialEventRow" />
-                        <ToggleItem label="Show Tariff Period Colors" valueKey="showTariffPeriodColors" />
-                        <ToggleItem label="Show Property Occupancy Row" valueKey="showPropertyOccupancyRow" />
-                        <ToggleItem label="Show Rate when creating Reservation" valueKey="showRateCreatingReservation" />
-                        <ToggleItem label="Show Pax Row" valueKey="showPaxRow" />
-                        <ToggleItem label="Show Unallocated Reservation" valueKey="showUnallocatedReservation" />
-
-                        <div style={{ display: 'flex', alignItems: 'start', marginTop: '12px' }}>
-                            <Switch
-                                checked={settings.hideOutOfOrderArea}
-                                onChange={(c) => handleChange('hideOutOfOrderArea', c)}
-                                style={{ marginRight: '12px', marginTop: '2px', backgroundColor: settings.hideOutOfOrderArea ? '#52c41a' : undefined }}
-                            />
-                            <Text style={{ fontSize: '13px', color: '#595959', lineHeight: '1.4' }}>
-                                Hide Area from view when out-of-order Area cover the entire selected date range
-                            </Text>
-                        </div>
-                    </div>
-
-                    {/* Right Column: Inputs */}
-                    <div style={{ width: '300px' }}>
-                        <SelectItem label="Area Height" valueKey="areaHeight" options={['Small', 'Medium', 'Large']} />
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', marginBottom: '12px' }}>
-                            <Text style={{ fontSize: '13px', color: '#595959' }}>Area Width:</Text>
-                            <Input
-                                value={settings.areaWidth}
-                                onChange={(e) => handleChange('areaWidth', e.target.value)}
-                            />
-                        </div>
-
-                        <SelectItem label="Color" valueKey="colorBy" options={['Reservation Status', 'Payment Status']} />
-                        <SelectItem label="Column View By" valueKey="columnViewBy" options={['Day', 'Week', 'Month']} />
-                        <SelectItem label="Day View" valueKey="dayView" options={['30', '60', '90']} />
-                        <SelectItem label="View By" valueKey="viewBy" options={['Area (by Room Type Display Order)', 'Category']} />
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', marginBottom: '12px' }}>
-                            <Text style={{ fontSize: '13px', color: '#595959' }}>Hour Display:</Text>
-                            <Space>
-                                <Select value={settings.hourStart} style={{ width: 80 }} options={[{ label: '0:00', value: '0:00' }]} />
-                                <Text style={{ fontSize: '12px' }}>Till</Text>
-                                <Select value={settings.hourEnd} style={{ width: 80 }} options={[{ label: '24:00', value: '24:00' }]} />
-                            </Space>
-                        </div>
-
-                        <SelectItem label="Text" valueKey="textLabel" options={['Surname', 'Reservation ID', 'Company']} />
-                    </div>
+                {/* Content Area */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    {renderContent()}
                 </div>
             </div>
         </Modal>

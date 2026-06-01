@@ -64,8 +64,8 @@ export const useUpdateRoomServiceStatus = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, type, description }) =>
-            roomsApi.updateServiceStatus(id, type, description),
+        mutationFn: ({ id, type, description, startDate, endDate }) =>
+            roomsApi.updateServiceStatus(id, type, description, startDate, endDate),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
             queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });

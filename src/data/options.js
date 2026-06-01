@@ -10,12 +10,13 @@ export const TARIFF_TYPE_OPTIONS = [
     "Corporate Rate"
 ];
 
+// These values must match the backend's normalizeStatusLabel output exactly
 export const STATUS_OPTIONS = [
-    'Unconfirmed', 
-    'Confirmed', 
-    'Checked In', 
-    'Checked Out', 
-    'Cancelled'
+    'Unconfirmed',
+    'Confirmed',
+    'Checked In',
+    'Checked Out',
+    'Canceled',
 ];
 
 export const BKG_SOURCE_OPTIONS = [

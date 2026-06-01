@@ -6,6 +6,7 @@ const colorMap = {
   'Checked In': 'blue',
   'Checked Out': 'purple',
   Canceled: 'red',
+  Cancelled: 'red',
   Completed: 'green',
   Incomplete: 'gold',
   'In Progress': 'blue',

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Input, Select, DatePicker, Button, Typography, Divider, Table, AutoComplete } from 'antd';
+import { Input, Select, DatePicker, Button, Typography, Divider, Table, AutoComplete, Spin } from 'antd';
 import {
     HomeOutlined,
     EnvironmentOutlined,
@@ -64,30 +64,35 @@ const FormField = ({
     prefixSelect,
     labelStyle = {},
     yellowBg = false,
-    disabled = false
+    disabled = false,
+    error = null,
 }) => {
     const displayValue = field ? clientData?.[field] : value;
     const finalBgColor = yellowBg ? '#fffbe6' : bgColor;
+    const hasError = Boolean(error);
 
     return (
         <div style={{
             display: 'grid',
             gridTemplateColumns: '140px 1fr',
-            alignItems: 'center',
-            marginBottom: '4px',
+            alignItems: 'start',
+            marginBottom: hasError ? '8px' : '4px',
             minHeight: '32px'
         }}>
             <Text style={{
                 fontSize: '12px',
                 color: '#262626',
                 paddingRight: '8px',
+                paddingTop: '4px',
                 textAlign: 'left',
                 textDecoration: label === 'Company' ? 'underline' : 'none',
                 cursor: label === 'Company' ? 'pointer' : 'default',
                 ...labelStyle
             }}>
                 {label}
+                {hasError && <span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span>}
             </Text>
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 0 }}>
             <div style={{ display: 'flex', width: '100%', gap: '4px', alignItems: 'center' }}>
                 {prefixSelect && (
                     prefixSelect.isAutoComplete ? (
@@ -133,7 +138,6 @@ const FormField = ({
                             showTime={{
                                 format: 'h:mm A',
                                 use12Hours: true,
-                                // This sets the default position of the clock for Arrive and Depart
                                 defaultValue: [
                                     dayjs('14:00', 'HH:mm'),
                                     dayjs('10:00', 'HH:mm')
@@ -141,8 +145,8 @@ const FormField = ({
                             }}
                             style={{ width: '100%', backgroundColor: finalBgColor }}
                             size="small"
+                            status={hasError ? 'error' : ''}
                             placeholder={['Arrive', 'Depart']}
-                        // Removed disabledDate so you can select previous dates
                         />
                     ) : isAutoComplete ? (
                         <AutoComplete
@@ -164,6 +168,7 @@ const FormField = ({
                             style={{ width: '100%' }}
                             size="small"
                             disabled={disabled}
+                            status={hasError ? 'error' : ''}
                             suffixIcon={suffix || <CaretDownOutlined style={{ fontSize: '10px' }} />}
                             dropdownMatchSelectWidth={['Company', 'Area'].includes(label) ? false : true}
                             optionLabelProp={['Company', 'Area'].includes(label) ? "label" : undefined}
@@ -237,6 +242,7 @@ const FormField = ({
                             value={displayValue}
                             onChange={(e) => handleFieldChange?.(field, e.target.value)}
                             disabled={disabled}
+                            status={hasError ? 'error' : ''}
                             onFocus={() => {
                                 if (field && displayValue && setSmartSearch) {
                                     setSmartSearch(prev => ({ ...prev, isOpen: true, term: displayValue }));
@@ -252,8 +258,14 @@ const FormField = ({
                             {addonAfter}
                         </div>
                     )}
-                </div>
-            </div>
+                </div>{/* closes position:relative div */}
+            </div>{/* closes row flex div */}
+            {hasError && (
+                <span style={{ fontSize: '11px', color: '#ff4d4f', marginTop: '2px', lineHeight: 1.3 }}>
+                    {error}
+                </span>
+            )}
+            </div>{/* closes column wrapper div */}
         </div>
     );
 };
@@ -268,6 +280,7 @@ const ReservationsListPage = () => {
     const arriveParam = searchParams.get('arrive');
     const areaParam = searchParams.get('area');
     const roomTypeParam = searchParams.get('roomType');
+    const reservationIdParam = searchParams.get('reservationId');
     const resNoParam = searchParams.get('resNo');
     const masterResNoParam = searchParams.get('masterResNo');
     const departParam = searchParams.get('depart');
@@ -293,6 +306,8 @@ const ReservationsListPage = () => {
     const createReservationMutation = useCreateReservation();
     const updateReservationMutation = useUpdateReservation();
     const updateRoomStatusMutation = useUpdateRoomStatus();
+
+    const isSaving = createReservationMutation.isPending || updateReservationMutation.isPending || updateRoomStatusMutation.isPending;
 
     // --- Data Normalization ---
     const allRooms = useMemo(() => {
@@ -408,6 +423,14 @@ const ReservationsListPage = () => {
         infants: 0
     });
 
+    const [fieldErrors, setFieldErrors] = useState({});
+
+    const clearFieldError = (field) => {
+        if (field && fieldErrors[field]) {
+            setFieldErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
+        }
+    };
+
     // Update state when query params change
     useEffect(() => {
         if (arriveParam || areaParam || roomTypeParam || resNoParam || givenParam || surnameParam) {
@@ -475,6 +498,10 @@ const ReservationsListPage = () => {
     }, [clientData.roomType, dynamicAreaOptions]);
 
     const handleFieldChange = (field, value) => {
+        // Map bookingDates to the individual arrive/depart field error keys
+        const errorKey = field === 'bookingDates' ? 'bookingDates' : field;
+        clearFieldError(errorKey);
+
         setClientData(prev => {
             const newData = { ...prev, [field]: value };
 
@@ -563,19 +590,26 @@ const ReservationsListPage = () => {
     };
 
     const handleSaveReservation = () => {
-        // Validation
+        // Collect all field errors at once so the user sees everything wrong at once
+        const errors = {};
+
         if (!clientData.arrive || !clientData.depart) {
-            message.error('Please select valid stay dates.');
-            return;
+            errors.bookingDates = 'Please select valid stay dates (Arrive and Depart).';
         }
         if (!clientData.area) {
-            message.error('Please select an Area (Room).');
-            return;
+            errors.area = 'Area (Room) is required.';
         }
         if (!clientData.surname) {
-            message.error('Please enter a Guest Name (Surname).');
+            errors.surname = 'Surname is required.';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            message.error('Please fill in all required fields.');
             return;
         }
+
+        setFieldErrors({});
 
         // Find room ID - check API rooms first
         const selectedRoom = allRooms.find(r => r.name === clientData.area);
@@ -607,6 +641,14 @@ const ReservationsListPage = () => {
         const isCanceledReservation = `${clientData.status || ''}`.toLowerCase().includes('cancel');
 
         const conflictingBookings = isCanceledReservation ? [] : allBookings.filter(booking => {
+            // Skip the booking that belongs to the reservation being edited
+            if (isEditMode && (
+                booking.reservationId === reservationId ||
+                booking.resNo === clientData.resNo
+            )) {
+                return false;
+            }
+
             // Check if it's the same room
             const bookingRoomId = booking.roomId || booking.room?._id || booking.room?.id || booking.room;
             const isSameRoom = bookingRoomId === selectedRoom._id ||
@@ -618,9 +660,7 @@ const ReservationsListPage = () => {
             }
 
             // Only check ACTIVE bookings (not canceled or parked)
-            // Exclude: Canceled status or isParked=true
             if (booking.status === 'Canceled' || booking.isParked) {
-                console.log(`[FILTERED OUT] Booking ${booking.resNo} - Status: ${booking.status}, Parked: ${booking.isParked}`);
                 return false;
             }
 
@@ -674,10 +714,9 @@ const ReservationsListPage = () => {
         }
 
         const generatedResNo = Math.floor(100000 + Math.random() * 900000).toString();
+        const totalTariffValue = parseFloat((clientData.totalTariff || '0').toString().split(' / ')[0]) || 0;
 
-        const payload = {
-            resNo: clientData.resNo === '(New Reservation)' ? `RES-${generatedResNo}` : clientData.resNo,
-            masterResNo: clientData.masterResNo === '(New Reservation)' ? `MASTER-${generatedResNo}` : clientData.masterResNo,
+        const basePayload = {
             room: selectedRoom._id || selectedRoom.id,
             client: clientData.clientId || undefined,
             guestName: `${clientData.given} ${clientData.surname}`.trim(),
@@ -691,63 +730,72 @@ const ReservationsListPage = () => {
             children: clientData.children || 0,
             infants: clientData.infants || 0,
             tariffType: clientData.tariffType || 'Corporate',
-            totalTariff: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
-            balance: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
+            totalTariff: totalTariffValue,
+            balance: totalTariffValue,
             bookingSource: clientData.bkgSource || 'Direct',
             isFixed: clientData.fixed === 'Yes',
-            importId: `IMPORT-${generatedResNo}`,
             groupName: clientData.groupname || undefined,
             confirmedBy: clientData.confirmedBy || undefined,
             confirmedDate: clientData.confirmed || undefined,
-            voucherNo: clientData.voucherNo || undefined
+            voucherNo: clientData.voucherNo || undefined,
         };
 
-        console.log('Saving Reservation Payload:', payload);
-
-        createReservationMutation.mutate(payload, {
-            onSuccess: (response) => {
-                const newId = response?.data?._id || response?.data?.id || response?._id || response?.id;
-                console.log('Save Success Response:', response);
-                console.log('Extracted ID:', newId);
-                if (newId) setSavedReservationId(newId);
-                // Update clientData with the actual resNo that was saved
-                const savedResNo = payload.resNo;
-                setClientData(prev => ({ ...prev, resNo: savedResNo }));
-
-                // If status is "Departed" or "Checked In", mark room as dirty
-                if ((clientData.status === 'Departed' || clientData.status === 'Checked In') && selectedRoom) {
-                    updateRoomStatusMutation.mutate({
-                        id: selectedRoom._id || selectedRoom.id,
-                        status: 'Dirty'
-                    }, {
-                        onSuccess: () => {
-                            console.log('Room marked as Dirty');
-                        },
-                        onError: (err) => {
-                            console.error('Failed to update room status:', err);
-                        }
-                    });
-                }
-
-                message.success('Reservation created successfully!');
-            },
-            onError: (err) => {
-                console.error('Reservation creation error:', err);
-                message.error('Failed to create reservation: ' + (err.response?.data?.message || err.message));
+        const markRoomDirtyIfNeeded = () => {
+            if ((clientData.status === 'Departed' || clientData.status === 'Checked In') && selectedRoom) {
+                updateRoomStatusMutation.mutate({ id: selectedRoom._id || selectedRoom.id, status: 'Dirty' });
             }
-        });
+        };
+
+        if (isEditMode) {
+            // UPDATE existing reservation
+            updateReservationMutation.mutate(
+                { id: reservationId, data: basePayload },
+                {
+                    onSuccess: () => {
+                        markRoomDirtyIfNeeded();
+                        message.success('Reservation updated successfully!');
+                    },
+                    onError: (err) => {
+                        message.error('Failed to update reservation: ' + (err.response?.data?.message || err.message));
+                    },
+                }
+            );
+        } else {
+            // CREATE new reservation
+            const createPayload = {
+                ...basePayload,
+                resNo: clientData.resNo === '(New Reservation)' ? `RES-${generatedResNo}` : clientData.resNo,
+                masterResNo: clientData.masterResNo === '(New Reservation)' ? `MASTER-${generatedResNo}` : clientData.masterResNo,
+                importId: `IMPORT-${generatedResNo}`,
+            };
+
+            createReservationMutation.mutate(createPayload, {
+                onSuccess: (response) => {
+                    const newId = response?.data?._id || response?.data?.id || response?._id || response?.id;
+                    if (newId) setSavedReservationId(newId);
+                    setClientData(prev => ({ ...prev, resNo: createPayload.resNo }));
+                    markRoomDirtyIfNeeded();
+                    message.success('Reservation created successfully!');
+                },
+                onError: (err) => {
+                    message.error('Failed to create reservation: ' + (err.response?.data?.message || err.message));
+                },
+            });
+        }
     };
 
-    // Derive reservationId from saved or existing reservation
+    // Derive the reservation ID — prefer the explicit URL param, then a just-created ID
     const reservationId = useMemo(() => {
+        if (reservationIdParam) return reservationIdParam;
         if (savedReservationId) return savedReservationId;
-        // For reservations loaded via URL params (from booking chart)
-        if (resNoParam) {
+        if (resNoParam && allReservations.length > 0) {
             const existing = allReservations.find(r => r.resNo === resNoParam);
-            return existing?._id || null;
+            return existing?._id || existing?.id || null;
         }
         return null;
-    }, [savedReservationId, resNoParam, allReservations]);
+    }, [reservationIdParam, savedReservationId, resNoParam, allReservations]);
+
+    const isEditMode = Boolean(reservationId);
 
     // Invoice data memo
     const invoiceData = useMemo(() => ({
@@ -848,12 +896,39 @@ const ReservationsListPage = () => {
     ];
 
     return (
+        <Spin
+            spinning={isSaving}
+            tip="Saving reservation..."
+            size="large"
+            style={{ maxHeight: 'none' }}
+        >
         <div style={{ display: 'flex', height: 'calc(100vh - 64px)', backgroundColor: '#f5f5f5', position: 'relative' }}>
             {/* Sidebar Navigation */}
             <div style={{ width: '160px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px 0' }}>
-                <div style={{ padding: '0 16px 16px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <HomeOutlined style={{ fontSize: '16px', color: '#1890ff' }} />
-                    <Text strong style={{ fontSize: '14px' }}>Reservation</Text>
+                <div style={{ padding: '0 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <HomeOutlined style={{ fontSize: '16px', color: '#1890ff' }} />
+                        <Text strong style={{ fontSize: '14px' }}>Reservation</Text>
+                    </div>
+                    <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        backgroundColor: isEditMode ? '#fff7e6' : '#f6ffed',
+                        border: `1px solid ${isEditMode ? '#ffd591' : '#b7eb8f'}`,
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: isEditMode ? '#d46b08' : '#389e0d',
+                    }}>
+                        <span style={{
+                            width: 6, height: 6, borderRadius: '50%',
+                            backgroundColor: isEditMode ? '#fa8c16' : '#52c41a',
+                            flexShrink: 0,
+                        }} />
+                        {isEditMode ? 'Editing' : 'New'}
+                    </div>
                 </div>
                 <Divider style={{ margin: '0 0 8px 0' }} />
                 {sidebarItems.map(item => (
@@ -895,7 +970,7 @@ const ReservationsListPage = () => {
                 <FormField label="RMS SmartSearch" field="smartSearch" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
                 <FormField label="Client No" field="clientNo" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} yellowBg />
                 <FormField label="Groupname" field="groupname" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
-                <FormField label="Surname" field="surname" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
+                <FormField label="Surname" field="surname" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} error={fieldErrors.surname} />
                 <FormField label="Given" field="given" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
                 <FormField label="Title" field="title" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TITLE_OPTIONS} />
                 <FormField
@@ -981,16 +1056,19 @@ const ReservationsListPage = () => {
                 {/* Reservation Panel */}
                 <div style={{ width: '520px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <Text strong style={{ fontSize: '16px' }}>Reservation</Text>
+                        <Text strong style={{ fontSize: '16px' }}>{isEditMode ? 'Edit Reservation' : 'New Reservation'}</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <Button type="text" size="small" icon={<SearchOutlined />} />
                             <Button
-                                type="text"
+                                type="primary"
                                 size="small"
                                 icon={<SaveOutlined />}
                                 onClick={handleSaveReservation}
-                                loading={createReservationMutation.isLoading}
-                            />
+                                loading={isSaving}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? 'Saving...' : isEditMode ? 'Update' : 'Save'}
+                            </Button>
                             <Button type="text" size="small" icon={<MoreOutlined />} />
                         </div>
                     </div>
@@ -998,12 +1076,12 @@ const ReservationsListPage = () => {
                     <FormField label="Res No" field="resNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Master Res No" field="masterResNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Status" field="status" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={STATUS_OPTIONS} bgColor="#ffa940" />
-                    <FormField label="Stay Dates" field="bookingDates" clientData={clientData} handleFieldChange={handleFieldChange} isRange yellowBg />
+                    <FormField label="Stay Dates" field="bookingDates" clientData={clientData} handleFieldChange={handleFieldChange} isRange yellowBg error={fieldErrors.bookingDates} />
                     <FormField label="Nights" field="nights" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Adults" field="adults" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Tariff Type" field="tariffType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TARIFF_TYPE_OPTIONS} />
                     <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicRoomTypeOptions} />
-                    <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={filteredAreaOptions} />
+                    <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={filteredAreaOptions} error={fieldErrors.area} />
                     <FormField label="Bkg Source" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
                     <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
                     <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
@@ -1062,6 +1140,7 @@ const ReservationsListPage = () => {
                 isConfirming={updateReservationMutation.isPending}
             />
         </div>
+        </Spin>
     );
 };
 

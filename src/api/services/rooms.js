@@ -1,6 +1,11 @@
 import http from '../http.js';
 import { unwrapResponse } from '../utils.js';
 
+export async function createRoom(payload) {
+  const response = await http.post('/rooms', payload);
+  return unwrapResponse(response);
+}
+
 export async function getRooms(params) {
   const response = await http.get('/rooms', { params });
   return unwrapResponse(response);
@@ -26,12 +31,13 @@ export async function deleteRoom(id) {
   return unwrapResponse(response);
 }
 
-export async function updateRoomServiceStatus(id, type, description) {
-  const response = await http.patch(`/rooms/${id}/service-status`, { type, description });
+export async function updateRoomServiceStatus(id, type, description, startDate, endDate) {
+  const response = await http.patch(`/rooms/${id}/service-status`, { type, description, startDate, endDate });
   return unwrapResponse(response);
 }
 
 const roomsApi = {
+  create: createRoom,
   getAll: getRooms,
   getById: getRoomById,
   updateStatus: updateRoomStatus,

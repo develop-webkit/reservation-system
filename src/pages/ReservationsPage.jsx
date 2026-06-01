@@ -33,13 +33,19 @@ function ReservationsPage() {
   const roomsQuery = useRoomsQuery();
   const companiesQuery = useCompaniesQuery();
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.reservations });
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.reservations });
+    queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+    // Invalidate all booking chart queries (they use dynamic params so invalidate by prefix)
+    queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });
+    queryClient.invalidateQueries({ queryKey: ['booking-chart'] });
+  };
 
   const createMutation = useAppMutation({
     mutationFn: createReservation,
     successMessage: 'Reservation created successfully.',
     onSuccess: () => {
-      invalidate();
+      invalidateAll();
       setDrawerOpen(false);
     },
   });
@@ -47,7 +53,7 @@ function ReservationsPage() {
     mutationFn: ({ id, payload }) => updateReservation(id, payload),
     successMessage: 'Reservation updated successfully.',
     onSuccess: () => {
-      invalidate();
+      invalidateAll();
       setDrawerOpen(false);
       setEditingReservation(null);
     },
@@ -55,7 +61,7 @@ function ReservationsPage() {
   const deleteMutation = useAppMutation({
     mutationFn: deleteReservation,
     successMessage: 'Reservation deleted successfully.',
-    onSuccess: invalidate,
+    onSuccess: invalidateAll,
   });
 
   const filteredReservations = useMemo(() => {
@@ -78,8 +84,9 @@ function ReservationsPage() {
   }, [filters, reservationsQuery.data]);
 
   const handleSubmit = async (values) => {
-    if (editingReservation?._id) {
-      await updateMutation.mutateAsync({ id: editingReservation._id, payload: values });
+    const editingId = editingReservation?._id || editingReservation?.id;
+    if (editingId) {
+      await updateMutation.mutateAsync({ id: editingId, payload: values });
       return;
     }
 

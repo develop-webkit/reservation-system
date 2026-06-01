@@ -40,5 +40,6 @@ export const navConfig = [
             { name: 'Guest Debtors', path: '/reports/debtors' },
         ]
     },
+    { name: 'Rooms', icon: 'bi-door-open-fill', path: '/rooms' },
     { name: 'Asset Maintenance', icon: 'bi-tools', path: '/asset-maintenance' },
 ];

@@ -14,6 +14,7 @@ import ReservationEditPage from './pages/ReservationEditPage.jsx';
 import ReservationsListPage from './pages/ReservationsListPage.jsx';
 import ReservationsPage from './pages/ReservationsPage.jsx';
 import TasksPage from './pages/TasksPage.jsx';
+import RoomsPage from './pages/RoomsPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
 import VouchersPage from './pages/VouchersPage.jsx';
 
@@ -37,6 +38,7 @@ function App() {
           <Route path="/housekeeping" element={<HousekeepingPage />} />
           <Route path="/accounting" element={<AccountingPage />} />
           <Route path="/clients" element={<ClientsPage />} />
+          <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/vouchers" element={<VouchersPage />} />
           <Route path="/users" element={<UsersPage />} />
         </Route>

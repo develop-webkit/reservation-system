@@ -105,7 +105,10 @@ const BookingChartHeader = ({
     onExpandAll,
     onCollapseAll,
     filters,
-    onFiltersChange
+    onFiltersChange,
+    chartOptions,
+    onChartOptionsSave,
+    onChartOptionsRestore,
 }) => {
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
@@ -229,7 +232,13 @@ const BookingChartHeader = ({
                     <Button icon={<SettingOutlined />} onClick={() => setIsOptionsVisible(true)} />
                 </Space>
 
-                <BookingChartOptionsModal visible={isOptionsVisible} onClose={() => setIsOptionsVisible(false)} />
+                <BookingChartOptionsModal
+                    visible={isOptionsVisible}
+                    onClose={() => setIsOptionsVisible(false)}
+                    settings={chartOptions}
+                    onSave={onChartOptionsSave}
+                    onRestore={onChartOptionsRestore}
+                />
             </div>
 
             {/* Filter Section */}

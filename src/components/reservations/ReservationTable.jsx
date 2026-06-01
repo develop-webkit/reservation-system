@@ -48,7 +48,7 @@ function ReservationTable({ data, loading, onEdit, onDelete }) {
           <Popconfirm
             title="Delete reservation?"
             description="This will remove the linked automated flow."
-            onConfirm={() => onDelete(record._id)}
+            onConfirm={() => onDelete(record._id || record.id)}
           >
             <Button danger>Delete</Button>
           </Popconfirm>

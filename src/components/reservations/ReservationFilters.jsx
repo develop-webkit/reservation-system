@@ -1,6 +1,6 @@
 import { DatePicker, Input, Select } from 'antd';
 import FilterBar, { FilterBarItem } from '../common/FilterBar.jsx';
-import { bookingStatuses } from '../../constants/statuses.js';
+import { STATUS_OPTIONS } from '../../data/options.js';
 
 function ReservationFilters({ filters, onChange, clients }) {
   return (
@@ -18,7 +18,7 @@ function ReservationFilters({ filters, onChange, clients }) {
           placeholder="Filter by status"
           value={filters.status}
           onChange={(value) => onChange('status', value)}
-          options={bookingStatuses.map((status) => ({ label: status, value: status }))}
+          options={STATUS_OPTIONS.map((status) => ({ label: status, value: status }))}
         />
       </FilterBarItem>
       <FilterBarItem>

@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import useAuthStore from '../store/authStore';
 import { PERMISSIONS } from '../constants/permissions';
-import { ROLES } from '../constants/roles';
+import { ROLES, roleHasPermission } from '../constants/roles';
 
 // Roles that have full admin privileges
 const ADMIN_ROLES = [ROLES.SUPER_ADMIN, ROLES.MANAGER];
@@ -71,7 +71,9 @@ const mapNavToAntd = (navItems) => {
 const AntdSidebar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { role, hasPermission } = useAuthStore();
+    const user = useAuthStore((state) => state.user);
+    const role = user?.role ?? null;
+    const hasPermission = (permission) => roleHasPermission(role, permission);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [openKeys, setOpenKeys] = useState([]);
@@ -104,6 +106,11 @@ const AntdSidebar = () => {
                     name: 'Clients',
                     path: '/clients',
                     icon: 'team'
+                },
+                {
+                    name: 'Rooms',
+                    path: '/rooms',
+                    icon: 'setting'
                 },
                 {
                     name: 'General Management',

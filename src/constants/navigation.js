@@ -1,4 +1,5 @@
 import {
+  BuildOutlined,
   CalendarOutlined,
   DollarOutlined,
   HomeOutlined,
@@ -10,14 +11,16 @@ import {
   WalletOutlined,
 } from '@ant-design/icons';
 
+// null means visible to all authenticated users
 export const navigationItems = [
-  { key: '/dashboard', label: 'Dashboard', icon: HomeOutlined },
-  { key: '/reservations', label: 'Reservations', icon: CalendarOutlined },
-  { key: '/bookings', label: 'Bookings', icon: ScheduleOutlined },
-  { key: '/tasks', label: 'Tasks', icon: ReadOutlined },
-  { key: '/housekeeping', label: 'Housekeeping', icon: SolutionOutlined },
-  { key: '/accounting', label: 'Accounting', icon: DollarOutlined },
-  { key: '/clients', label: 'Clients', icon: TeamOutlined },
-  { key: '/vouchers', label: 'Vouchers', icon: WalletOutlined },
-  { key: '/users', label: 'Users', icon: UserAddOutlined },
+  { key: '/dashboard',    label: 'Dashboard',    icon: HomeOutlined,    roles: null },
+  { key: '/reservations', label: 'Reservations', icon: CalendarOutlined, roles: ['admin', 'manager'] },
+  { key: '/bookings',     label: 'Bookings',     icon: ScheduleOutlined, roles: ['admin', 'manager'] },
+  { key: '/tasks',        label: 'Tasks',        icon: ReadOutlined,     roles: ['admin', 'manager', 'housekeeper'] },
+  { key: '/housekeeping', label: 'Housekeeping', icon: SolutionOutlined, roles: ['admin', 'manager', 'housekeeper'] },
+  { key: '/accounting',   label: 'Accounting',   icon: DollarOutlined,   roles: ['admin', 'manager'] },
+  { key: '/clients',      label: 'Clients',      icon: TeamOutlined,     roles: ['admin', 'manager'] },
+  { key: '/rooms',        label: 'Rooms',        icon: BuildOutlined,    roles: ['admin', 'manager'] },
+  { key: '/vouchers',     label: 'Vouchers',     icon: WalletOutlined,   roles: ['admin', 'manager'] },
+  { key: '/users',        label: 'Users',        icon: UserAddOutlined,  roles: ['admin'] },
 ];
