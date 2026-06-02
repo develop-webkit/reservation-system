@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
 import { useClients } from '../hooks/useClients';
+import useAuthStore, { selectCurrentUser } from '../store/authStore';
 
 const { Title, Text } = Typography;
 
@@ -32,7 +33,6 @@ const DEFAULT_FORM = {
   username: '',
   password: '',
   role: 'portal_user',
-  clientNumber: 'CL-ADMIN',
   linkedClientNo: null,
   canRequestBookings: true,
 };
@@ -42,6 +42,7 @@ const UsersPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
 
+  const currentUser = useAuthStore(selectCurrentUser);
   const { data: usersRaw, isLoading } = useUsers();
   const { data: clientsRaw } = useClients();
   const createUser = useCreateUser();
@@ -72,7 +73,6 @@ const UsersPage = () => {
       username: user.username || '',
       password: '',
       role: user.role || 'portal_user',
-      clientNumber: user.clientNumber || 'CL-ADMIN',
       linkedClientNo: user.linkedClientNo || null,
       canRequestBookings: user.canRequestBookings !== false,
     });
@@ -80,7 +80,8 @@ const UsersPage = () => {
   };
 
   const handleSubmit = (values) => {
-    const payload = { ...values };
+    const adminClientNumber = currentUser?.clientNumber || 'CL-ADMIN';
+    const payload = { ...values, clientNumber: adminClientNumber };
     if (!payload.password) delete payload.password;
 
     if (editingUser) {

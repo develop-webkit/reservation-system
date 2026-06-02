@@ -1,3 +1,26 @@
+## Bug Fixes (2026-06-03)
+
+### Booking Chart Filter Fix
+- `BookingChartHeader.jsx` — text filter inputs (Surname, Area) now use local component state so typing is immediately reflected. The parent `onFiltersChange` is called directly (no debounce) since filtering is client-side.
+- `BookingChart.jsx` — area filter is now row-level (hides the entire room row when it doesn't match) instead of filtering bookings within the already-matched row. Removed the redundant in-row area filter.
+
+### Date Display Consistency Fix
+- `utils/format.js` — `formatDate` now passes `timeZone: 'UTC'` to `Intl.DateTimeFormat`. This ensures a UTC date-only string (e.g., `"2026-06-08"`) always displays as the same date regardless of the browser's local timezone.
+
+### Reservation Table Column Fix
+- `ReservationTable.jsx` — field accessors updated to match `mapReservationEntityToFrontend` output:
+  - Guest: `dataIndex: 'clientName'` (was `guestName` which doesn't exist in the mapped response)
+  - Room: `record.roomId` (was `record.room?.name` — no nested room object returned)
+  - Client: `record.billingClientNumber` (was `record.client?.clientName` — no nested client object)
+  - `rowKey` updated to `record.id || record._id` (mapper returns `id`, not `_id`)
+- `ReservationsPage.jsx` — text search now uses `clientName` (was `guestName`). Clients data normalized via `useMemo` to handle both array and `{ data: [] }` API shapes.
+
+### User Creation Fix
+- `UsersPage.jsx` — `clientNumber` had no `<Form.Item>`, so Ant Design never included it in `onFinish(values)`, causing the backend DTO's `@IsString()` to fail with "clientNumber must be a string".
+- Fix: `handleSubmit` now explicitly injects `clientNumber` from the authenticated user's `clientNumber` (via `useAuthStore`) before calling `createUser.mutate`.
+
+---
+
 ## Reservation Status & Cancellation Flow (2026-06-02)
 
 ### Status Value Convention

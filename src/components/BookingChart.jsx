@@ -233,6 +233,11 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
 
     // Helper to render a single room row
     const renderRoomRow = (room) => {
+        // Area filter is row-level: hide the entire row if it doesn't match
+        if (filters.area && !room.name?.toLowerCase().includes(filters.area.toLowerCase())) {
+            return null;
+        }
+
         const isParkedRow = room.id === 'PK01';
         const rowHeightPx = isParkedRow ? `${rowHeight * 2}px` : `${rowHeight}px`;
 
@@ -312,14 +317,6 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                 // Tariff Type filter
                 if (filters.tariffType && filters.tariffType.length > 0) {
                     if (!filters.tariffType.includes(booking.tariffType)) {
-                        return false;
-                    }
-                }
-
-                // Area/Room filter
-                if (filters.area) {
-                    const roomName = booking.roomId || '';
-                    if (!roomName.toLowerCase().includes(filters.area.toLowerCase())) {
                         return false;
                     }
                 }

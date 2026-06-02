@@ -5,16 +5,16 @@ import { formatCurrency, formatDate } from '../../utils/format.js';
 function ReservationTable({ data, loading, onEdit, onDelete }) {
   const columns = [
     { title: 'Res No', dataIndex: 'resNo', key: 'resNo', render: (value) => value || '-' },
-    { title: 'Guest', dataIndex: 'guestName', key: 'guestName' },
+    { title: 'Guest', dataIndex: 'clientName', key: 'clientName', render: (value) => value || '-' },
     {
       title: 'Room',
       key: 'room',
-      render: (_, record) => record.room?.name || '-',
+      render: (_, record) => record.roomId || '-',
     },
     {
       title: 'Client',
       key: 'client',
-      render: (_, record) => record.client?.clientName || record.client?.clientNo || '-',
+      render: (_, record) => record.billingClientNumber || '-',
     },
     {
       title: 'Stay',
@@ -59,7 +59,7 @@ function ReservationTable({ data, loading, onEdit, onDelete }) {
 
   return (
     <Table
-      rowKey={(record) => record._id}
+      rowKey={(record) => record.id || record._id}
       columns={columns}
       dataSource={data}
       loading={loading}

@@ -112,25 +112,13 @@ const BookingChartHeader = ({
 }) => {
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
-    const debounceTimerRef = React.useRef(null);
+    // Local state for text inputs so they respond immediately while the parent state updates
+    const [localSurname, setLocalSurname] = React.useState(filters.surname || '');
+    const [localArea, setLocalArea] = React.useState(filters.area || '');
 
-    // Debounced filter update
-    const handleFilterChange = (newFilters) => {
-        if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current);
-        }
-        debounceTimerRef.current = setTimeout(() => {
-            onFiltersChange(newFilters);
-        }, 300); // 300ms debounce
-    };
-
-    React.useEffect(() => {
-        return () => {
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-        };
-    }, []);
+    // Sync local text state when parent resets filters (e.g. Clear Filters button)
+    React.useEffect(() => { setLocalSurname(filters.surname || ''); }, [filters.surname]);
+    React.useEffect(() => { setLocalArea(filters.area || ''); }, [filters.area]);
 
     const handlePrev = () => {
         const newDate = dayjs(currentStart).subtract(1, 'days').format('YYYY-MM-DD');
@@ -257,8 +245,11 @@ const BookingChartHeader = ({
                     {/* Surname Filter */}
                     <Input
                         placeholder="Surname"
-                        value={filters.surname}
-                        onChange={(e) => handleFilterChange({ ...filters, surname: e.target.value })}
+                        value={localSurname}
+                        onChange={(e) => {
+                            setLocalSurname(e.target.value);
+                            onFiltersChange({ ...filters, surname: e.target.value });
+                        }}
                         style={{ width: '150px' }}
                         allowClear
                     />
@@ -301,8 +292,11 @@ const BookingChartHeader = ({
                     {/* Area Filter */}
                     <Input
                         placeholder="Filter Area (Room)"
-                        value={filters.area}
-                        onChange={(e) => handleFilterChange({ ...filters, area: e.target.value })}
+                        value={localArea}
+                        onChange={(e) => {
+                            setLocalArea(e.target.value);
+                            onFiltersChange({ ...filters, area: e.target.value });
+                        }}
                         style={{ width: '150px' }}
                         allowClear
                     />

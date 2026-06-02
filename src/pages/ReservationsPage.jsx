@@ -26,11 +26,18 @@ function ReservationsPage() {
   });
 
   const reservationsQuery = useReservationsQuery({
-    status: filters.status,
-    clientId: filters.clientId,
+    status: filters.status || undefined,
+    clientId: filters.clientId || undefined,
   });
   const clientsQuery = useClientsQuery({});
   const roomsQuery = useRoomsQuery();
+
+  // Normalise clients — API may return a plain array or { data: [] }
+  const clients = useMemo(() => {
+    const raw = clientsQuery.data;
+    if (!raw) return [];
+    return Array.isArray(raw) ? raw : (raw.data || []);
+  }, [clientsQuery.data]);
   const companiesQuery = useCompaniesQuery();
 
   const invalidateAll = () => {
@@ -71,7 +78,7 @@ function ReservationsPage() {
       const searchValue = filters.search.trim().toLowerCase();
       const textMatch =
         !searchValue ||
-        item.guestName?.toLowerCase().includes(searchValue) ||
+        item.clientName?.toLowerCase().includes(searchValue) ||
         item.resNo?.toLowerCase().includes(searchValue);
       const rangeMatch =
         !filters.range ||
@@ -108,7 +115,7 @@ function ReservationsPage() {
         <ReservationFilters
           filters={filters}
           onChange={(key, value) => setFilters((current) => ({ ...current, [key]: value }))}
-          clients={clientsQuery.data}
+          clients={clients}
         />
       </SectionCard>
       <SectionCard title="Reservation list">
