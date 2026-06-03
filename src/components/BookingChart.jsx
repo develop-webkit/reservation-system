@@ -79,10 +79,12 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
         const bEnd = dayjs(checkOut);
         const startCol = bStart.diff(chartStart, 'days') + 1;
         const duration = bEnd.diff(bStart, 'days');
+        // +1 so the bar extends through the checkout date column (grid end is exclusive)
+        const endCol = startCol + duration + 1;
         return {
             start: startCol,
-            end: startCol + duration,
-            isVisible: !((startCol + duration) <= 1 || startCol > visibleDays)
+            end: endCol,
+            isVisible: !(endCol <= 1 || startCol > visibleDays)
         };
     }, [dateRange, visibleDays]);
 

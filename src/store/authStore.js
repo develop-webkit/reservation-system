@@ -39,5 +39,6 @@ const useAuthStore = create(
 export const selectCurrentUser = (state) => state.user;
 export const selectCurrentRole = (state) => state.user?.role ?? null;
 export const selectCurrentClient = (state) => state.client;
+export const selectLinkedClientNo = (state) => state.user?.linkedClientNo ?? null;
 
 export default useAuthStore;

@@ -2,6 +2,7 @@ import {
   BuildOutlined,
   CalendarOutlined,
   DollarOutlined,
+  FileSearchOutlined,
   HomeOutlined,
   ReadOutlined,
   ScheduleOutlined,
@@ -13,14 +14,21 @@ import {
 
 // null means visible to all authenticated users
 export const navigationItems = [
-  { key: '/dashboard',    label: 'Dashboard',    icon: HomeOutlined,    roles: null },
-  { key: '/reservations', label: 'Reservations', icon: CalendarOutlined, roles: ['admin', 'manager'] },
-  { key: '/bookings',     label: 'Bookings',     icon: ScheduleOutlined, roles: ['admin', 'manager'] },
-  { key: '/tasks',        label: 'Tasks',        icon: ReadOutlined,     roles: ['admin', 'manager', 'housekeeper'] },
-  { key: '/housekeeping', label: 'Housekeeping', icon: SolutionOutlined, roles: ['admin', 'manager', 'housekeeper'] },
-  { key: '/accounting',   label: 'Accounting',   icon: DollarOutlined,   roles: ['admin', 'manager'] },
-  { key: '/clients',      label: 'Clients',      icon: TeamOutlined,     roles: ['admin', 'manager'] },
-  { key: '/rooms',        label: 'Rooms',        icon: BuildOutlined,    roles: ['admin', 'manager'] },
-  { key: '/vouchers',     label: 'Vouchers',     icon: WalletOutlined,   roles: ['admin', 'manager'] },
-  { key: '/users',        label: 'Users',        icon: UserAddOutlined,  roles: ['admin'] },
+  // Admin / Manager / Staff navigation
+  { key: '/dashboard',         label: 'Dashboard',         icon: HomeOutlined,       roles: ['admin', 'manager', 'user', 'housekeeper'] },
+  { key: '/reservations',      label: 'Reservations',      icon: CalendarOutlined,   roles: ['admin', 'manager'] },
+  { key: '/bookings',          label: 'Bookings',          icon: ScheduleOutlined,   roles: ['admin', 'manager'] },
+  { key: '/tasks',             label: 'Tasks',             icon: ReadOutlined,       roles: ['admin', 'manager', 'housekeeper'] },
+  { key: '/housekeeping',      label: 'Housekeeping',      icon: SolutionOutlined,   roles: ['admin', 'manager', 'housekeeper'] },
+  { key: '/accounting',        label: 'Accounting',        icon: DollarOutlined,     roles: ['admin', 'manager'] },
+  { key: '/clients',           label: 'Clients',           icon: TeamOutlined,       roles: ['admin', 'manager'] },
+  { key: '/rooms',             label: 'Rooms',             icon: BuildOutlined,      roles: ['admin', 'manager'] },
+  { key: '/vouchers',          label: 'Vouchers',          icon: WalletOutlined,     roles: ['admin', 'manager'] },
+  { key: '/users',             label: 'Users',             icon: UserAddOutlined,    roles: ['admin'] },
+  { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
+  // Portal user (corporate client) navigation
+  { key: '/portal/dashboard',        label: 'Dashboard',        icon: HomeOutlined,       roles: ['portal_user'] },
+  { key: '/portal/reservations',     label: 'My Reservations',  icon: CalendarOutlined,   roles: ['portal_user'] },
+  { key: '/portal/booking-requests', label: 'Booking Requests', icon: FileSearchOutlined, roles: ['portal_user'] },
+  { key: '/portal/staff',            label: 'Staff Management', icon: TeamOutlined,       roles: ['portal_user'] },
 ];

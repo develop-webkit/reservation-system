@@ -5,6 +5,7 @@ import AccountingPage from './pages/AccountingPage.jsx';
 import BookingChartPage from './pages/BookingChart.jsx';
 import BookingsPage from './pages/BookingsPage.jsx';
 import BookingsByDate from './pages/BookingsByDate.jsx';
+import BookingRequestsAdminPage from './pages/BookingRequestsAdminPage.jsx';
 import ClientsPage from './pages/ClientsPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import HousekeepingPage from './pages/HousekeepingPage.jsx';
@@ -17,14 +18,23 @@ import TasksPage from './pages/TasksPage.jsx';
 import RoomsPage from './pages/RoomsPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
 import VouchersPage from './pages/VouchersPage.jsx';
+import PortalDashboardPage from './pages/portal/PortalDashboardPage.jsx';
+import PortalReservationsPage from './pages/portal/PortalReservationsPage.jsx';
+import PortalStaffPage from './pages/portal/PortalStaffPage.jsx';
+import PortalBookingRequestPage from './pages/portal/PortalBookingRequestPage.jsx';
+import useAuthStore from './store/authStore.js';
 
 function App() {
+  const role = useAuthStore((state) => state.user?.role ?? null);
+  const defaultRedirect = role === 'portal_user' ? '/portal/dashboard' : '/dashboard';
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<Navigate to={defaultRedirect} replace />} />
+          {/* Admin / Manager routes */}
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/reservations/list" element={<ReservationsListPage />} />
@@ -41,6 +51,12 @@ function App() {
           <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/vouchers" element={<VouchersPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/booking-requests" element={<BookingRequestsAdminPage />} />
+          {/* Portal user (corporate client) routes */}
+          <Route path="/portal/dashboard" element={<PortalDashboardPage />} />
+          <Route path="/portal/reservations" element={<PortalReservationsPage />} />
+          <Route path="/portal/booking-requests" element={<PortalBookingRequestPage />} />
+          <Route path="/portal/staff" element={<PortalStaffPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />

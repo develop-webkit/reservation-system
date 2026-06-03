@@ -30,7 +30,7 @@ function ReservationFilters({ filters, onChange, clients }) {
           onChange={(value) => onChange('clientId', value)}
           options={(clients || []).map((client) => ({
             label: `${client.clientNo} - ${client.clientName || client.given || 'Client'}`,
-            value: client._id,
+            value: client.clientNo,
           }))}
         />
       </FilterBarItem>
