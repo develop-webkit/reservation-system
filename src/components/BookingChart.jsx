@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Typography, Tooltip, Popover, Card, Spin, Alert, message, Modal, Input, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useBookingChart, useUpdateBookingChart } from '../hooks/useBookings';
-import { useRooms, useUpdateRoomServiceStatus, useUpdateRoomStatus } from '../hooks/useRooms';
+import { useRooms, useUpdateRoomServiceStatus, useUpdateRoomStatus, useRemoveRoomServiceEntry } from '../hooks/useRooms';
 import { rooms as roomsFromData } from '../data/rooms';
 
 
@@ -37,11 +37,12 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
 
     const navigate = useNavigate();
-    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null });
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null, serviceEntry: null });
     const [resizeDraft, setResizeDraft] = useState(null);
     const [serviceModal, setServiceModal] = useState({ visible: false, type: null, roomId: null, description: '', startDate: null, endDate: null });
     const updateBookingChartMutation = useUpdateBookingChart();
     const updateRoomServiceStatusMutation = useUpdateRoomServiceStatus();
+    const removeServiceEntryMutation = useRemoveRoomServiceEntry();
     const updateRoomStatusMutation = useUpdateRoomStatus();
 
     // Fetch chart data with date range
@@ -73,14 +74,15 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
         return dates;
     }, [startDate, visibleDays]);
 
-    const getGridPosition = useCallback((checkIn, checkOut) => {
+    // inclusive=true: bar covers through the end date (service entries — room is OOS on that day)
+    // inclusive=false: bar ends before the end date (bookings — room is free on checkout day)
+    const getGridPosition = useCallback((checkIn, checkOut, inclusive = false) => {
         const chartStart = dayjs(dateRange[0]);
         const bStart = dayjs(checkIn);
         const bEnd = dayjs(checkOut);
         const startCol = bStart.diff(chartStart, 'days') + 1;
         const duration = bEnd.diff(bStart, 'days');
-        // +1 so the bar extends through the checkout date column (grid end is exclusive)
-        const endCol = startCol + duration + 1;
+        const endCol = startCol + duration + (inclusive ? 1 : 0);
         return {
             start: startCol,
             end: endCol,
@@ -244,15 +246,23 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
         const rowHeightPx = isParkedRow ? `${rowHeight * 2}px` : `${rowHeight}px`;
 
         const cleanStatus = room.status || room.defaultCleanStatus || 'Clean';
-        const statusColor = room.outOfService
+        // Determine status dot from active/future service entries (not expired ones)
+        const today = dayjs().startOf('day');
+        const upcomingEntries = (room.serviceEntries || []).filter(
+            (e) => e.endDate && !dayjs(e.endDate).isBefore(today),
+        );
+        const hasOOS = upcomingEntries.some((e) => e.type === 'out_of_service');
+        const hasOOO = upcomingEntries.some((e) => e.type === 'out_of_order');
+        const firstActive = upcomingEntries[0];
+        const statusColor = hasOOS
             ? '#003a8c'
-            : room.outOfOrder
+            : hasOOO
                 ? ROOM_STATUS_COLORS['OOO']
                 : (ROOM_STATUS_COLORS[cleanStatus.toUpperCase()] || ROOM_STATUS_COLORS['CLEAN']);
-        const roomStatusText = room.outOfService
-            ? `Out of Service${room.serviceDescription ? ': ' + room.serviceDescription : ''}`
-            : room.outOfOrder
-                ? `Out of Order${room.serviceDescription ? ': ' + room.serviceDescription : ''}`
+        const roomStatusText = hasOOS
+            ? `Out of Service${firstActive?.description ? ': ' + firstActive.description : ''}`
+            : hasOOO
+                ? `Out of Order${firstActive?.description ? ': ' + firstActive.description : ''}`
                 : cleanStatus;
 
         const RoomInfoContent = (
@@ -388,61 +398,76 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                             />
                         );
                     })}
-                    {/* Service block bar (Out Of Service / Out Of Order) */}
-                    {(room.outOfService || room.outOfOrder) && room.serviceStartDate && room.serviceEndDate && (() => {
-                        const servicePos = getGridPosition(room.serviceStartDate, room.serviceEndDate);
+                    {/* Service blocks — one bar per entry; right-click to remove */}
+                    {(room.serviceEntries || []).map((entry) => {
+                        if (!entry.startDate || !entry.endDate) return null;
+                        const servicePos = getGridPosition(entry.startDate, entry.endDate, true);
                         if (!servicePos.isVisible) return null;
-                        const serviceColor = room.outOfService ? '#003a8c' : '#722ed1';
-                        const serviceLabel = room.outOfService
-                            ? `Out Of Service${room.serviceDescription ? ': ' + room.serviceDescription : ''}`
-                            : `Out Of Order${room.serviceDescription ? ': ' + room.serviceDescription : ''}`;
+                        const isOOS = entry.type === 'out_of_service';
+                        const serviceColor = isOOS ? '#003a8c' : '#722ed1';
+                        const serviceLabel = `${isOOS ? 'Out Of Service' : 'Out Of Order'}${entry.description ? ': ' + entry.description : ''}`;
+                        const entryId = entry._id || entry.id;
                         const ServiceBlockContent = (
                             <div style={{ width: 280 }}>
                                 <div style={{ backgroundColor: serviceColor, color: '#fff', padding: '10px 14px', margin: '-12px -16px 12px -16px', borderRadius: '4px 4px 0 0' }}>
-                                    <Text strong style={{ color: '#fff' }}>{room.outOfService ? 'Out Of Service' : 'Out Of Order'}</Text>
+                                    <Text strong style={{ color: '#fff' }}>{isOOS ? 'Out Of Service' : 'Out Of Order'}</Text>
                                 </div>
                                 <div style={{ padding: '0 4px' }}>
                                     {[
-                                        { label: 'Description', value: room.serviceDescription || '-' },
-                                        { label: 'From Date', value: dayjs(room.serviceStartDate).format('ddd DD MMM YYYY HH:mm') },
-                                        { label: 'To Date', value: dayjs(room.serviceEndDate).format('ddd DD MMM YYYY HH:mm') },
+                                        { label: 'Description', value: entry.description || '-' },
+                                        { label: 'From Date', value: dayjs(entry.startDate).format('ddd DD MMM YYYY HH:mm') },
+                                        { label: 'To Date', value: dayjs(entry.endDate).format('ddd DD MMM YYYY HH:mm') },
                                         { label: 'Area', value: room.name },
-                                        { label: 'Status', value: room.outOfService ? 'Out Of Service' : 'Out Of Order' },
+                                        { label: 'Status', value: isOOS ? 'Out Of Service' : 'Out Of Order' },
                                     ].map((item, i) => (
                                         <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: 8, marginBottom: 6 }}>
                                             <Text strong style={{ fontSize: 12, textAlign: 'right' }}>{item.label}</Text>
                                             <Text style={{ fontSize: 12 }}>{item.value}</Text>
                                         </div>
                                     ))}
+                                    <div style={{ marginTop: 8, fontSize: 11, color: '#888' }}>Right-click to remove this entry</div>
                                 </div>
                             </div>
                         );
                         return (
-                            <Popover key={`service-${room.id}`} content={ServiceBlockContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
-                                <div style={{
-                                    gridColumnStart: Math.max(1, servicePos.start),
-                                    gridColumnEnd: Math.min(visibleDays + 1, servicePos.end),
-                                    gridRow: 1,
-                                    zIndex: 2,
-                                    height: '22px',
-                                    backgroundColor: serviceColor,
-                                    borderRadius: '4px',
-                                    margin: '0 2px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    color: '#fff',
-                                    padding: '0 8px',
-                                    overflow: 'hidden',
-                                    cursor: 'default',
-                                    alignSelf: 'center',
-                                }}>
+                            <Popover key={entryId} content={ServiceBlockContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
+                                <div
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setContextMenu({
+                                            visible: true,
+                                            x: e.pageX, y: e.pageY,
+                                            room,
+                                            date: null, booking: null,
+                                            serviceEntry: { id: entryId, type: entry.type, description: entry.description },
+                                        });
+                                    }}
+                                    style={{
+                                        gridColumnStart: Math.max(1, servicePos.start),
+                                        gridColumnEnd: Math.min(visibleDays + 1, servicePos.end),
+                                        gridRow: 1,
+                                        zIndex: 2,
+                                        height: '22px',
+                                        backgroundColor: serviceColor,
+                                        borderRadius: '4px',
+                                        margin: '0 2px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        color: '#fff',
+                                        padding: '0 8px',
+                                        overflow: 'hidden',
+                                        cursor: 'context-menu',
+                                        alignSelf: 'center',
+                                    }}
+                                >
                                     <Text ellipsis style={{ color: '#fff', fontSize: '10px', width: '100%', textAlign: 'center' }}>
                                         {serviceLabel}
                                     </Text>
                                 </div>
                             </Popover>
                         );
-                    })()}
+                    })}
                     {roomBookings.map(booking => {
                         const { checkIn, checkOut } = getDisplayedBookingDates(booking);
                         const pos = getGridPosition(checkIn, checkOut);
@@ -582,26 +607,33 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     const handleContextMenu = (e, room, date, booking = null) => {
         e.preventDefault();
         e.stopPropagation();
-
-        console.log('[CONTEXT MENU] Right-click detected:', {
-            isBooking: !!booking,
-            bookingResNo: booking?.resNo,
-            room: room?.name,
-            date
-        });
-
         setContextMenu({
             visible: true,
             x: e.pageX,
             y: e.pageY,
             room: room || null,
             date: date || null,
-            booking: booking || null
+            booking: booking || null,
+            serviceEntry: null,
         });
     };
 
     const handleCloseContextMenu = () => {
-        setContextMenu({ ...contextMenu, visible: false });
+        setContextMenu({ ...contextMenu, visible: false, serviceEntry: null });
+    };
+
+    const handleRemoveServiceEntry = () => {
+        const roomId = contextMenu.room?._id || contextMenu.room?.id;
+        const entryId = contextMenu.serviceEntry?.id;
+        if (!roomId || !entryId) return;
+        handleCloseContextMenu();
+        removeServiceEntryMutation.mutate(
+            { roomId, entryId },
+            {
+                onSuccess: () => message.success('Service entry removed'),
+                onError: (err) => message.error(err.response?.data?.message || 'Failed to remove entry'),
+            },
+        );
     };
 
     const handleOpenServiceModal = (type) => {
@@ -652,8 +684,6 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     };
 
     const handleMenuItemClick = (action) => {
-        console.log(`[MENU CLICK] Context menu action: ${action}`, contextMenu);
-
         if (action === 'add_reservation') {
             const params = new URLSearchParams();
             if (contextMenu.date) {
@@ -697,7 +727,6 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
             if (contextMenu.booking) {
                 const checkoutDate = contextMenu.booking?.checkOut || contextMenu.booking?.endDate;
                 const date = checkoutDate ? dayjs(checkoutDate).format('YYYY-MM-DD') : contextMenu.date;
-                console.log('[ASSIGN HOUSEKEEPING] Navigating to housekeeping with date:', date);
                 navigate(`/housekeeping?date=${date}`);
             }
         }
@@ -786,7 +815,23 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {contextMenu.booking ? (
+                    {contextMenu.serviceEntry ? (
+                        <>
+                            <div style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#f5f5f5', borderBottom: '1px solid #f0f0f0' }}>
+                                {contextMenu.serviceEntry.type === 'out_of_service' ? 'Out Of Service' : 'Out Of Order'}
+                                {contextMenu.serviceEntry.description ? `: ${contextMenu.serviceEntry.description}` : ''}
+                            </div>
+                            <div
+                                className="context-menu-item"
+                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#cf1322' }}
+                                onClick={handleRemoveServiceEntry}
+                            >
+                                Remove this entry
+                            </div>
+                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
+                        </>
+                    ) : contextMenu.booking ? (
                         <>
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>
                                 ✎ Edit {contextMenu.booking.resNo || 'Booking'}

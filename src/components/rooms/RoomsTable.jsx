@@ -43,8 +43,11 @@ function RoomsTable({ data, loading, onEdit, onDelete }) {
       title: 'Service',
       key: 'service',
       render: (_, record) => {
-        if (record.outOfOrder) return <Tag color="red">Out of Order</Tag>;
-        if (record.outOfService) return <Tag color="orange">Out of Service</Tag>;
+        const entries = record.serviceEntries || [];
+        const hasOOO = entries.some((e) => e.type === 'out_of_order');
+        const hasOOS = entries.some((e) => e.type === 'out_of_service');
+        if (hasOOO) return <Tag color="red">Out of Order ({entries.filter(e => e.type === 'out_of_order').length})</Tag>;
+        if (hasOOS) return <Tag color="orange">Out of Service ({entries.filter(e => e.type === 'out_of_service').length})</Tag>;
         return <Tag color="green">Active</Tag>;
       },
     },

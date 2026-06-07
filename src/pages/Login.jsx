@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Card, Typography, Space, message, Tag, Divider, Checkbox, Modal } from 'antd';
-import { UserOutlined, LockOutlined, SafetyOutlined, NumberOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, message, Checkbox, Modal } from 'antd';
+import { UserOutlined, LockOutlined, NumberOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useForm, Controller } from 'react-hook-form';
 import useAuthStore from '../store/authStore';
-import { ROLE_COLORS, ROLES } from '../constants/roles';
 import authApi from '../api/services/auth';
 
 const { Title, Text } = Typography;
@@ -29,9 +28,6 @@ const Login = () => {
 
     // Auth store hook to update global user state upon successful login.
     const login = useAuthStore(state => state.login);
-
-    // Local state to manage visibility of the demo accounts section.
-    const [showDemoAccounts] = useState(true);
 
     // State for tracking login attempts and lockout
     const [isLocked, setIsLocked] = useState(false);
@@ -128,7 +124,6 @@ const Login = () => {
     const {
         control,
         handleSubmit,
-        setValue,
         formState: { errors, isSubmitting }
     } = useForm({
         defaultValues: {
@@ -188,9 +183,7 @@ const Login = () => {
 
             // Navigate the user to the application's home/dashboard.
             navigate('/');
-        } catch (error) {
-            console.error('Login Error:', error);
-
+        } catch {
             // Record the failed login attempt
             recordFailedAttempt();
 
@@ -202,15 +195,6 @@ const Login = () => {
                 message.warning(`Account locked due to multiple failed attempts. Please try again later.`);
             }
         }
-    };
-
-    /**
-     * quickLogin helper: Utility function to pre-fill the form fields for demo purposes.
-     */
-    const quickLogin = (clientNumber, username, password) => {
-        setValue('clientNumber', clientNumber);
-        setValue('username', username);
-        setValue('password', password);
     };
 
     /**
@@ -228,8 +212,7 @@ const Login = () => {
             message.success('Password reset link has been sent to your email. Please check your inbox.');
             setShowForgotPassword(false);
             setResetEmail('');
-        } catch (error) {
-            console.error('Forgot Password Error:', error);
+        } catch {
             message.error('Failed to process password reset. Please try again later.');
         } finally {
             setResetLoading(false);
@@ -245,33 +228,10 @@ const Login = () => {
             backgroundColor: '#f0f2f5'
         }}>
             <Card
-                title={<Title level={3} style={{ textAlign: 'center' }}>RMS System Login</Title>}
+                title={<Title level={3} style={{ textAlign: 'center' }}>MMV System Login</Title>}
                 variant="borderless"
                 style={{ width: 450, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
             >
-                {/* Demo accounts section: Provides one-click login for testing. */}
-                {showDemoAccounts && (
-                    <>
-                        <div style={{ marginBottom: 20 }}>
-                            <Text strong style={{ display: 'block', marginBottom: 12 }}>
-                                <SafetyOutlined /> Demo Accounts
-                            </Text>
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                                <Button
-                                    size="small"
-                                    block
-                                    onClick={() => quickLogin('CL-ADMIN', 'admin', 'password123')}
-                                    style={{ borderColor: ROLE_COLORS[ROLES.SUPER_ADMIN] }}
-                                >
-                                    <Tag color={ROLE_COLORS[ROLES.SUPER_ADMIN]}>Admin</Tag>
-                                    CL-ADMIN / admin / password123
-                                </Button>
-                            </Space>
-                        </div>
-                        <Divider>Or Login Manually</Divider>
-                    </>
-                )}
-
                 {/* Main Login Form using Ant Design Layout and React Hook Form Controller */}
                 <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
 

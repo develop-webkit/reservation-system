@@ -63,9 +63,12 @@ function RoomsPage() {
       if (filters.cleanStatus && (room.status || 'Clean') !== filters.cleanStatus) return false;
 
       if (filters.serviceStatus) {
-        if (filters.serviceStatus === 'out_of_order' && !room.outOfOrder) return false;
-        if (filters.serviceStatus === 'out_of_service' && !room.outOfService) return false;
-        if (filters.serviceStatus === 'active' && (room.outOfOrder || room.outOfService)) return false;
+        const entries = room.serviceEntries || [];
+        const hasOOO = entries.some((e) => e.type === 'out_of_order');
+        const hasOOS = entries.some((e) => e.type === 'out_of_service');
+        if (filters.serviceStatus === 'out_of_order' && !hasOOO) return false;
+        if (filters.serviceStatus === 'out_of_service' && !hasOOS) return false;
+        if (filters.serviceStatus === 'active' && (hasOOO || hasOOS)) return false;
       }
 
       return true;

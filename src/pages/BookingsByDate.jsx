@@ -29,7 +29,6 @@ const BookingsByDate = () => {
 
     // Process data for the table
     const dataSource = useMemo(() => {
-        console.log('BookingsByDate: chartData', chartData);
         if (!chartData?.bookings) return [];
 
         // Map room IDs to names for better display

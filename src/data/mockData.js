@@ -10,36 +10,36 @@ export const roomsData = [
     { id: 'S01', name: '01 Manager', type: 'STAFF', category: 'Staff Accommodation', status: 'CLEAN' },
     { id: 'S02', name: '02 Other Staff', type: 'STAFF', category: 'Staff Accommodation', status: 'CLEAN' },
 
-    // Standard Ensuite Benjamin
-    { id: 'B01', name: 'B01', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'CLEAN' },
-    { id: 'B02', name: 'B02', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'DIRTY' },
-    { id: 'B03', name: 'B03', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'DIRTY' },
-    { id: 'B04', name: 'B04', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'INSPECT' },
-    { id: 'B05', name: 'B05', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'CLEAN' },
-    { id: 'B06', name: 'B06', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'CLEAN' },
-    { id: 'B07', name: 'B07', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'DIRTY' },
-    { id: 'B08', name: 'B08', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'CLEAN' },
-    { id: 'B09', name: 'B09', type: 'ENSUITE', category: 'Standard Ensuite Benjamin', status: 'CLEAN' },
+    // Benjamin Wing
+    { id: 'B01', name: 'B01', type: 'ENSUITE', category: 'Benjamin Wing', status: 'CLEAN' },
+    { id: 'B02', name: 'B02', type: 'ENSUITE', category: 'Benjamin Wing', status: 'DIRTY' },
+    { id: 'B03', name: 'B03', type: 'ENSUITE', category: 'Benjamin Wing', status: 'DIRTY' },
+    { id: 'B04', name: 'B04', type: 'ENSUITE', category: 'Benjamin Wing', status: 'INSPECT' },
+    { id: 'B05', name: 'B05', type: 'ENSUITE', category: 'Benjamin Wing', status: 'CLEAN' },
+    { id: 'B06', name: 'B06', type: 'ENSUITE', category: 'Benjamin Wing', status: 'CLEAN' },
+    { id: 'B07', name: 'B07', type: 'ENSUITE', category: 'Benjamin Wing', status: 'DIRTY' },
+    { id: 'B08', name: 'B08', type: 'ENSUITE', category: 'Benjamin Wing', status: 'CLEAN' },
+    { id: 'B09', name: 'B09', type: 'ENSUITE', category: 'Benjamin Wing', status: 'CLEAN' },
 
-    // Standard Ensuite Shiel
-    { id: 'S01_SH', name: 'S01', type: 'ENSUITE', category: 'Standard Ensuite Shiel', status: 'CLEAN' },
-    { id: 'S02_SH', name: 'S02', type: 'ENSUITE', category: 'Standard Ensuite Shiel', status: 'DIRTY' },
-    { id: 'S03_SH', name: 'S03', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
-    { id: 'S04_SH', name: 'S04', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
-    { id: 'S05_SH', name: 'S05', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
-    { id: 'S06_SH', name: 'S06', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
-    { id: 'S07_SH', name: 'S07', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
-    { id: 'S08_SH', name: 'S08', type: 'ENSUITE', category: 'Standard Ensuite Shiel' },
+    // Sheil Wing
+    { id: 'S01_SH', name: 'S01', type: 'ENSUITE', category: 'Sheil Wing', status: 'CLEAN' },
+    { id: 'S02_SH', name: 'S02', type: 'ENSUITE', category: 'Sheil Wing', status: 'DIRTY' },
+    { id: 'S03_SH', name: 'S03', type: 'ENSUITE', category: 'Sheil Wing' },
+    { id: 'S04_SH', name: 'S04', type: 'ENSUITE', category: 'Sheil Wing' },
+    { id: 'S05_SH', name: 'S05', type: 'ENSUITE', category: 'Sheil Wing' },
+    { id: 'S06_SH', name: 'S06', type: 'ENSUITE', category: 'Sheil Wing' },
+    { id: 'S07_SH', name: 'S07', type: 'ENSUITE', category: 'Sheil Wing' },
+    { id: 'S08_SH', name: 'S08', type: 'ENSUITE', category: 'Sheil Wing' },
 
-    // Standard Ensuite Wallace
-    { id: 'W01', name: 'W01', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'DIRTY' },
-    { id: 'W02', name: 'W02', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'CLEAN' },
-    { id: 'W03', name: 'W03', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'CLEAN' },
-    { id: 'W04', name: 'W04', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'CLEAN' },
-    { id: 'W05', name: 'W05', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'CLEAN' },
-    { id: 'W06', name: 'W06', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'DIRTY' },
-    { id: 'W07', name: 'W07', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'CLEAN' },
-    { id: 'W08', name: 'W08', type: 'ENSUITE', category: 'Standard Ensuite Wallace', status: 'CLEAN' },
+    // Wallace Wing
+    { id: 'W01', name: 'W01', type: 'ENSUITE', category: 'Wallace Wing', status: 'DIRTY' },
+    { id: 'W02', name: 'W02', type: 'ENSUITE', category: 'Wallace Wing', status: 'CLEAN' },
+    { id: 'W03', name: 'W03', type: 'ENSUITE', category: 'Wallace Wing', status: 'CLEAN' },
+    { id: 'W04', name: 'W04', type: 'ENSUITE', category: 'Wallace Wing', status: 'CLEAN' },
+    { id: 'W05', name: 'W05', type: 'ENSUITE', category: 'Wallace Wing', status: 'CLEAN' },
+    { id: 'W06', name: 'W06', type: 'ENSUITE', category: 'Wallace Wing', status: 'DIRTY' },
+    { id: 'W07', name: 'W07', type: 'ENSUITE', category: 'Wallace Wing', status: 'CLEAN' },
+    { id: 'W08', name: 'W08', type: 'ENSUITE', category: 'Wallace Wing', status: 'CLEAN' },
 ];
 
 // Booking definitions

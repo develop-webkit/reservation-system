@@ -148,7 +148,7 @@ const UserDropdown = ({ onLogout }) => {
                         IP Address: {mockUser.ip}
                     </Text>
                     <Text type="secondary" style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem' }}>
-                        {mockUser.client} (RMS Client No: {mockUser.clientNo})
+                        {mockUser.client} (MMV Client No: {mockUser.clientNo})
                     </Text>
                 </Space>
             </div>

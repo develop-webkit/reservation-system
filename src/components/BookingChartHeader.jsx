@@ -12,7 +12,8 @@ import {
     InfoCircleOutlined,
     SwapOutlined,
     FilterOutlined,
-    CloseOutlined
+    CloseOutlined,
+    DownloadOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import BookingChartOptionsModal from './BookingChartOptionsModal';
@@ -109,6 +110,7 @@ const BookingChartHeader = ({
     chartOptions,
     onChartOptionsSave,
     onChartOptionsRestore,
+    onExport,
 }) => {
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
@@ -208,6 +210,11 @@ const BookingChartHeader = ({
                             style={{ padding: 4 }}
                         />
                     </Popover>
+                    {onExport && (
+                        <Button icon={<DownloadOutlined />} onClick={onExport}>
+                            Export
+                        </Button>
+                    )}
                     <Button
                         icon={<FilterOutlined />}
                         onClick={() => setShowFilters(!showFilters)}

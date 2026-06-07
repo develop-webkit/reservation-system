@@ -19,9 +19,11 @@ import RoomsPage from './pages/RoomsPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
 import VouchersPage from './pages/VouchersPage.jsx';
 import PortalDashboardPage from './pages/portal/PortalDashboardPage.jsx';
+import PortalGroupsPage from './pages/portal/PortalGroupsPage.jsx';
 import PortalReservationsPage from './pages/portal/PortalReservationsPage.jsx';
 import PortalStaffPage from './pages/portal/PortalStaffPage.jsx';
 import PortalBookingRequestPage from './pages/portal/PortalBookingRequestPage.jsx';
+import InvoiceGeneratorPage from './pages/InvoiceGeneratorPage.jsx';
 import useAuthStore from './store/authStore.js';
 
 function App() {
@@ -52,9 +54,11 @@ function App() {
           <Route path="/vouchers" element={<VouchersPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/booking-requests" element={<BookingRequestsAdminPage />} />
+          <Route path="/invoice-generator" element={<InvoiceGeneratorPage />} />
           {/* Portal user (corporate client) routes */}
           <Route path="/portal/dashboard" element={<PortalDashboardPage />} />
           <Route path="/portal/reservations" element={<PortalReservationsPage />} />
+          <Route path="/portal/groups" element={<PortalGroupsPage />} />
           <Route path="/portal/booking-requests" element={<PortalBookingRequestPage />} />
           <Route path="/portal/staff" element={<PortalStaffPage />} />
         </Route>

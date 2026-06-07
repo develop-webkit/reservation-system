@@ -393,8 +393,8 @@ const ReservationsListPage = () => {
         resNo: '(New Reservation)',
         masterResNo: '(New Reservation)',
         status: 'Unconfirmed',
-        arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : dayjs().hour(14).minute(0).second(0).toDate(),
-        depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : dayjs().add(1, 'day').hour(10).minute(0).second(0).toDate(),
+        arrive: arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0).toDate() : dayjs().hour(15).minute(0).second(0).toDate(),
+        depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(7).minute(0).second(0).toDate() : dayjs().add(1, 'day').hour(7).minute(0).second(0).toDate(),
         nights: 1,
         adults: 1,
         tariffType: 'Occupied Room Rate PRPN',
@@ -440,8 +440,8 @@ const ReservationsListPage = () => {
                 resNo: resNoParam || prev.resNo,
                 masterResNo: masterResNoParam || prev.masterResNo,
                 // Dates
-                arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : prev.arrive,
-                depart: departParam ? dayjs(departParam).hour(10).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : prev.depart),
+                arrive: arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0).toDate() : prev.arrive,
+                depart: departParam ? dayjs(departParam).hour(7).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(7).minute(0).second(0).toDate() : prev.depart),
                 area: areaParam || prev.area,
                 roomType: roomTypeParam || prev.roomType,
                 // Client fields
@@ -464,14 +464,9 @@ const ReservationsListPage = () => {
     // Auto-select client from SmartSearch when clientIdParam is provided
     useEffect(() => {
         if (clientIdParam && allClients.length > 0) {
-            console.log('[AUTO-SELECT CLIENT] Looking for client with ID:', clientIdParam);
             const selectedClient = allClients.find(c => c._id === clientIdParam || c.id === clientIdParam);
-
             if (selectedClient) {
-                console.log('[AUTO-SELECT CLIENT] Found and selecting client:', selectedClient.clientName);
                 handleSelectClient(selectedClient);
-            } else {
-                console.warn('[AUTO-SELECT CLIENT] Client not found with ID:', clientIdParam);
             }
         }
     }, [clientIdParam, allClients]);
@@ -533,17 +528,17 @@ const ReservationsListPage = () => {
                     // 1. Apply Default Times if they haven't been set by the user yet
                     // Ant Design defaults to 00:00 if only a date is clicked.
                     if (arrive.hour() === 0 && arrive.minute() === 0) {
-                        arrive = arrive.hour(14).minute(0).second(0);
+                        arrive = arrive.hour(15).minute(0).second(0);
                     }
                     if (depart.hour() === 0 && depart.minute() === 0) {
-                        depart = depart.hour(10).minute(0).second(0);
+                        depart = depart.hour(7).minute(0).second(0);
                     }
 
                     // 2. Enforce Minimum 1 Night stay
-                    // If the user selects the same day or a day before, 
-                    // we force the departure to be the next day at 10 AM.
+                    // If the user selects the same day or a day before,
+                    // we force the departure to be the next day at 7 AM.
                     if (depart.isBefore(arrive, 'day') || depart.isSame(arrive, 'day')) {
-                        depart = arrive.add(1, 'day').hour(10).minute(0).second(0);
+                        depart = arrive.add(1, 'day').hour(7).minute(0).second(0);
                     }
 
                     newData.arrive = arrive.toDate();
@@ -566,7 +561,7 @@ const ReservationsListPage = () => {
             ...prev,
             smartSearch: client.clientName || `${client.given || ''} ${client.surname || ''}`.trim(),
             clientNo: client.clientNo,
-            masterResNo: client.clientNo, // Sourced from RMS SmartSearch per user request
+            masterResNo: client.clientNo, // Sourced from MMV SmartSearch per user request
             groupname: client.groupName,
             surname: client.surname,
             given: client.given,
@@ -627,7 +622,6 @@ const ReservationsListPage = () => {
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(mongoRoomId);
 
         if (!isMongoId) {
-            console.warn('ID provided for room is not a Mongo ID:', mongoRoomId);
             message.error(`Room ID error: '${mongoRoomId}' is not a valid database ID. Please wait for rooms to load.`);
             return;
         }
@@ -671,15 +665,6 @@ const ReservationsListPage = () => {
             // Overlap logic: new arrival is before existing checkout AND new departure is after existing checkin
             // This allows same-day bookings: if someone leaves on Apr 8, new guest can arrive Apr 8
             const hasOverlap = newArriveDate < bookingEndDate && newDepartDate > bookingStartDate;
-
-            if (hasOverlap) {
-                console.log(`[CONFLICT FOUND] Booking ${booking.resNo}:`, {
-                    existingDates: { start: bookingStartDate, end: bookingEndDate },
-                    newDates: { arrive: newArriveDate, depart: newDepartDate },
-                    status: booking.status,
-                    isParked: booking.isParked
-                });
-            }
 
             return hasOverlap;
         });
@@ -967,7 +952,7 @@ const ReservationsListPage = () => {
                     </div>
                 </div>
 
-                <FormField label="RMS SmartSearch" field="smartSearch" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
+                <FormField label="MMV SmartSearch" field="smartSearch" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
                 <FormField label="Client No" field="clientNo" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} yellowBg />
                 <FormField label="Groupname" field="groupname" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
                 <FormField label="Surname" field="surname" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} error={fieldErrors.surname} />
@@ -1029,7 +1014,7 @@ const ReservationsListPage = () => {
                     }}>
                         <div style={{ padding: '12px 16px', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text strong style={{ fontSize: '16px' }}>
-                                Client RMS SmartSearch - {filteredClients.length} Found
+                                Client MMV SmartSearch - {filteredClients.length} Found
                             </Text>
                             <Button
                                 type="text"

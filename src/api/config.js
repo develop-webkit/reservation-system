@@ -24,6 +24,7 @@ export const API_CONFIG = {
         TASKS: '/tasks',
         DASHBOARD_STATS: '/dashboard/stats',
         ACCOUNTING: '/accounting',
+        CLIENT_GROUPS: '/client-groups',
     },
     
     // Request timeout

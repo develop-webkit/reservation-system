@@ -30,13 +30,7 @@ const BookingFormDrawer = ({ visible, onClose, initialData = {} }) => {
         }
     }, [visible, initialData, form]);
 
-    const onFinish = (values) => {
-        console.log('Booking Submitted:', {
-            ...values,
-            // Format dates back to string for backend
-            checkIn: values.checkIn ? values.checkIn.format('YYYY-MM-DD') : null,
-            checkOut: values.checkOut ? values.checkOut.format('YYYY-MM-DD') : null,
-        });
+    const onFinish = () => {
         // Logic to save the booking and refresh the chart would go here
         onClose();
     };

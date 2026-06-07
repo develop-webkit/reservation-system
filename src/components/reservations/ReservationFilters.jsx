@@ -35,6 +35,22 @@ function ReservationFilters({ filters, onChange, clients }) {
         />
       </FilterBarItem>
       <FilterBarItem>
+        <Input
+          allowClear
+          value={filters.companyName}
+          onChange={(e) => onChange('companyName', e.target.value)}
+          placeholder="Filter by company name"
+        />
+      </FilterBarItem>
+      <FilterBarItem>
+        <Input
+          allowClear
+          value={filters.groupName}
+          onChange={(e) => onChange('groupName', e.target.value)}
+          placeholder="Filter by group name"
+        />
+      </FilterBarItem>
+      <FilterBarItem>
         <DatePicker.RangePicker
           value={filters.range}
           onChange={(value) => onChange('range', value)}

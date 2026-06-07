@@ -10,7 +10,7 @@ function LoginForm({ onSubmit, loading, onForgotPassword, isLocked }) {
   return (
     <Card className="login-card">
       <div className="login-card-header">
-        <Typography.Text className="eyebrow">RMS DESKTOP</Typography.Text>
+        <Typography.Text className="eyebrow">MMV DESKTOP</Typography.Text>
         <Typography.Title level={2}>Login to property operations</Typography.Title>
         <Typography.Paragraph>
           Use your client number, username, and password to enter the tenant workspace.
@@ -27,7 +27,7 @@ function LoginForm({ onSubmit, loading, onForgotPassword, isLocked }) {
 
       <Form layout="vertical" onFinish={onSubmit}>
         <Form.Item
-          label="RMS Client No"
+          label="MMV Client No"
           name="clientNumber"
           rules={[{ required: true, message: 'Client number is required.' }]}
         >

@@ -1,7 +1,14 @@
 import { Button, Space, Table } from 'antd';
 import StatusTag from '../common/StatusTag.jsx';
 
-function TaskTable({ data, loading, onEdit }) {
+function TaskTable({ data, loading, onEdit, selectedRowKeys, onSelectionChange }) {
+  const rowSelection = onSelectionChange
+    ? {
+        selectedRowKeys,
+        onChange: onSelectionChange,
+      }
+    : undefined;
+
   const columns = [
     { title: 'Type', dataIndex: 'type', key: 'type' },
     {
@@ -37,7 +44,15 @@ function TaskTable({ data, loading, onEdit }) {
     },
   ];
 
-  return <Table rowKey={(record) => record._id} columns={columns} dataSource={data} loading={loading} />;
+  return (
+    <Table
+      rowKey={(record) => record._id}
+      rowSelection={rowSelection}
+      columns={columns}
+      dataSource={data}
+      loading={loading}
+    />
+  );
 }
 
 export default TaskTable;

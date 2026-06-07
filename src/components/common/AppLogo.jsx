@@ -6,7 +6,7 @@ function AppLogo() {
       <div className="app-logo-mark">R</div>
       <div>
         <Typography.Title level={4} className="app-logo-title">
-          RMS Frontdesk
+          MMV Frontdesk
         </Typography.Title>
         <Typography.Text type="secondary">
           Bookings and guest operations

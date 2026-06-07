@@ -116,6 +116,18 @@ a {
   padding: 8px 2px;
 }
 
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: var(--panel-bg, #f0f5ff);
+  border: 1px solid #91caff;
+  border-radius: 6px;
+}
+
 .page-title.ant-typography {
   margin-bottom: 4px;
 }

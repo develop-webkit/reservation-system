@@ -57,8 +57,8 @@ export const useUpdateRoomStatus = () => {
 };
 
 /**
- * Hook to set a room as Out Of Service or Out Of Order
- * @returns {MutationResult}
+ * Hook to add an Out Of Service or Out Of Order entry to a room.
+ * Uses $push on the backend — does NOT overwrite existing entries.
  */
 export const useUpdateRoomServiceStatus = () => {
     const queryClient = useQueryClient();
@@ -66,6 +66,22 @@ export const useUpdateRoomServiceStatus = () => {
     return useMutation({
         mutationFn: ({ id, type, description, startDate, endDate }) =>
             roomsApi.updateServiceStatus(id, type, description, startDate, endDate),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });
+        },
+    });
+};
+
+/**
+ * Hook to remove a single service entry from a room by its embedded _id.
+ */
+export const useRemoveRoomServiceEntry = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ roomId, entryId }) =>
+            roomsApi.removeServiceEntry(roomId, entryId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
             queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });

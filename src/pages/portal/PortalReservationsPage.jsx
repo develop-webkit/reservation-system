@@ -1,8 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Input, Select, Space, Table, Tag, Typography } from 'antd';
+import { useQueryClient } from '@tanstack/react-query';
+import { Alert, Button, Input, Select, Space, Table, Tag, Typography, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { createReservation, updateReservation } from '../../api/services/reservations.js';
 import { useReservationsQuery } from '../../hooks/useReservationsQuery.js';
+import { useRoomsQuery } from '../../hooks/useRoomsQuery.js';
+import { useClientsQuery } from '../../hooks/useClientsQuery.js';
+import { useCompaniesQuery } from '../../hooks/useCompaniesQuery.js';
+import { useAppMutation } from '../../hooks/useAppMutation.js';
+import { queryKeys } from '../../constants/queryKeys.js';
 import { STATUS_OPTIONS } from '../../data/options.js';
+import ReservationFormDrawer from '../../components/reservations/ReservationFormDrawer.jsx';
 
 const { Title, Text } = Typography;
 
@@ -17,27 +26,80 @@ const STATUS_COLOR = {
 };
 
 function PortalReservationsPage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(undefined);
+  const [groupFilter, setGroupFilter] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingReservation, setEditingReservation] = useState(null);
 
   const reservationsQuery = useReservationsQuery({ status: statusFilter });
+  const roomsQuery = useRoomsQuery();
+  const clientsQuery = useClientsQuery({});
+  const companiesQuery = useCompaniesQuery();
+
+  const clients = useMemo(() => {
+    const raw = clientsQuery.data;
+    if (!raw) return [];
+    return Array.isArray(raw) ? raw : (raw.data || []);
+  }, [clientsQuery.data]);
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.reservations });
+    queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+    queryClient.invalidateQueries({ queryKey: ['bookings', 'chart'] });
+    queryClient.invalidateQueries({ queryKey: ['booking-chart'] });
+  };
+
+  const createMutation = useAppMutation({
+    mutationFn: createReservation,
+    successMessage: 'Reservation created successfully.',
+    onSuccess: () => {
+      invalidateAll();
+      setDrawerOpen(false);
+    },
+  });
+
+  const updateMutation = useAppMutation({
+    mutationFn: ({ id, payload }) => updateReservation(id, payload),
+    successMessage: 'Reservation updated successfully.',
+    onSuccess: () => {
+      invalidateAll();
+      setDrawerOpen(false);
+      setEditingReservation(null);
+    },
+  });
 
   const filtered = useMemo(() => {
     const source = reservationsQuery.data || [];
     const term = search.trim().toLowerCase();
+    const groupTerm = groupFilter.trim().toLowerCase();
     return source.filter((item) => {
-      if (!term) return true;
-      return (
+      const textMatch =
+        !term ||
         item.clientName?.toLowerCase().includes(term) ||
-        item.resNo?.toLowerCase().includes(term)
-      );
+        item.guestName?.toLowerCase().includes(term) ||
+        item.resNo?.toLowerCase().includes(term);
+      const groupMatch =
+        !groupTerm || item.groupName?.toLowerCase().includes(groupTerm);
+      return textMatch && groupMatch;
     });
-  }, [search, statusFilter, reservationsQuery.data]);
+  }, [search, groupFilter, reservationsQuery.data]);
+
+  const handleSubmit = async (values) => {
+    const editingId = editingReservation?._id || editingReservation?.id;
+    if (editingId) {
+      await updateMutation.mutateAsync({ id: editingId, payload: values });
+      return;
+    }
+    await createMutation.mutateAsync(values);
+  };
 
   const columns = [
-    { title: 'Res No', dataIndex: 'resNo', key: 'resNo', width: 130 },
-    { title: 'Guest', dataIndex: 'clientName', key: 'clientName' },
-    { title: 'Room', dataIndex: 'roomId', key: 'roomId', width: 100 },
+    { title: 'Res No', dataIndex: 'resNo', key: 'resNo', width: 130, render: (v) => v || '-' },
+    { title: 'Guest', dataIndex: 'clientName', key: 'clientName', render: (v) => v || '-' },
+    { title: 'Group', dataIndex: 'groupName', key: 'groupName', render: (v) => v || '-' },
+    { title: 'Room', dataIndex: 'roomId', key: 'roomId', width: 100, render: (v) => v || '-' },
     {
       title: 'Check-in',
       dataIndex: 'checkIn',
@@ -61,21 +123,58 @@ function PortalReservationsPage() {
       ),
       width: 130,
     },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Button
+          size="small"
+          onClick={() => {
+            setEditingReservation(record);
+            setDrawerOpen(true);
+          }}
+        >
+          Edit
+        </Button>
+      ),
+      width: 80,
+    },
   ];
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3} style={{ margin: 0, marginBottom: 4 }}>My Reservations</Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 20 }}>
-        Reservations made for your company
-      </Text>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div>
+          <Title level={3} style={{ margin: 0, marginBottom: 4 }}>My Reservations</Title>
+          <Text type="secondary" style={{ display: 'block' }}>
+            Reservations made for your company
+          </Text>
+        </div>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditingReservation(null);
+            setDrawerOpen(true);
+          }}
+        >
+          New Reservation
+        </Button>
+      </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Input
           placeholder="Search guest or reservation no"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 260 }}
+          style={{ width: 240 }}
+          allowClear
+        />
+        <Input
+          placeholder="Filter by group name"
+          value={groupFilter}
+          onChange={(e) => setGroupFilter(e.target.value)}
+          style={{ width: 200 }}
           allowClear
         />
         <Select
@@ -100,6 +199,22 @@ function PortalReservationsPage() {
         pagination={{ pageSize: 15 }}
         locale={{ emptyText: 'No reservations found.' }}
         size="small"
+        scroll={{ x: 900 }}
+      />
+
+      <ReservationFormDrawer
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setEditingReservation(null);
+        }}
+        onSubmit={handleSubmit}
+        loading={createMutation.isPending || updateMutation.isPending}
+        initialValues={editingReservation}
+        rooms={roomsQuery.data}
+        clients={clients}
+        companies={companiesQuery.data}
+        enableMemberSearch
       />
     </div>
   );

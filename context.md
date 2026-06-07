@@ -1,3 +1,109 @@
+## Invoice Generator (2026-06-07)
+
+### Overview
+Standalone Tax Invoice (AUD) generator for super admin (role === 'admin') only. No backend persistence — the admin fills in the form and downloads/prints the PDF.
+
+### Access Control
+- Route: `/invoice-generator`
+- Navigation: `FileTextOutlined` icon, `roles: ['admin']` only
+- `ProtectedRoute.jsx`: `/invoice-generator` added to `ADMIN_PATHS` so portal_user is blocked
+- `InvoiceGeneratorPage.jsx`: secondary guard with `<Navigate to="/dashboard" />` if role !== 'admin'
+
+### Files
+- `src/hooks/useInvoiceGenerator.js` — state + mutations for the invoice form (setField, addLineItem, removeLineItem, updateLineItem, resetInvoice, totals)
+  - Auto-updates dueDate (+14 days) when invoiceDate changes
+  - Auto-calculates net/gst/total via useMemo
+  - With Meals / Room Only checkboxes are mutually exclusive
+- `src/components/invoice/InvoiceGeneratorPDF.jsx` — react-pdf Document matching the reference screenshot
+  - Company header (top-right): Mount Morgan Space Solutions, address, ABN, phone, email, website
+  - Left: "Tax Invoice (AUD)", Invoice No, Billed To
+  - Right info box: Client, Date, Adults, Arrive/Depart Date, Voucher No, Account No, Reservation No, Cashier, Due Date
+  - Table: Date | Detail | GST | Amount (Inc. GST)
+  - Detail column: room label line + nights × rate type + Bednights range
+  - Totals: NET, GST (10%), Total, Balance
+  - Notes section with fixed payment terms text
+  - "Powered by rmcloud.com" dashed separator
+  - Remittance section: Billed-to + bank details (BSB 064-034, Account 306037269)
+- `src/components/invoice/InvoiceLineItemsTable.jsx` — editable Ant Design table for line items (Date, Room No, With Meals, Room Only, From/To Date, Total Price)
+- `src/pages/InvoiceGeneratorPage.jsx` — main page with form, preview modal (PDFViewer), print and download
+
+### Calculation Logic
+- Each row: `totalPrice` is NET (excl. GST); GST column = totalPrice × 0.1; Amount (Inc. GST) = totalPrice × 1.1
+- Totals footer: NET = sum of all totalPrice; GST = NET × 0.1; Total = NET × 1.1; Balance = Total
+
+---
+
+## Corporate Client Group Management Module (2026-06-07)
+
+### Overview
+Full-stack feature for corporate clients (portal_user) to organise their staff into named groups and use group members when creating reservations.
+
+### Backend Changes
+
+#### New: `ClientGroup` Schema (`src/schemas/client-group.schema.ts`)
+- Embedded `ClientGroupMember` sub-document: name, phone, email
+- `ClientGroup`: groupName, companyName, linkedClientNo, members[], createdBy
+- Scoped by `linkedClientNo` (same pattern as ClientStaff)
+
+#### New: `ClientGroupsModule` (`src/modules/client-groups/`)
+- Full CRUD: POST /client-groups, GET /client-groups, GET /client-groups/:id, PUT /client-groups/:id, DELETE /client-groups/:id
+- Member search: GET /client-groups/members/search?q=john&clientNo=optional
+  - For portal_user: auto-scoped to their linkedClientNo
+  - For admin/manager: scope by clientNo param or search all
+- Roles: PORTAL_USER, ADMIN, MANAGER
+
+#### Updated: Reservation Schema + DTO
+- Added `guestPhone: string` and `guestEmail: string` to reservation schema and DTO
+- `mapReservationEntityToFrontend` now returns `guestName`, `guestPhone`, `guestEmail`
+
+#### Updated: Reservations Controller
+- POST /reservations now allows `PORTAL_USER` in addition to ADMIN, MANAGER, USER
+
+### Frontend Changes
+
+#### Route Protection (`src/components/layout/ProtectedRoute.jsx`)
+- portal_user is blocked from all admin paths (dashboard, reservations, bookings, etc.) and redirected to /portal/dashboard
+- admin/manager/housekeeper is blocked from /portal/* paths and redirected to /dashboard
+- Invoice is admin-only by default since InvoiceModal is only in admin pages
+
+#### New: Group Management Page (`src/pages/portal/PortalGroupsPage.jsx`)
+- Groups table with expand rows showing members
+- Create/Edit group modal with inline MembersEditor (name, phone, email per member)
+- Delete group with confirmation
+- Uses useClientGroups, useCreateClientGroup, useUpdateClientGroup, useDeleteClientGroup
+
+#### New: API + Hooks
+- `src/api/services/clientGroups.js` — CRUD + searchMembers
+- `src/hooks/useClientGroups.js` — useClientGroups, useCreateClientGroup, useUpdateClientGroup, useDeleteClientGroup, useSearchGroupMembers
+- queryKeys.clientGroups added
+
+#### Navigation (`src/constants/navigation.js`)
+- Added `/portal/groups` — "Group Management" for portal_user (ApartmentOutlined icon)
+
+#### Portal Reservations Page (`src/pages/portal/PortalReservationsPage.jsx`)
+- Added "New Reservation" button with ReservationFormDrawer (enableMemberSearch=true)
+- Added Group Name column
+- Added group name filter and text search covers guestName
+
+#### ReservationFormDrawer (`src/components/reservations/ReservationFormDrawer.jsx`)
+- New prop: `enableMemberSearch` (false by default, true for portal users)
+- When enabled: AutoComplete "Guest Search" calls clientGroupsApi.searchMembers
+- On member select: auto-fills guestName, guestPhone, guestEmail, groupName, company (if matched)
+- New form fields: guestPhone, guestEmail, groupName (all optional)
+
+#### ReservationTable (`src/components/reservations/ReservationTable.jsx`)
+- Added "Group" column (maps to `groupName`)
+
+#### ReservationFilters (`src/components/reservations/ReservationFilters.jsx`)
+- Added "Company Name" filter input
+- Added "Group Name" filter input
+
+#### ReservationsPage (`src/pages/ReservationsPage.jsx`)
+- Added companyName, groupName to filters state
+- Client-side filtering by company name, group name, and guest name
+
+---
+
 ## Bug Fixes (2026-06-03)
 
 ### Booking Chart Filter Fix
@@ -51,23 +157,51 @@
 
 ---
 
-## Out Of Service / Out Of Order Feature (2026-06-02)
+## Out Of Service / Out Of Order Feature (updated 2026-06-07)
 
-### How It Works
-- Right-click on any room row (name column or date grid) in the booking chart
-- Context menu shows "Out Of Service" and "Out Of Order" options (only when a room row is right-clicked)
-- Clicking opens a modal to enter: Description, From Date, To Date
-- On confirm: PATCH /rooms/:id/service-status with { type, description, startDate, endDate }
-- Room fields updated: outOfService/outOfOrder flag, serviceDescription, serviceStartDate, serviceEndDate
-- Chart renders a colored bar (dark blue = OOS, purple = OOO) spanning those dates
+### Architecture: Multiple Independent Entries Per Room
+
+Each room now stores an embedded array `serviceEntries[]` rather than flat boolean/date fields. This allows any number of independent OOS/OOO periods on the same room without overwriting existing ones.
+
+#### Backend Schema (`src/schemas/room.schema.ts`)
+```typescript
+@Schema({ _id: true })
+class RoomServiceEntry {
+  type: string;         // 'out_of_service' | 'out_of_order'
+  description: string;
+  startDate: Date;
+  endDate: Date;
+}
+
+class Room {
+  serviceEntries: RoomServiceEntry[];  // replaces flat outOfOrder/outOfService/serviceStartDate/serviceEndDate
+}
+```
+Flat fields (`outOfOrder`, `outOfService`, `serviceDescription`, `serviceStartDate`, `serviceEndDate`) and `outOfOrder` in `CreateRoomDto` have been removed.
+
+#### Backend Service (`rooms.service.ts`)
+- `updateServiceStatus(id, dto)` — uses `$push: { serviceEntries: entry }` to append; `serviceEntries: []` when clearing all
+- `removeServiceEntry(roomId, entryId)` — uses `$pull: { serviceEntries: { _id: entryId } }` for targeted removal
+
+#### Backend Controller (`rooms.controller.ts`)
+- `PATCH /rooms/:id/service-status` — adds a new entry
+- `DELETE /rooms/:id/service-entries/:entryId` — removes one specific entry (ADMIN, MANAGER)
+
+### Frontend: How It Works
+1. Right-click on a room row (name or date cell) → context menu: "Out Of Service" / "Out Of Order"
+2. Modal: Description, From Date, To Date → confirms → `PATCH /rooms/:id/service-status`
+3. Each entry renders its own colored bar on the chart spanning the date range
+4. Right-click directly on a service bar → context menu shows "Remove this entry" → `DELETE /rooms/:id/service-entries/:entryId`
 
 ### Key Files
-- `src/components/BookingChart.jsx` — context menu, service modal, service block bar rendering
-- `src/api/services/rooms.js` — updateRoomServiceStatus now passes startDate/endDate
-- `src/hooks/useRooms.js` — useUpdateRoomServiceStatus passes dates in mutationFn
-- Backend: `src/schemas/room.schema.ts` — added serviceStartDate, serviceEndDate fields
-- Backend: `src/modules/rooms/rooms.service.ts` — updateServiceStatus accepts startDate/endDate
-- Backend: `src/modules/rooms/rooms.controller.ts` — endpoint accepts startDate/endDate body params
+- `src/components/BookingChart.jsx` — service block bars map over `serviceEntries[]`, context menu has ternary: `serviceEntry ? remove-entry-menu : booking ? booking-menu : room-menu`
+- `src/api/services/rooms.js` — added `removeRoomServiceEntry(roomId, entryId)`
+- `src/hooks/useRooms.js` — added `useRemoveRoomServiceEntry` mutation
+- `src/components/rooms/RoomsTable.jsx` — Service column counts entries per type
+- `src/pages/RoomsPage.jsx` — serviceStatus filter checks `serviceEntries[]`
+- `src/pages/CleanScreen.jsx` — Out of Order check uses `serviceEntries[]`
+- `src/components/rooms/RoomFormDrawer.jsx` — OOS/OOO fields removed; managed exclusively via chart context menu
+- Backend: `src/schemas/room.schema.ts`, `rooms.service.ts`, `rooms.controller.ts`, `dto/create-room.dto.ts`
 
 ### Booking Colors on Chart
 STATUS_COLORS in BookingChart.jsx:

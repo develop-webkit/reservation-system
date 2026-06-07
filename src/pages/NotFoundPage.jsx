@@ -6,7 +6,7 @@ function NotFoundPage() {
     <Result
       status="404"
       title="Page not found"
-      subTitle="The page you requested does not exist in this RMS workspace."
+      subTitle="The page you requested does not exist in this MMV workspace."
       extra={
         <Button type="primary">
           <Link to="/dashboard">Back to dashboard</Link>

@@ -18,4 +18,5 @@ export const queryKeys = {
   accounting: ['accounting'],
   vouchers: ['vouchers'],
   companies: ['companies'],
+  clientGroups: ['client-groups'],
 };

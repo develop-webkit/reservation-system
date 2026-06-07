@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Row, Col, DatePicker, Select, Input, Button, Space, theme } from 'antd';
 import { SearchOutlined, FilterOutlined, CalendarOutlined } from '@ant-design/icons';
 import moment from 'moment';
-import { roomsData } from '../data/mockData'; // To populate room type filter
 
 const { Search } = Input;
 const { Option } = Select;
@@ -21,8 +20,7 @@ const BookingFilterBar = ({ onFilterChange }) => {
     // Ant Design hook for theme tokens (used for dark theme inputs)
     const { token } = theme.useToken();
 
-    // Utility to get unique room types for the Select filter
-    const uniqueRoomTypes = ['ALL', ...new Set(roomsData.map(room => room.type))];
+    const uniqueRoomTypes = ['ALL', 'Single', 'Double', 'Suite', 'Deluxe'];
     
     // Mock booking statuses
     const bookingStatuses = ['ALL', 'CONFIRMED', 'PENDING', 'CHECKED_IN', 'CHECKED_OUT'];
@@ -30,21 +28,19 @@ const BookingFilterBar = ({ onFilterChange }) => {
     const handleDateChange = (date) => {
         const newFilters = { ...filters, date };
         setFilters(newFilters);
-        // In a real app, this would trigger data fetching/chart re-render
-        // onFilterChange(newFilters); 
-        console.log("Date filter changed to:", date.format('YYYY-MM-DD'));
+        if (onFilterChange) onFilterChange(newFilters);
     };
 
     const handleSelectChange = (value, name) => {
         const newFilters = { ...filters, [name]: value };
         setFilters(newFilters);
-        console.log(`${name} filter changed to:`, value);
+        if (onFilterChange) onFilterChange(newFilters);
     };
-    
+
     const handleSearch = (value) => {
         const newFilters = { ...filters, searchTerm: value };
         setFilters(newFilters);
-        console.log("Search term submitted:", value);
+        if (onFilterChange) onFilterChange(newFilters);
     };
 
     return (
@@ -113,10 +109,7 @@ const BookingFilterBar = ({ onFilterChange }) => {
 
             {/* 5. Action Button (e.g., Quick Add Booking) */}
             <Col>
-                <Button 
-                    type="primary" 
-                    onClick={() => console.log('Initiate Quick Add Booking Modal')}
-                >
+                <Button type="primary">
                     + New Booking
                 </Button>
             </Col>

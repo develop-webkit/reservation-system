@@ -303,8 +303,8 @@ const ReservationEditPage = () => {
         resNo: '',
         masterResNo: '',
         status: 'Unconfirmed',
-        arrive: dayjs('2026-02-04').hour(14).minute(0).toDate(),
-        depart: dayjs('2026-02-05').hour(10).minute(0).toDate(),
+        arrive: dayjs('2026-02-04').hour(15).minute(0).toDate(),
+        depart: dayjs('2026-02-05').hour(7).minute(0).toDate(),
         nights: 1,
         adults: 1,
         tariffType: 'Occupied Room Rate PRPN',
@@ -342,7 +342,6 @@ const ReservationEditPage = () => {
         if (!reservationData) return;
 
         const res = reservationData.data || reservationData;
-        console.log('[EDIT PAGE] Reservation data loaded:', res);
 
         setClientData(prev => ({
             ...prev,
@@ -397,8 +396,8 @@ const ReservationEditPage = () => {
                 ...prev,
                 resNo: resNoParam || prev.resNo,
                 masterResNo: masterResNoParam || prev.masterResNo,
-                arrive: arriveParam ? dayjs(arriveParam).hour(14).minute(0).second(0).toDate() : prev.arrive,
-                depart: departParam ? dayjs(departParam).hour(10).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(10).minute(0).second(0).toDate() : prev.depart),
+                arrive: arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0).toDate() : prev.arrive,
+                depart: departParam ? dayjs(departParam).hour(7).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(7).minute(0).second(0).toDate() : prev.depart),
                 area: areaParam || prev.area,
                 roomType: roomTypeParam || prev.roomType,
                 given: givenParam || prev.given,
@@ -485,33 +484,23 @@ const ReservationEditPage = () => {
     };
 
     const handleSaveReservation = () => {
-        console.log('[BUTTON CLICKED] Save button was clicked');
-        console.log('[DEBUG] clientData:', clientData);
-        console.log('[DEBUG] allRooms:', allRooms);
-        console.log('[DEBUG] allBookings:', allBookings);
-
         // Validation
         if (!clientData.arrive || !clientData.depart) {
-            console.log('[VALIDATION] Missing dates');
             message.error('Please select valid stay dates.');
             return;
         }
         if (!clientData.area) {
-            console.log('[VALIDATION] Missing area');
             message.error('Please select an Area (Room).');
             return;
         }
         if (!clientData.surname) {
-            console.log('[VALIDATION] Missing surname');
             message.error('Please enter a Guest Name (Surname).');
             return;
         }
 
         const selectedRoom = allRooms.find(r => r.name === clientData.area);
-        console.log('[DEBUG] selectedRoom:', selectedRoom);
 
         if (!selectedRoom) {
-            console.log('[VALIDATION] Room not found');
             message.error(`Selected room '${clientData.area}' not found.`);
             return;
         }
@@ -548,10 +537,7 @@ const ReservationEditPage = () => {
             return hasOverlap;
         });
 
-        console.log('[DEBUG] conflictingBookings:', conflictingBookings);
-
         if (conflictingBookings.length > 0) {
-            console.log('[VALIDATION] Booking conflict found');
             const conflicts = conflictingBookings.map(booking => {
                 const startDate = dayjs(booking.startDate).format('MMM DD, YYYY');
                 const endDate = dayjs(booking.endDate).format('MMM DD, YYYY');
@@ -568,11 +554,7 @@ const ReservationEditPage = () => {
         const mongoRoomId = selectedRoom._id || selectedRoom.id;
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(mongoRoomId);
 
-        console.log('[DEBUG] mongoRoomId:', mongoRoomId, 'isMongoId:', isMongoId);
-
         if (!isMongoId) {
-            console.log('[VALIDATION] Invalid room ID format');
-            console.warn('ID provided for room is not a Mongo ID:', mongoRoomId);
             message.error(`Room ID error: '${mongoRoomId}' is not a valid database ID.`);
             return;
         }
@@ -581,18 +563,12 @@ const ReservationEditPage = () => {
         const isValidMongoId = (id) => !id || /^[0-9a-fA-F]{24}$/.test(id);
         const isValidMongoIdRequired = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
-        console.log('[DEBUG] clientId:', clientData.clientId, 'valid:', isValidMongoId(clientData.clientId));
-        console.log('[DEBUG] companyId:', clientData.companyId, 'valid:', isValidMongoId(clientData.companyId));
-
         if (clientData.clientId && !isValidMongoId(clientData.clientId)) {
-            console.log('[VALIDATION] Invalid client ID');
             message.error('Invalid Client ID format.');
             return;
         }
         // Don't validate companyId if it's not a valid mongo ID - just exclude it from payload
         // (company can be a string name from the UI, not always an ID)
-
-        console.log('[VALIDATION] All checks passed, proceeding to save');
 
         const payload = {
             resNo: clientData.resNo,
@@ -629,9 +605,6 @@ const ReservationEditPage = () => {
         if (clientData.confirmedDate) payload.confirmedDate = clientData.confirmedDate;
         if (clientData.voucherNo) payload.voucherNo = clientData.voucherNo;
 
-        console.log('[SAVE] Reservation ID:', reservationId);
-        console.log('[SAVE] Payload:', JSON.stringify(payload, null, 2));
-
         if (!reservationId) {
             message.error('No reservation ID found. Cannot update.');
             return;
@@ -640,9 +613,7 @@ const ReservationEditPage = () => {
         updateReservationMutation.mutate(
             { id: reservationId, data: payload },
             {
-                onSuccess: (data) => {
-                    console.log('[SUCCESS] Reservation updated:', data);
-
+                onSuccess: () => {
                     // If status is "Departed" or "Checked In", mark room as dirty
                     if ((clientData.status === 'Departed' || clientData.status === 'Checked In') && selectedRoom) {
                         updateRoomStatusMutation.mutate({
@@ -650,12 +621,10 @@ const ReservationEditPage = () => {
                             status: 'Dirty'
                         }, {
                             onSuccess: () => {
-                                console.log('Room marked as Dirty');
                                 message.success('Reservation updated successfully!');
                                 navigate(-1);
                             },
-                            onError: (err) => {
-                                console.error('Failed to update room status:', err);
+                            onError: () => {
                                 message.success('Reservation updated successfully!');
                                 navigate(-1);
                             }
@@ -666,8 +635,6 @@ const ReservationEditPage = () => {
                     }
                 },
                 onError: (err) => {
-                    console.error('[ERROR] Update failed:', err);
-                    console.error('[ERROR] Response:', err.response?.data);
                     message.error('Failed to update reservation: ' + (err.response?.data?.message || err.message));
                 }
             }
@@ -818,7 +785,7 @@ const ReservationEditPage = () => {
                     </div>
                 </div>
 
-                <FormField label="RMS SmartSearch" field="smartSearch" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
+                <FormField label="MMV SmartSearch" field="smartSearch" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
                 <FormField label="Client No" field="clientNo" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} yellowBg />
                 <FormField label="Groupname" field="groupname" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
                 <FormField label="Surname" field="surname" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />

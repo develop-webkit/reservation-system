@@ -1,8 +1,10 @@
 import {
+  ApartmentOutlined,
   BuildOutlined,
   CalendarOutlined,
   DollarOutlined,
   FileSearchOutlined,
+  FileTextOutlined,
   HomeOutlined,
   ReadOutlined,
   ScheduleOutlined,
@@ -26,9 +28,11 @@ export const navigationItems = [
   { key: '/vouchers',          label: 'Vouchers',          icon: WalletOutlined,     roles: ['admin', 'manager'] },
   { key: '/users',             label: 'Users',             icon: UserAddOutlined,    roles: ['admin'] },
   { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
+  { key: '/invoice-generator', label: 'Invoice Generator', icon: FileTextOutlined,   roles: ['admin'] },
   // Portal user (corporate client) navigation
   { key: '/portal/dashboard',        label: 'Dashboard',        icon: HomeOutlined,       roles: ['portal_user'] },
   { key: '/portal/reservations',     label: 'My Reservations',  icon: CalendarOutlined,   roles: ['portal_user'] },
+  { key: '/portal/groups',           label: 'Group Management', icon: ApartmentOutlined,  roles: ['portal_user'] },
   { key: '/portal/booking-requests', label: 'Booking Requests', icon: FileSearchOutlined, roles: ['portal_user'] },
   { key: '/portal/staff',            label: 'Staff Management', icon: TeamOutlined,       roles: ['portal_user'] },
 ];

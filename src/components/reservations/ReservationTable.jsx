@@ -6,6 +6,7 @@ function ReservationTable({ data, loading, onEdit, onDelete }) {
   const columns = [
     { title: 'Res No', dataIndex: 'resNo', key: 'resNo', render: (value) => value || '-' },
     { title: 'Guest', dataIndex: 'clientName', key: 'clientName', render: (value) => value || '-' },
+    { title: 'Group', dataIndex: 'groupName', key: 'groupName', render: (value) => value || '-' },
     {
       title: 'Room',
       key: 'room',

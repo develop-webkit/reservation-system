@@ -1,25 +1,30 @@
-import { Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Switch, Alert } from 'antd';
+import { useCallback, useState } from 'react';
+import {
+  Alert, AutoComplete, Button, DatePicker, Drawer, Form, Input,
+  InputNumber, Select, Switch,
+} from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { STATUS_OPTIONS } from '../../data/options';
+import clientGroupsApi from '../../api/services/clientGroups.js';
 import dayjs from 'dayjs';
 
 const STATUS_COLOR_MAP = {
-    'Unconfirmed': '#faad14',
-    'Confirmed': '#52c41a',
-    'Checked In': '#1890ff',
-    'Checked Out': '#eb2f96',
-    'Canceled': '#d9d9d9',
+  'Unconfirmed': '#faad14',
+  'Confirmed': '#52c41a',
+  'Checked In': '#1890ff',
+  'Checked Out': '#eb2f96',
+  'Canceled': '#d9d9d9',
 };
 
-// Normalize status from backend to match STATUS_OPTIONS values
 const normalizeStatusForForm = (status) => {
-    if (!status) return undefined;
-    const s = status.toLowerCase().replace(/\s+/g, '');
-    if (s.includes('unconfirm')) return 'Unconfirmed';
-    if (s.includes('checkedin') || s.includes('checkin')) return 'Checked In';
-    if (s.includes('checkedout') || s.includes('checkout') || s.includes('depart')) return 'Checked Out';
-    if (s.includes('cancel')) return 'Canceled';
-    if (s.includes('confirm')) return 'Confirmed';
-    return status;
+  if (!status) return undefined;
+  const s = status.toLowerCase().replace(/\s+/g, '');
+  if (s.includes('unconfirm')) return 'Unconfirmed';
+  if (s.includes('checkedin') || s.includes('checkin')) return 'Checked In';
+  if (s.includes('checkedout') || s.includes('checkout') || s.includes('depart')) return 'Checked Out';
+  if (s.includes('cancel')) return 'Canceled';
+  if (s.includes('confirm')) return 'Confirmed';
+  return status;
 };
 
 function ReservationFormDrawer({
@@ -31,8 +36,12 @@ function ReservationFormDrawer({
   clients,
   companies,
   initialValues,
+  enableMemberSearch = false,
 }) {
   const [form] = Form.useForm();
+  const [memberOptions, setMemberOptions] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
   const isEditing = Boolean(initialValues?._id || initialValues?.id);
 
   const mappedValues = initialValues
@@ -44,7 +53,6 @@ function ReservationFormDrawer({
         checkIn: initialValues.checkIn ? dayjs(initialValues.checkIn) : null,
         checkOut: initialValues.checkOut ? dayjs(initialValues.checkOut) : null,
         status: normalizeStatusForForm(initialValues.status),
-        // Ensure numeric fields are numbers
         totalTariff: Number(initialValues.totalTariff) || 0,
         balance: Number(initialValues.balance) || 0,
         adults: Number(initialValues.adults) || 1,
@@ -65,6 +73,53 @@ function ReservationFormDrawer({
     });
   };
 
+  const handleMemberSearch = useCallback(async (searchText) => {
+    if (!searchText || searchText.trim().length < 1) {
+      setMemberOptions([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const results = await clientGroupsApi.searchMembers(searchText);
+      setMemberOptions(
+        (results || []).map((member) => ({
+          value: member.name,
+          label: (
+            <div>
+              <div style={{ fontWeight: 500 }}>{member.name}</div>
+              <div style={{ fontSize: 11, color: '#8c8c8c' }}>
+                {member.groupName} · {member.companyName}
+              </div>
+            </div>
+          ),
+          member,
+        })),
+      );
+    } catch {
+      setMemberOptions([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  const handleMemberSelect = (_, option) => {
+    if (!option?.member) return;
+    const { member } = option;
+    form.setFieldsValue({
+      guestName: member.name,
+      guestPhone: member.phone || '',
+      guestEmail: member.email || '',
+      groupName: member.groupName || '',
+    });
+    // Try to auto-match company by name
+    const matched = (companies || []).find(
+      (c) => (c.name || c.companyName || '').toLowerCase() === member.companyName?.toLowerCase(),
+    );
+    if (matched) {
+      form.setFieldValue('company', matched._id);
+    }
+  };
+
   return (
     <Drawer
       title={initialValues ? 'Edit reservation' : 'New reservation'}
@@ -77,6 +132,7 @@ function ReservationFormDrawer({
           form.setFieldsValue(mappedValues);
         } else {
           form.resetFields();
+          setMemberOptions([]);
         }
       }}
     >
@@ -90,14 +146,27 @@ function ReservationFormDrawer({
         />
       )}
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleFormSubmit}
-      >
+      <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
         {isEditing && (
           <Form.Item label="Reservation No" name="resNo">
             <Input disabled style={{ backgroundColor: '#f5f5f5' }} />
+          </Form.Item>
+        )}
+
+        {enableMemberSearch && (
+          <Form.Item label="Guest Search">
+            <AutoComplete
+              options={memberOptions}
+              onSearch={handleMemberSearch}
+              onSelect={handleMemberSelect}
+              placeholder="Type a member name to search…"
+              notFoundContent={searchLoading ? 'Searching…' : 'No members found'}
+              suffixIcon={<SearchOutlined />}
+              allowClear
+            />
+            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
+              Search your group members to auto-fill guest details.
+            </div>
           </Form.Item>
         )}
 
@@ -107,6 +176,18 @@ function ReservationFormDrawer({
           rules={[{ required: true, message: 'Guest name is required.' }]}
         >
           <Input />
+        </Form.Item>
+
+        <Form.Item label="Phone" name="guestPhone">
+          <Input placeholder="+61 400 000 000" />
+        </Form.Item>
+
+        <Form.Item label="Email" name="guestEmail">
+          <Input placeholder="guest@example.com" />
+        </Form.Item>
+
+        <Form.Item label="Group Name" name="groupName">
+          <Input placeholder="e.g. Maintenance Team" />
         </Form.Item>
 
         <Form.Item label="Room" name="room" rules={[{ required: true, message: 'Room is required.' }]}>

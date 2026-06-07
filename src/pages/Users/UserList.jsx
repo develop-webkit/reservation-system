@@ -19,7 +19,6 @@ const UserList = ({ role = 'customer' }) => {
         const filtered = Array.isArray(allUsers)
             ? allUsers.filter(u => u.role === targetRole)
             : allUsers.data?.filter(u => u.role === targetRole) || [];
-        console.log(`[UserList] Role: ${role}, Target: ${targetRole}, All Users:`, allUsers, 'Filtered:', filtered);
         return filtered;
     }, [allUsers, role]);
 

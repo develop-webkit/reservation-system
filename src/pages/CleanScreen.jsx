@@ -128,7 +128,7 @@ const CleanScreen = () => {
             let occupancyStatus = 'Vacant'; // Default
             if (activeBooking) {
                 occupancyStatus = 'Occupied';
-            } else if (room.status === 'Out of Order' || room.outOfOrder) {
+            } else if (room.status === 'Out of Order' || (room.serviceEntries || []).some((e) => e.type === 'out_of_order')) {
                 occupancyStatus = 'Out of Order';
             }
 

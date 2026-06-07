@@ -111,15 +111,9 @@ export const useHousekeepers = () => {
                 // Try to fetch all users first
                 const response = await usersApi.getAll();
                 let users = Array.isArray(response) ? response : (response.data || []);
-                console.log('[useHousekeepers] All users:', users);
-
-                // Filter for housekeeper role
                 const housekeepers = users.filter(u => u.role === 'housekeeper');
-                console.log('[useHousekeepers] Filtered housekeepers:', housekeepers);
-
                 return housekeepers.length > 0 ? housekeepers : users;
-            } catch (error) {
-                console.error('[useHousekeepers] Error fetching housekeepers:', error);
+            } catch {
                 return [];
             }
         },

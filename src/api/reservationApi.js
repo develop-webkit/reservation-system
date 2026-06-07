@@ -16,7 +16,6 @@ export const fetchReservations = async ({
     sortOrder = 'ascend',
     filters = {}
 }) => {
-    console.log(`Fetching Reservations: Page ${pageIndex}, Size ${pageSize}, Sort ${sortBy} ${sortOrder}`);
     await delay(750); // Simulate network latency
 
     // Map the unified reservations data to the structure expected by the Reservations List Grid

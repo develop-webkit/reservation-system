@@ -21,7 +21,7 @@ function AppHeader() {
     <Layout.Header className="app-header">
       <div>
         <Typography.Title level={4} className="header-title">
-          RMS Operations Console
+          MMV Operations Console
         </Typography.Title>
         <Typography.Text type="secondary">
           Tenant-aware reservation, booking, and housekeeping workflows

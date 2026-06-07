@@ -36,12 +36,18 @@ export async function updateRoomServiceStatus(id, type, description, startDate, 
   return unwrapResponse(response);
 }
 
+export async function removeRoomServiceEntry(roomId, entryId) {
+  const response = await http.delete(`/rooms/${roomId}/service-entries/${entryId}`);
+  return unwrapResponse(response);
+}
+
 const roomsApi = {
   create: createRoom,
   getAll: getRooms,
   getById: getRoomById,
   updateStatus: updateRoomStatus,
   updateServiceStatus: updateRoomServiceStatus,
+  removeServiceEntry: removeRoomServiceEntry,
   update: updateRoom,
   delete: deleteRoom,
 };

@@ -1,4 +1,4 @@
-import { Button, Drawer, Form, Input, InputNumber, Select, Switch } from 'antd';
+import { Button, Drawer, Form, Input, InputNumber, Select } from 'antd';
 
 const ROOM_TYPE_OPTIONS = ['ENSUITE', 'STAFF', 'EVENT', 'STUDIO', 'SUITE', 'STANDARD'].map(
   (t) => ({ label: t, value: t }),
@@ -17,16 +17,12 @@ function RoomFormDrawer({ open, onClose, onSubmit, loading, initialValues }) {
   const mappedValues = initialValues
     ? {
         ...initialValues,
-        outOfOrder: Boolean(initialValues.outOfOrder),
-        outOfService: Boolean(initialValues.outOfService),
         maxOccupancy: Number(initialValues.maxOccupancy) || 2,
         sortOrder: initialValues.sortOrder ?? undefined,
       }
     : {
         status: 'Clean',
         maxOccupancy: 2,
-        outOfOrder: false,
-        outOfService: false,
       };
 
   return (
@@ -84,18 +80,6 @@ function RoomFormDrawer({ open, onClose, onSubmit, loading, initialValues }) {
 
         <Form.Item label="Import ID" name="importId">
           <Input placeholder="e.g. B01" />
-        </Form.Item>
-
-        <Form.Item label="Out of order" name="outOfOrder" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-
-        <Form.Item label="Out of service" name="outOfService" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-
-        <Form.Item label="Service description" name="serviceDescription">
-          <Input.TextArea rows={2} placeholder="Reason for out of service / out of order" />
         </Form.Item>
 
         <Button type="primary" htmlType="submit" loading={loading} block size="large">

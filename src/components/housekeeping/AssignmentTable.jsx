@@ -2,7 +2,14 @@ import { Button, Table } from 'antd';
 import StatusTag from '../common/StatusTag.jsx';
 import { formatDateTime } from '../../utils/format.js';
 
-function AssignmentTable({ data, loading, onComplete }) {
+function AssignmentTable({ data, loading, onComplete, selectedRowKeys, onSelectionChange }) {
+  const rowSelection = onSelectionChange
+    ? {
+        selectedRowKeys,
+        onChange: onSelectionChange,
+      }
+    : undefined;
+
   const columns = [
     { title: 'Task', dataIndex: 'type', key: 'type' },
     {
@@ -37,7 +44,15 @@ function AssignmentTable({ data, loading, onComplete }) {
     },
   ];
 
-  return <Table rowKey={(record) => record._id} columns={columns} dataSource={data} loading={loading} />;
+  return (
+    <Table
+      rowKey={(record) => record._id}
+      rowSelection={rowSelection}
+      columns={columns}
+      dataSource={data}
+      loading={loading}
+    />
+  );
 }
 
 export default AssignmentTable;

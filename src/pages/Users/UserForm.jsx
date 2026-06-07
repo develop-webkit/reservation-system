@@ -37,15 +37,14 @@ const UserForm = ({ role = 'customer' }) => {
                     return parsed.state.user.clientNumber;
                 }
             }
-        } catch (e) {
-            console.log('Failed to parse localStorage:', e);
+        } catch {
+            // ignore parse errors
         }
 
         return '';
     };
 
     const defaultClientNumber = getClientNumber();
-    console.log('[UserForm] Getting clientNumber:', defaultClientNumber, 'authUser:', authUser);
 
     const { data: user, isLoading: isFetching } = useUser(isEditMode ? id : null);
     const createUserMutation = useCreateUser();
@@ -73,7 +72,6 @@ const UserForm = ({ role = 'customer' }) => {
             role: defaultRole,
         };
 
-        console.log('[UserForm] Form values being submitted:', payload);
         if (isEditMode) {
             updateUserMutation.mutate({ id, userData: payload }, {
                 onSuccess: () => {

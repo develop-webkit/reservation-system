@@ -232,7 +232,6 @@ export const mockApi = {
                 updatedAt: new Date().toISOString(),
             };
             mockUsers.push(newUser);
-            console.log('[MockAPI] User created:', newUser);
             return newUser;
         },
 

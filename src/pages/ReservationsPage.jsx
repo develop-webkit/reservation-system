@@ -22,6 +22,8 @@ function ReservationsPage() {
     search: '',
     status: undefined,
     clientId: undefined,
+    companyName: '',
+    groupName: '',
     range: null,
   });
 
@@ -76,17 +78,28 @@ function ReservationsPage() {
 
     return source.filter((item) => {
       const searchValue = filters.search.trim().toLowerCase();
+      const groupNameValue = filters.groupName.trim().toLowerCase();
+      const companyNameValue = filters.companyName.trim().toLowerCase();
+
       const textMatch =
         !searchValue ||
         item.clientName?.toLowerCase().includes(searchValue) ||
+        item.guestName?.toLowerCase().includes(searchValue) ||
         item.resNo?.toLowerCase().includes(searchValue);
+
+      const groupMatch =
+        !groupNameValue || item.groupName?.toLowerCase().includes(groupNameValue);
+
+      const companyMatch =
+        !companyNameValue || item.company?.toLowerCase().includes(companyNameValue);
+
       const rangeMatch =
         !filters.range ||
         !filters.range[0] ||
         (dayjs(item.checkIn).isAfter(filters.range[0].startOf('day')) &&
           dayjs(item.checkOut).isBefore(filters.range[1].endOf('day')));
 
-      return textMatch && rangeMatch;
+      return textMatch && groupMatch && companyMatch && rangeMatch;
     });
   }, [filters, reservationsQuery.data]);
 
