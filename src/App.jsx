@@ -18,6 +18,7 @@ import TasksPage from './pages/TasksPage.jsx';
 import RoomsPage from './pages/RoomsPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
 import VouchersPage from './pages/VouchersPage.jsx';
+import GroupsManagementPage from './pages/GroupsManagementPage.jsx';
 import PortalDashboardPage from './pages/portal/PortalDashboardPage.jsx';
 import PortalGroupsPage from './pages/portal/PortalGroupsPage.jsx';
 import PortalReservationsPage from './pages/portal/PortalReservationsPage.jsx';
@@ -54,6 +55,7 @@ function App() {
           <Route path="/vouchers" element={<VouchersPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/booking-requests" element={<BookingRequestsAdminPage />} />
+          <Route path="/groups" element={<GroupsManagementPage />} />
           <Route path="/invoice-generator" element={<InvoiceGeneratorPage />} />
           {/* Portal user (corporate client) routes */}
           <Route path="/portal/dashboard" element={<PortalDashboardPage />} />

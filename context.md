@@ -79,6 +79,17 @@ Full-stack feature for corporate clients (portal_user) to organise their staff i
 
 #### Navigation (`src/constants/navigation.js`)
 - Added `/portal/groups` — "Group Management" for portal_user (ApartmentOutlined icon)
+- Added `/groups` — "Group Management" for admin/manager (ApartmentOutlined icon)
+
+#### Admin Group Management Page (`src/pages/GroupsManagementPage.jsx`)
+- Same CRUD + member management as PortalGroupsPage
+- Admin sees ALL groups across all companies (backend handles scoping per role)
+- Company name filter input for client-side search/filter
+- Route: `/groups` (registered in App.jsx, guarded for admin/manager via navigation roles)
+
+#### Shared Component (`src/components/groups/MembersEditor.jsx`)
+- Extracted from PortalGroupsPage — reused by both PortalGroupsPage and GroupsManagementPage
+- Props: `members[]`, `onChange(members[])` — each member: `{ name, phone, email }`
 
 #### Portal Reservations Page (`src/pages/portal/PortalReservationsPage.jsx`)
 - Added "New Reservation" button with ReservationFormDrawer (enableMemberSearch=true)
@@ -123,7 +134,15 @@ Full-stack feature for corporate clients (portal_user) to organise their staff i
 
 ### User Creation Fix
 - `UsersPage.jsx` — `clientNumber` had no `<Form.Item>`, so Ant Design never included it in `onFinish(values)`, causing the backend DTO's `@IsString()` to fail with "clientNumber must be a string".
-- Fix: `handleSubmit` now explicitly injects `clientNumber` from the authenticated user's `clientNumber` (via `useAuthStore`) before calling `createUser.mutate`.
+- Fix: `handleSubmit` now derives `clientNumber` based on role:
+  - `portal_user` + has `linkedClientNo` → `clientNumber = linkedClientNo` (portal user logs in under their company's client number)
+  - All other roles → `clientNumber = currentUser.clientNumber || 'CL-ADMIN'` (internal staff stay under admin client)
+- `linkedClientNo` is now **required** for `portal_user` role (dynamic `rules` with `dependencies: ['role']`)
+- Role `<Select>` calls `form.validateFields(['linkedClientNo'])` on change to trigger re-validation immediately
+
+### Invoice Logo Fix
+- `InvoiceGeneratorPDF.jsx` — replaced the `LOGO` placeholder box with `<Image src={logoSrc} />` using `@react-pdf/renderer`'s `Image` component
+- Logo imported from `src/assets/logo.png`; styled at `90×90pt` with `objectFit: 'contain'`
 
 ---
 

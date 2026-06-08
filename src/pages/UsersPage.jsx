@@ -80,8 +80,14 @@ const UsersPage = () => {
   };
 
   const handleSubmit = (values) => {
-    const adminClientNumber = currentUser?.clientNumber || 'CL-ADMIN';
-    const payload = { ...values, clientNumber: adminClientNumber };
+    // Portal users authenticate under their own company's client number.
+    // Internal staff (user, housekeeper, manager) belong to the admin client.
+    const clientNumber =
+      values.role === 'portal_user' && values.linkedClientNo
+        ? values.linkedClientNo
+        : currentUser?.clientNumber || 'CL-ADMIN';
+
+    const payload = { ...values, clientNumber };
     if (!payload.password) delete payload.password;
 
     if (editingUser) {
@@ -250,7 +256,10 @@ const UsersPage = () => {
           </Form.Item>
 
           <Form.Item label="Role" name="role">
-            <Select options={ROLE_OPTIONS} />
+            <Select
+              options={ROLE_OPTIONS}
+              onChange={() => form.validateFields(['linkedClientNo'])}
+            />
           </Form.Item>
 
           <Divider orientation="left" plain style={{ fontSize: 12, color: '#8c8c8c' }}>
@@ -260,7 +269,14 @@ const UsersPage = () => {
           <Form.Item
             label="Link to Client Record"
             name="linkedClientNo"
-            tooltip="Select the client record this user represents. They will only see their own reservations."
+            dependencies={['role']}
+            tooltip="Portal users log in using their linked client number. Required for portal_user role."
+            rules={[
+              ({ getFieldValue }) => ({
+                required: getFieldValue('role') === 'portal_user',
+                message: 'A linked client is required for portal users — it becomes their login client number.',
+              }),
+            ]}
           >
             <Select
               allowClear

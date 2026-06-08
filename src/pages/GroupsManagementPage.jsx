@@ -1,24 +1,25 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Button, Form, Input, Modal, Popconfirm, Space, Table, Tag, Typography, message,
 } from 'antd';
 import {
-  DeleteOutlined, EditOutlined, PlusOutlined, TeamOutlined, UserOutlined,
+  DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, TeamOutlined, UserOutlined,
 } from '@ant-design/icons';
 import {
   useClientGroups,
   useCreateClientGroup,
   useDeleteClientGroup,
   useUpdateClientGroup,
-} from '../../hooks/useClientGroups.js';
-import MembersEditor from '../../components/groups/MembersEditor.jsx';
+} from '../hooks/useClientGroups.js';
+import MembersEditor from '../components/groups/MembersEditor.jsx';
 
 const { Title, Text } = Typography;
 
-function PortalGroupsPage() {
+function GroupsManagementPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [members, setMembers] = useState([]);
+  const [companyFilter, setCompanyFilter] = useState('');
   const [form] = Form.useForm();
 
   const { data: groupsRaw, isLoading } = useClientGroups();
@@ -26,7 +27,16 @@ function PortalGroupsPage() {
   const updateGroup = useUpdateClientGroup();
   const deleteGroup = useDeleteClientGroup();
 
-  const groups = Array.isArray(groupsRaw) ? groupsRaw : (groupsRaw?.data || []);
+  const allGroups = useMemo(
+    () => (Array.isArray(groupsRaw) ? groupsRaw : (groupsRaw?.data ?? [])),
+    [groupsRaw],
+  );
+
+  const groups = useMemo(() => {
+    if (!companyFilter.trim()) return allGroups;
+    const needle = companyFilter.trim().toLowerCase();
+    return allGroups.filter((g) => (g.companyName || '').toLowerCase().includes(needle));
+  }, [allGroups, companyFilter]);
 
   const openCreate = () => {
     setEditing(null);
@@ -166,12 +176,23 @@ function PortalGroupsPage() {
         <div>
           <Title level={3} style={{ margin: 0, marginBottom: 4 }}>Group Management</Title>
           <Text type="secondary">
-            Organise your staff into groups. Use groups to quickly fill guest details when creating reservations.
+            Manage corporate client groups and their members across all companies.
           </Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           New Group
         </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Input
+          prefix={<SearchOutlined />}
+          placeholder="Filter by company name..."
+          value={companyFilter}
+          onChange={(e) => setCompanyFilter(e.target.value)}
+          allowClear
+          style={{ maxWidth: 320 }}
+        />
       </div>
 
       <Table
@@ -181,7 +202,7 @@ function PortalGroupsPage() {
         loading={isLoading}
         expandable={{ expandedRowRender }}
         pagination={{ pageSize: 15 }}
-        locale={{ emptyText: 'No groups yet. Create your first group to get started.' }}
+        locale={{ emptyText: 'No groups found.' }}
         size="small"
       />
 
@@ -224,4 +245,4 @@ function PortalGroupsPage() {
   );
 }
 
-export default PortalGroupsPage;
+export default GroupsManagementPage;

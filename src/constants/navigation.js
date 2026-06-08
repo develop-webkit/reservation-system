@@ -28,6 +28,7 @@ export const navigationItems = [
   { key: '/vouchers',          label: 'Vouchers',          icon: WalletOutlined,     roles: ['admin', 'manager'] },
   { key: '/users',             label: 'Users',             icon: UserAddOutlined,    roles: ['admin'] },
   { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
+  { key: '/groups',            label: 'Group Management',  icon: ApartmentOutlined,  roles: ['admin', 'manager'] },
   { key: '/invoice-generator', label: 'Invoice Generator', icon: FileTextOutlined,   roles: ['admin'] },
   // Portal user (corporate client) navigation
   { key: '/portal/dashboard',        label: 'Dashboard',        icon: HomeOutlined,       roles: ['portal_user'] },

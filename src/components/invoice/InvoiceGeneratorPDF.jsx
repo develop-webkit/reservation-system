@@ -1,4 +1,5 @@
-import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import logoSrc from '../../assets/logo.png';
 import dayjs from 'dayjs';
 
 const COMPANY = {
@@ -21,8 +22,7 @@ const S = StyleSheet.create({
   page: { padding: '28pt 34pt', fontSize: 8.5, fontFamily: 'Helvetica', color: '#1a1a1a' },
   // Header
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
-  logoBox: { width: 48, height: 48, borderWidth: 1, borderColor: '#ccc', alignItems: 'center', justifyContent: 'center' },
-  logoText: { fontSize: 7, color: '#aaa' },
+  logoImage: { width: 90, height: 90, objectFit: 'contain' },
   companyBlock: { alignItems: 'flex-end' },
   companyName: { fontFamily: 'Helvetica-Bold', fontSize: 12, marginBottom: 2 },
   companyLine: { marginBottom: 1.5 },
@@ -95,9 +95,7 @@ function InvoiceGeneratorPDF({ invoice }) {
       <Page size="A4" style={S.page}>
         {/* Company header */}
         <View style={S.topRow}>
-          <View style={S.logoBox}>
-            <Text style={S.logoText}>LOGO</Text>
-          </View>
+          <Image src={logoSrc} style={S.logoImage} />
           <View style={S.companyBlock}>
             <Text style={S.companyName}>{COMPANY.name}</Text>
             <Text style={S.companyLine}>{COMPANY.address}</Text>
