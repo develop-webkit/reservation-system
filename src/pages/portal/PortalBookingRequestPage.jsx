@@ -158,7 +158,7 @@ function PortalBookingRequestPage() {
         width={540}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} validateTrigger={[]}>
           {staff.length > 0 && (
             <Form.Item label="Select Staff Member" name="staffId">
               <Select

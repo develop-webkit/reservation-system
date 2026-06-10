@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Input, Select, Space, Table, Tag, Typography, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Alert, Button, Input, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd';
+import { PlusOutlined, StopOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { createReservation, updateReservation } from '../../api/services/reservations.js';
 import { useReservationsQuery } from '../../hooks/useReservationsQuery.js';
@@ -70,6 +70,12 @@ function PortalReservationsPage() {
     },
   });
 
+  const cancelMutation = useAppMutation({
+    mutationFn: (id) => updateReservation(id, { status: 'Canceled' }),
+    successMessage: 'Reservation cancelled.',
+    onSuccess: invalidateAll,
+  });
+
   const filtered = useMemo(() => {
     const source = reservationsQuery.data || [];
     const term = search.trim().toLowerCase();
@@ -126,18 +132,37 @@ function PortalReservationsPage() {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => (
-        <Button
-          size="small"
-          onClick={() => {
-            setEditingReservation(record);
-            setDrawerOpen(true);
-          }}
-        >
-          Edit
-        </Button>
-      ),
-      width: 80,
+      width: 140,
+      render: (_, record) => {
+        const isCanceled = record.status?.toLowerCase().includes('cancel');
+        return (
+          <Space size="small">
+            <Button
+              size="small"
+              disabled={isCanceled}
+              onClick={() => {
+                setEditingReservation(record);
+                setDrawerOpen(true);
+              }}
+            >
+              Edit
+            </Button>
+            {!isCanceled && (
+              <Popconfirm
+                title="Cancel this reservation?"
+                description="This will mark the reservation as Cancelled."
+                okText="Yes, Cancel"
+                okType="danger"
+                onConfirm={() => cancelMutation.mutate(record.id || record._id)}
+              >
+                <Button size="small" danger icon={<StopOutlined />} loading={cancelMutation.isPending}>
+                  Cancel
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -214,7 +239,6 @@ function PortalReservationsPage() {
         rooms={roomsQuery.data}
         clients={clients}
         companies={companiesQuery.data}
-        enableMemberSearch
       />
     </div>
   );

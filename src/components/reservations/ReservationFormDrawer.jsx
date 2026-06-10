@@ -36,7 +36,6 @@ function ReservationFormDrawer({
   clients,
   companies,
   initialValues,
-  enableMemberSearch = false,
 }) {
   const [form] = Form.useForm();
   const [memberOptions, setMemberOptions] = useState([]);
@@ -105,18 +104,28 @@ function ReservationFormDrawer({
   const handleMemberSelect = (_, option) => {
     if (!option?.member) return;
     const { member } = option;
+
     form.setFieldsValue({
       guestName: member.name,
       guestPhone: member.phone || '',
       guestEmail: member.email || '',
       groupName: member.groupName || '',
     });
-    // Try to auto-match company by name
-    const matched = (companies || []).find(
+
+    // Auto-resolve billing client from the member's linked client number.
+    if (member.linkedClientNo && clients?.length) {
+      const matched = clients.find((c) => c.clientNo === member.linkedClientNo);
+      if (matched) {
+        form.setFieldValue('client', matched._id);
+      }
+    }
+
+    // Auto-match company by name.
+    const matchedCompany = (companies || []).find(
       (c) => (c.name || c.companyName || '').toLowerCase() === member.companyName?.toLowerCase(),
     );
-    if (matched) {
-      form.setFieldValue('company', matched._id);
+    if (matchedCompany) {
+      form.setFieldValue('company', matchedCompany._id);
     }
   };
 
@@ -146,29 +155,33 @@ function ReservationFormDrawer({
         />
       )}
 
-      <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
+      <Form form={form} layout="vertical" onFinish={handleFormSubmit} validateTrigger={[]}>
         {isEditing && (
           <Form.Item label="Reservation No" name="resNo">
             <Input disabled style={{ backgroundColor: '#f5f5f5' }} />
           </Form.Item>
         )}
 
-        {enableMemberSearch && (
-          <Form.Item label="Guest Search">
-            <AutoComplete
-              options={memberOptions}
-              onSearch={handleMemberSearch}
-              onSelect={handleMemberSelect}
-              placeholder="Type a member name to search…"
-              notFoundContent={searchLoading ? 'Searching…' : 'No members found'}
-              suffixIcon={<SearchOutlined />}
-              allowClear
-            />
-            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
-              Search your group members to auto-fill guest details.
-            </div>
-          </Form.Item>
-        )}
+        {/* Group member search — auto-fills guest details and billing client */}
+        <Form.Item label="Search Group Member">
+          <AutoComplete
+            options={memberOptions}
+            onSearch={handleMemberSearch}
+            onSelect={handleMemberSelect}
+            placeholder="Type a member name to search…"
+            notFoundContent={searchLoading ? 'Searching…' : 'No members found'}
+            suffixIcon={<SearchOutlined />}
+            allowClear
+          />
+          <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
+            Select a group member to auto-fill guest details.
+          </div>
+        </Form.Item>
+
+        {/* Hidden — auto-populated from member selection; submitted for backend billing resolution */}
+        <Form.Item name="client" noStyle>
+          <Input type="hidden" />
+        </Form.Item>
 
         <Form.Item
           label="Guest name"
@@ -196,18 +209,6 @@ function ReservationFormDrawer({
             showSearch
             placeholder="Select a room"
             options={(rooms || []).map((room) => ({ label: room.name, value: room._id }))}
-          />
-        </Form.Item>
-
-        <Form.Item label="Client" name="client">
-          <Select
-            allowClear
-            showSearch
-            placeholder="Search client"
-            options={(clients || []).map((client) => ({
-              label: `${client.clientNo ?? ''} - ${client.clientName || client.given || 'Client'}`.trim().replace(/^-\s/, ''),
-              value: client._id,
-            }))}
           />
         </Form.Item>
 

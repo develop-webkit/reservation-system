@@ -19,7 +19,7 @@ function BookingStatusModal({ open, onCancel, onSubmit, loading, booking }) {
         }
       }}
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} validateTrigger={[]}>
         <Form.Item
           label="Status"
           name="status"

@@ -1,12 +1,12 @@
 import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd';
 import {
-  CalendarOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   ClockCircleOutlined,
   HomeOutlined,
   LoginOutlined,
   LogoutOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import useAuthStore from '../../store/authStore.js';
 import { usePortalDashboard } from '../../hooks/usePortalDashboard.js';
@@ -53,7 +53,7 @@ function PortalDashboardPage() {
 
       <Title level={5} style={{ marginBottom: 12 }}>Reservations</Title>
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={6}>
           <StatCard
             title="Active Reservations"
             value={stats?.activeReservations}
@@ -61,7 +61,7 @@ function PortalDashboardPage() {
             color="#1890ff"
           />
         </Col>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={6}>
           <StatCard
             title="Upcoming Check-ins (7 days)"
             value={stats?.upcomingCheckIns}
@@ -69,12 +69,20 @@ function PortalDashboardPage() {
             color="#52c41a"
           />
         </Col>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={6}>
           <StatCard
             title="Upcoming Check-outs (7 days)"
             value={stats?.upcomingCheckOuts}
             icon={<LogoutOutlined />}
             color="#fa8c16"
+          />
+        </Col>
+        <Col xs={24} sm={6}>
+          <StatCard
+            title="Available Rooms"
+            value={stats?.availableRooms}
+            icon={<AppstoreOutlined />}
+            color="#722ed1"
           />
         </Col>
       </Row>

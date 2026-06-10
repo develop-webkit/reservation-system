@@ -30,7 +30,7 @@ function ClientFormDrawer({ open, onClose, onSubmit, loading, companies, initial
         }
       }}
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} validateTrigger={[]}>
         <Form.Item label="Client No" name="clientNo">
           <Input placeholder="CL-1001" />
         </Form.Item>

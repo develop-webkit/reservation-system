@@ -40,7 +40,7 @@ function RoomFormDrawer({ open, onClose, onSubmit, loading, initialValues }) {
         }
       }}
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} validateTrigger={[]}>
         <Form.Item
           label="Room name"
           name="name"

@@ -30,6 +30,7 @@ function VoucherFormDrawer({ open, onClose, onSubmit, loading, clients, companie
       <Form
         form={form}
         layout="vertical"
+        validateTrigger={[]}
         onFinish={(values) =>
           onSubmit({
             ...values,

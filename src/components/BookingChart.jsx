@@ -74,19 +74,33 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
         return dates;
     }, [startDate, visibleDays]);
 
-    // inclusive=true: bar covers through the end date (service entries — room is OOS on that day)
-    // inclusive=false: bar ends before the end date (bookings — room is free on checkout day)
+    // Each visible day is split into 2 sub-columns: AM (left half) and PM (right half).
+    // Bookings: bar starts at PM of check-in day, ends at AM of checkout day.
+    //   → same-day turnover: departing guest fills AM, arriving guest fills PM on the shared date.
+    // Service entries (inclusive=true): full-day coverage — AM of start through PM of end day.
     const getGridPosition = useCallback((checkIn, checkOut, inclusive = false) => {
-        const chartStart = dayjs(dateRange[0]);
-        const bStart = dayjs(checkIn);
-        const bEnd = dayjs(checkOut);
-        const startCol = bStart.diff(chartStart, 'days') + 1;
-        const duration = bEnd.diff(bStart, 'days');
-        const endCol = startCol + duration + (inclusive ? 1 : 0);
+        const chartStart = dayjs(dateRange[0]).startOf('day');
+        const bStart = dayjs(checkIn).startOf('day');
+        const bEnd = dayjs(checkOut).startOf('day');
+        const startOffset = bStart.diff(chartStart, 'days');
+        const endOffset = bEnd.diff(chartStart, 'days');
+        const totalSubCols = visibleDays * 2;
+
+        let startSubCol, endSubCol;
+        if (inclusive) {
+            // Service entries: full day — AM of startDate through PM of endDate
+            startSubCol = startOffset * 2 + 1;
+            endSubCol = endOffset * 2 + 3;
+        } else {
+            // Bookings: start at PM of check-in (right half), end at PM of checkout (grid end = AM of checkout = left half)
+            startSubCol = startOffset * 2 + 2;
+            endSubCol = endOffset * 2 + 2;
+        }
+
         return {
-            start: startCol,
-            end: endCol,
-            isVisible: !(endCol <= 1 || startCol > visibleDays)
+            start: startSubCol,
+            end: endSubCol,
+            isVisible: !(endSubCol <= 1 || startSubCol > totalSubCols),
         };
     }, [dateRange, visibleDays]);
 
@@ -386,14 +400,14 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                         </Tooltip>
                     </div>
                 </Popover>
-                <div data-booking-grid="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative' }}>
+                <div data-booking-grid="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays * 2}, 1fr)`, position: 'relative' }}>
                     {dateRange.map((date, idx) => {
                         const dayOfWeek = dayjs(date).day();
                         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                         return (
                             <div
                                 key={date}
-                                style={{ borderRight: '1px solid #f0f0f0', gridColumn: idx + 1, gridRow: 1, backgroundColor: isWeekend ? '#FAFAFA' : 'transparent', height: '100%', cursor: 'pointer' }}
+                                style={{ borderRight: '1px solid #f0f0f0', gridColumn: `${idx * 2 + 1} / span 2`, gridRow: 1, backgroundColor: isWeekend ? '#FAFAFA' : 'transparent', height: '100%', cursor: 'pointer' }}
                                 onContextMenu={(e) => handleContextMenu(e, room, date)}
                             />
                         );
@@ -445,7 +459,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                     }}
                                     style={{
                                         gridColumnStart: Math.max(1, servicePos.start),
-                                        gridColumnEnd: Math.min(visibleDays + 1, servicePos.end),
+                                        gridColumnEnd: Math.min(visibleDays * 2 + 1, servicePos.end),
                                         gridRow: 1,
                                         zIndex: 2,
                                         height: '22px',
@@ -533,7 +547,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                     onContextMenu={(e) => { e.stopPropagation(); handleContextMenu(e, room, null, booking); }}
                                     style={{
                                     gridColumnStart: Math.max(1, pos.start),
-                                    gridColumnEnd: Math.min(visibleDays + 1, pos.end),
+                                    gridColumnEnd: Math.min(visibleDays * 2 + 1, pos.end),
                                     gridRow: 1,
                                     zIndex: 2,
                                     height: '22px',
@@ -546,25 +560,11 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                     padding: '0 4px',
                                     overflow: 'hidden',
                                     cursor: 'pointer',
-                                    // Stacking styles
                                     alignSelf: alignProp,
                                     marginTop: isParkedRow ? `${topPosition}px` : 0,
-                                    position: isParkedRow ? 'absolute' : 'relative', // Relative in grid usually centers but absolute allows precise stacking if relative container is full height. 
-                                    // Actually within grid cell, 'alignSelf: start' + marginTop is easier than absolute if gridRow is correct.
-                                    // Let's stick to Grid layout. The parent container is absolute relative to row? No, it's defined as:
-                                    // display: 'grid', gridTemplateColumns: `repeat(${visibleDays}, 1fr)`, position: 'relative'
-                                    // The bookings are children of this grid.
-                                    // If we use absolute, we rely on the parent being relative and covering the whole row area.
-                                    // The parent div DOES have position: 'relative'.
-                                    // However, the booking divs utilize gridColumnStart/End. 
-                                    // If we use absolute, we might lose the grid column width unless we calculate left/width manually.
-                                    // Better approach: Keep grid column logic, but use marginTop or transforms for vertical offset.
-                                    // If we use position: absolute, we can't easily rely on grid columns.
-                                    // But wait! Grid items CAN be position: absolute, but then they position relative to the nearest positioned ancestor (the grid container), NOT the grid tracks.
-                                    // Exception: If you specify grid-column/row AND position: absolute, it positions within that grid area! (Verified behavior in modern CSS specs).
-                                    // Let's try position: absolute combined with grid properties.
+                                    position: isParkedRow ? 'absolute' : 'relative',
                                     top: isParkedRow ? `${topPosition}px` : 'auto',
-                                    width: isParkedRow ? 'calc(100% - 4px)' : 'auto' // absolute items need explicit width if not stretched
+                                    width: isParkedRow ? 'calc(100% - 4px)' : 'auto'
                                 }}>
                                     <div
                                         onMouseDown={(event) => handleResizeStart(event, booking, 'start')}

@@ -172,7 +172,7 @@ function PortalStaffPage() {
         width={560}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} validateTrigger={[]}>
           <Form.Item label="Full Name" name="fullName" rules={[{ required: true }]}>
             <Input placeholder="John Smith" />
           </Form.Item>

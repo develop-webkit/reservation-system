@@ -363,7 +363,7 @@ const UserManagementTabs = () => {
                                     />
                                 </div>
                                 <Card title="Create New Company" size="small" type="inner">
-                                    <Form form={companyForm} layout="vertical" onFinish={onFinishCompany} initialValues={{ creditHold: false }}>
+                                    <Form form={companyForm} layout="vertical" onFinish={onFinishCompany} validateTrigger={[]} initialValues={{ creditHold: false }}>
                                         <Form.Item name="name" label="Company Name" rules={[{ required: true }]}><Input placeholder="Heritage Minerals Ltd." /></Form.Item>
                                         <Form.Item name="tradingAs" label="Trading As"><Input placeholder="Heritage" /></Form.Item>
                                         <Form.Item name="address" label="Address"><Input /></Form.Item>
@@ -411,7 +411,7 @@ const UserManagementTabs = () => {
                                     />
                                 </div>
                                 <Card title="Create New Group" size="small" type="inner">
-                                    <Form form={groupForm} layout="vertical" onFinish={onFinishGroup}>
+                                    <Form form={groupForm} layout="vertical" onFinish={onFinishGroup} validateTrigger={[]}>
                                         <Form.Item name="clientAssociation" label="Association Name" rules={[{ required: true }]}><Input placeholder="Heritage Minerals" /></Form.Item>
                                         <Form.Item name="primaryContactName" label="Contact Name"><Input placeholder="Adam Brick" /></Form.Item>
                                         <Form.Item name="primaryContactEmail" label="Contact Email"><Input /></Form.Item>
@@ -454,7 +454,7 @@ const UserManagementTabs = () => {
                                     />
                                 </div>
                                 <Card title="Create New Voucher" size="small" type="inner">
-                                    <Form form={voucherForm} layout="vertical" onFinish={onFinishVoucher}>
+                                    <Form form={voucherForm} layout="vertical" onFinish={onFinishVoucher} validateTrigger={[]}>
                                         <Form.Item name="code" label="Voucher Code" rules={[{ required: true }]}><Input placeholder="VCHR-2026-001" /></Form.Item>
                                         <Form.Item name="description" label="Description"><Input.TextArea rows={2} /></Form.Item>
                                         <Form.Item name="creditAmount" label="Credit Amount"><InputNumber style={{ width: '100%' }} /></Form.Item>
@@ -485,7 +485,7 @@ const UserManagementTabs = () => {
                     <Button key="submit" type="primary" loading={updateCompanyMutation.isPending} onClick={() => editCompanyForm.submit()}>Update</Button>,
                 ]}
             >
-                <Form form={editCompanyForm} layout="vertical" onFinish={handleEditCompany}>
+                <Form form={editCompanyForm} layout="vertical" onFinish={handleEditCompany} validateTrigger={[]}>
                     <Form.Item name="name" label="Company Name" rules={[{ required: true }]}><Input /></Form.Item>
                     <Form.Item name="tradingAs" label="Trading As"><Input /></Form.Item>
                     <Form.Item name="address" label="Address"><Input /></Form.Item>
@@ -508,7 +508,7 @@ const UserManagementTabs = () => {
                     <Button key="submit" type="primary" loading={updateGroupMutation.isPending} onClick={() => editGroupForm.submit()}>Update</Button>,
                 ]}
             >
-                <Form form={editGroupForm} layout="vertical" onFinish={handleEditGroup}>
+                <Form form={editGroupForm} layout="vertical" onFinish={handleEditGroup} validateTrigger={[]}>
                     <Form.Item name="clientAssociation" label="Association Name" rules={[{ required: true }]}><Input /></Form.Item>
                     <Form.Item name="primaryContactName" label="Contact Name"><Input /></Form.Item>
                     <Form.Item name="primaryContactEmail" label="Contact Email"><Input /></Form.Item>
@@ -526,7 +526,7 @@ const UserManagementTabs = () => {
                     <Button key="submit" type="primary" loading={updateVoucherMutation.isPending} onClick={() => editVoucherForm.submit()}>Update</Button>,
                 ]}
             >
-                <Form form={editVoucherForm} layout="vertical" onFinish={handleEditVoucher}>
+                <Form form={editVoucherForm} layout="vertical" onFinish={handleEditVoucher} validateTrigger={[]}>
                     <Form.Item name="code" label="Voucher Code" rules={[{ required: true }]}><Input /></Form.Item>
                     <Form.Item name="description" label="Description"><Input.TextArea rows={2} /></Form.Item>
                     <Form.Item name="creditAmount" label="Credit Amount"><InputNumber style={{ width: '100%' }} /></Form.Item>

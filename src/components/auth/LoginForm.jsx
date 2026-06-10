@@ -25,7 +25,7 @@ function LoginForm({ onSubmit, loading, onForgotPassword, isLocked }) {
         />
       ) : null}
 
-      <Form layout="vertical" onFinish={onSubmit}>
+      <Form layout="vertical" onFinish={onSubmit} validateTrigger={[]}>
         <Form.Item
           label="MMV Client No"
           name="clientNumber"

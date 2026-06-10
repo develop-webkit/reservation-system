@@ -152,7 +152,7 @@ function ReservationsPage() {
         loading={createMutation.isPending || updateMutation.isPending}
         initialValues={editingReservation}
         rooms={roomsQuery.data}
-        clients={clientsQuery.data}
+        clients={clients}
         companies={companiesQuery.data}
       />
     </div>

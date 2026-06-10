@@ -84,6 +84,7 @@ const ClientForm = () => {
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
+                validateTrigger={[]}
                 disabled={isViewMode}
             >
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>

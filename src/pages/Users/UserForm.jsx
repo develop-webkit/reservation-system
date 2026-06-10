@@ -114,6 +114,7 @@ const UserForm = ({ role = 'customer' }) => {
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
+                validateTrigger={[]}
                 disabled={isViewMode}
                 initialValues={{ role: defaultRole }}
             >

@@ -17,7 +17,7 @@ function AccountingEditDrawer({ open, onClose, onSubmit, loading, initialValues 
         }
       }}
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} validateTrigger={[]}>
         <Form.Item label="Type" name="type">
           <Input />
         </Form.Item>

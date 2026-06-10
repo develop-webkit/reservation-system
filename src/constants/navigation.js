@@ -1,5 +1,6 @@
 import {
   ApartmentOutlined,
+  AppstoreOutlined,
   BuildOutlined,
   CalendarOutlined,
   DollarOutlined,
@@ -23,12 +24,20 @@ export const navigationItems = [
   { key: '/tasks',             label: 'Tasks',             icon: ReadOutlined,       roles: ['admin', 'manager', 'housekeeper'] },
   { key: '/housekeeping',      label: 'Housekeeping',      icon: SolutionOutlined,   roles: ['admin', 'manager', 'housekeeper'] },
   { key: '/accounting',        label: 'Accounting',        icon: DollarOutlined,     roles: ['admin', 'manager'] },
-  { key: '/clients',           label: 'Clients',           icon: TeamOutlined,       roles: ['admin', 'manager'] },
+  {
+    key: 'clients-group',
+    label: 'Clients',
+    icon: TeamOutlined,
+    roles: ['admin', 'manager'],
+    children: [
+      { key: '/clients', label: 'All Clients',      icon: TeamOutlined,    roles: ['admin', 'manager'] },
+      { key: '/groups',  label: 'Group Management', icon: ApartmentOutlined, roles: ['admin', 'manager'] },
+    ],
+  },
   { key: '/rooms',             label: 'Rooms',             icon: BuildOutlined,      roles: ['admin', 'manager'] },
   { key: '/vouchers',          label: 'Vouchers',          icon: WalletOutlined,     roles: ['admin', 'manager'] },
   { key: '/users',             label: 'Users',             icon: UserAddOutlined,    roles: ['admin'] },
   { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
-  { key: '/groups',            label: 'Group Management',  icon: ApartmentOutlined,  roles: ['admin', 'manager'] },
   { key: '/invoice-generator', label: 'Invoice Generator', icon: FileTextOutlined,   roles: ['admin'] },
   // Portal user (corporate client) navigation
   { key: '/portal/dashboard',        label: 'Dashboard',        icon: HomeOutlined,       roles: ['portal_user'] },
@@ -36,4 +45,5 @@ export const navigationItems = [
   { key: '/portal/groups',           label: 'Group Management', icon: ApartmentOutlined,  roles: ['portal_user'] },
   { key: '/portal/booking-requests', label: 'Booking Requests', icon: FileSearchOutlined, roles: ['portal_user'] },
   { key: '/portal/staff',            label: 'Staff Management', icon: TeamOutlined,       roles: ['portal_user'] },
+  { key: '/portal/rooms',            label: 'Room Availability', icon: AppstoreOutlined,  roles: ['portal_user'] },
 ];

@@ -26,7 +26,7 @@ function TaskFormDrawer({ open, onClose, onSubmit, loading, rooms, users, initia
         }
       }}
     >
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} validateTrigger={[]}>
         <Form.Item label="Type" name="type" rules={[{ required: true, message: 'Type is required.' }]}>
           <Select
             options={[

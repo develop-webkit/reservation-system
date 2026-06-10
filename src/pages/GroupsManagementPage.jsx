@@ -216,7 +216,7 @@ function GroupsManagementPage() {
         width={680}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: 8 }}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} validateTrigger={[]} style={{ marginTop: 8 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Form.Item
               label="Group Name"

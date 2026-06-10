@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
 import {
   Button, Col, DatePicker, Divider, Input,
-  InputNumber, Modal, Row, Space, Typography,
+  InputNumber, Modal, Row, Space, Tooltip, Typography,
 } from 'antd';
 import { DownloadOutlined, EyeOutlined, PrinterOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -49,7 +49,16 @@ function InvoiceTotals({ net, gst, total }) {
   );
 }
 
-function DownloadButton({ invoice }) {
+function DownloadButton({ invoice, disabled }) {
+  if (disabled) {
+    return (
+      <Tooltip title="Fill in client name and at least one line item with a price to download">
+        <Button type="primary" icon={<DownloadOutlined />} disabled>
+          Download PDF
+        </Button>
+      </Tooltip>
+    );
+  }
   return (
     <PDFDownloadLink
       document={<InvoiceGeneratorPDF invoice={invoice} />}
@@ -75,6 +84,10 @@ function InvoiceGeneratorPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const hasData =
+    (invoice.billedTo?.trim() || invoice.clientName?.trim()) &&
+    invoice.lineItems.some((item) => Number(item.totalPrice) > 0);
+
   const handlePrint = () => {
     if (!pdfViewerRef.current) return;
     const iframe = pdfViewerRef.current.querySelector('iframe');
@@ -89,8 +102,16 @@ function InvoiceGeneratorPage() {
         extra={
           <Space>
             <Button icon={<ReloadOutlined />} onClick={resetInvoice}>New Invoice</Button>
-            <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>Preview / Print</Button>
-            <DownloadButton invoice={invoice} />
+            <Tooltip title={!hasData ? 'Fill in client name and at least one line item with a price to preview' : ''}>
+              <Button
+                icon={<EyeOutlined />}
+                onClick={() => setPreviewOpen(true)}
+                disabled={!hasData}
+              >
+                Preview / Print
+              </Button>
+            </Tooltip>
+            <DownloadButton invoice={invoice} disabled={!hasData} />
           </Space>
         }
       />
@@ -244,7 +265,7 @@ function InvoiceGeneratorPage() {
         footer={[
           <Button key="close" onClick={() => setPreviewOpen(false)}>Close</Button>,
           <Button key="print" icon={<PrinterOutlined />} onClick={handlePrint}>Print</Button>,
-          <DownloadButton key="download" invoice={invoice} />,
+          <DownloadButton key="download" invoice={invoice} disabled={!hasData} />,
         ]}
       >
         <div ref={pdfViewerRef} style={{ width: '100%', height: 600 }}>

@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Table, Button, Modal, Form, Input, Select, Switch, Tag, Space,
-  Typography, Card, message, Tooltip, Divider,
+  Table, Button, Modal, Form, Input, Select, Tag, Space,
+  Typography, Card, message, Tooltip, Alert,
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, LinkOutlined,
+  LoginOutlined,
 } from '@ant-design/icons';
+import { Navigate } from 'react-router-dom';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
 import { useClients } from '../hooks/useClients';
 import useAuthStore, { selectCurrentUser } from '../store/authStore';
@@ -13,7 +15,6 @@ import useAuthStore, { selectCurrentUser } from '../store/authStore';
 const { Title, Text } = Typography;
 
 const ROLE_OPTIONS = [
-  { value: 'portal_user', label: 'Portal User (Limited Access)' },
   { value: 'user', label: 'User' },
   { value: 'housekeeper', label: 'Housekeeper' },
   { value: 'manager', label: 'Manager' },
@@ -32,9 +33,8 @@ const DEFAULT_FORM = {
   email: '',
   username: '',
   password: '',
-  role: 'portal_user',
+  role: 'user',
   linkedClientNo: null,
-  canRequestBookings: true,
 };
 
 const UsersPage = () => {
@@ -43,6 +43,8 @@ const UsersPage = () => {
   const [form] = Form.useForm();
 
   const currentUser = useAuthStore(selectCurrentUser);
+  const isAdmin = currentUser?.role === 'admin';
+
   const { data: usersRaw, isLoading } = useUsers();
   const { data: clientsRaw } = useClients();
   const createUser = useCreateUser();
@@ -61,7 +63,11 @@ const UsersPage = () => {
 
   const openCreate = () => {
     setEditingUser(null);
-    form.setFieldsValue(DEFAULT_FORM);
+    form.setFieldsValue({
+      ...DEFAULT_FORM,
+      // Non-admins are always scoped to their own client — pre-fill and lock it.
+      linkedClientNo: isAdmin ? null : (currentUser?.clientNumber || null),
+    });
     setModalOpen(true);
   };
 
@@ -72,22 +78,16 @@ const UsersPage = () => {
       email: user.email || '',
       username: user.username || '',
       password: '',
-      role: user.role || 'portal_user',
+      role: user.role || 'user',
       linkedClientNo: user.linkedClientNo || null,
-      canRequestBookings: user.canRequestBookings !== false,
     });
     setModalOpen(true);
   };
 
   const handleSubmit = (values) => {
-    // Portal users authenticate under their own company's client number.
-    // Internal staff (user, housekeeper, manager) belong to the admin client.
-    const clientNumber =
-      values.role === 'portal_user' && values.linkedClientNo
-        ? values.linkedClientNo
-        : currentUser?.clientNumber || 'CL-ADMIN';
-
-    const payload = { ...values, clientNumber };
+    // Admin picks the client freely. Non-admin is always locked to their own client number.
+    const resolvedClientNo = isAdmin ? values.linkedClientNo : (currentUser?.clientNumber || values.linkedClientNo);
+    const payload = { ...values, linkedClientNo: resolvedClientNo, clientNumber: resolvedClientNo };
     if (!payload.password) delete payload.password;
 
     if (editingUser) {
@@ -100,7 +100,33 @@ const UsersPage = () => {
       );
     } else {
       createUser.mutate(payload, {
-        onSuccess: () => { message.success('User created'); setModalOpen(false); },
+        onSuccess: () => {
+          setModalOpen(false);
+          Modal.info({
+            title: 'User Created Successfully',
+            icon: <LoginOutlined />,
+            width: 460,
+            content: (
+              <div style={{ marginTop: 8 }}>
+                <p style={{ marginBottom: 12, color: '#595959' }}>
+                  Share these login credentials with the new user. They must enter the
+                  exact <strong>MMV Client No</strong> shown below at the login screen.
+                </p>
+                <div style={{ background: '#f5f5f5', borderRadius: 6, padding: '12px 16px', lineHeight: 2 }}>
+                  <div>
+                    <Text type="secondary">MMV Client No:</Text>{' '}
+                    <Text strong copyable style={{ fontFamily: 'monospace' }}>{payload.clientNumber}</Text>
+                  </div>
+                  <div>
+                    <Text type="secondary">Username:</Text>{' '}
+                    <Text strong copyable style={{ fontFamily: 'monospace' }}>{payload.username}</Text>
+                  </div>
+                </div>
+              </div>
+            ),
+            okText: 'Done',
+          });
+        },
         onError: (err) => message.error(err.response?.data?.message || 'Failed to create user'),
       });
     }
@@ -145,6 +171,18 @@ const UsersPage = () => {
       ),
     },
     {
+      title: 'Login Client No',
+      dataIndex: 'clientNumber',
+      key: 'clientNumber',
+      render: (clientNumber) => (
+        <Tooltip title="Enter this as 'MMV Client No' at the login screen">
+          <Tag color="geekblue" style={{ fontFamily: 'monospace' }}>
+            {clientNumber || '—'}
+          </Tag>
+        </Tooltip>
+      ),
+    },
+    {
       title: 'Linked Client',
       dataIndex: 'linkedClientNo',
       key: 'linkedClientNo',
@@ -155,17 +193,6 @@ const UsersPage = () => {
           </Tooltip>
         ) : (
           <Text type="secondary">—</Text>
-        ),
-    },
-    {
-      title: 'Can Request Bookings',
-      dataIndex: 'canRequestBookings',
-      key: 'canRequestBookings',
-      render: (val) =>
-        val !== false ? (
-          <Tag color="green">Yes</Tag>
-        ) : (
-          <Tag color="default">No</Tag>
         ),
     },
     {
@@ -182,13 +209,18 @@ const UsersPage = () => {
 
   const isSaving = createUser.isPending || updateUser.isPending;
 
+  // Only admin and manager can access this page.
+  if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'manager') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <Title level={3} style={{ margin: 0 }}>Users</Title>
           <Text type="secondary">
-            Manage portal users with limited access. Portal users can request bookings from available slots.
+            Manage system users. Each user must be linked to a client record — that client number is used to log in.
           </Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
@@ -221,6 +253,7 @@ const UsersPage = () => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          validateTrigger={[]}
           initialValues={DEFAULT_FORM}
         >
           <Form.Item
@@ -228,7 +261,7 @@ const UsersPage = () => {
             name="fullName"
             rules={[{ required: true, message: 'Full name is required' }]}
           >
-            <Input placeholder="Hamza Ali" />
+            <Input placeholder="e.g. John Smith" />
           </Form.Item>
 
           <Form.Item
@@ -236,7 +269,7 @@ const UsersPage = () => {
             name="email"
             rules={[{ type: 'email', message: 'Enter a valid email' }]}
           >
-            <Input placeholder="hamza@example.com" />
+            <Input placeholder="e.g. john.smith@company.com" />
           </Form.Item>
 
           <Form.Item
@@ -244,7 +277,7 @@ const UsersPage = () => {
             name="username"
             rules={[{ required: true, message: 'Username is required' }]}
           >
-            <Input placeholder="hamza.ali" />
+            <Input placeholder="e.g. john.smith" />
           </Form.Item>
 
           <Form.Item
@@ -256,48 +289,82 @@ const UsersPage = () => {
           </Form.Item>
 
           <Form.Item label="Role" name="role">
-            <Select
-              options={ROLE_OPTIONS}
-              onChange={() => form.validateFields(['linkedClientNo'])}
-            />
+            <Select options={ROLE_OPTIONS} />
           </Form.Item>
 
-          <Divider orientation="left" plain style={{ fontSize: 12, color: '#8c8c8c' }}>
-            Client Linking
-          </Divider>
+          {isAdmin ? (
+            <>
+              <Form.Item
+                label="Link to Client Record"
+                name="linkedClientNo"
+                tooltip="The user's login client number is taken directly from this field."
+                rules={[{ required: true, message: 'A linked client is required — it becomes the login client number.' }]}
+              >
+                <Select
+                  allowClear
+                  showSearch
+                  placeholder="Select a client to link"
+                  optionFilterProp="label"
+                  options={clients.map((c) => ({
+                    value: c.clientNo,
+                    label: `${c.clientNo} — ${c.clientName || c.given || 'Client'}`,
+                  }))}
+                />
+              </Form.Item>
 
-          <Form.Item
-            label="Link to Client Record"
-            name="linkedClientNo"
-            dependencies={['role']}
-            tooltip="Portal users log in using their linked client number. Required for portal_user role."
-            rules={[
-              ({ getFieldValue }) => ({
-                required: getFieldValue('role') === 'portal_user',
-                message: 'A linked client is required for portal users — it becomes their login client number.',
-              }),
-            ]}
-          >
-            <Select
-              allowClear
-              showSearch
-              placeholder="Select a client to link"
-              optionFilterProp="label"
-              options={clients.map((c) => ({
-                value: c.clientNo,
-                label: `${c.clientNo} — ${c.clientName || c.given || 'Client'}`,
-              }))}
-            />
-          </Form.Item>
+              <Form.Item noStyle shouldUpdate={(prev, curr) => prev.linkedClientNo !== curr.linkedClientNo}>
+                {({ getFieldValue }) => {
+                  const linkedClientNo = getFieldValue('linkedClientNo');
+                  if (!linkedClientNo) {
+                    return (
+                      <Alert
+                        type="warning"
+                        showIcon
+                        style={{ marginTop: -8, marginBottom: 16 }}
+                        message="Select a client above to assign the login client number."
+                      />
+                    );
+                  }
+                  return (
+                    <Alert
+                      type="info"
+                      showIcon
+                      style={{ marginTop: -8, marginBottom: 16 }}
+                      message={
+                        <span>
+                          Login client number:{' '}
+                          <Text strong copyable style={{ fontFamily: 'monospace' }}>{linkedClientNo}</Text>
+                        </span>
+                      }
+                      description="This is the 'MMV Client No' the user must enter at the login screen."
+                    />
+                  );
+                }}
+              </Form.Item>
+            </>
+          ) : (
+            <>
+              {/* Hidden field keeps the value in form state; it was pre-filled in openCreate */}
+              <Form.Item name="linkedClientNo" noStyle>
+                <Input type="hidden" />
+              </Form.Item>
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message={
+                  <span>
+                    Login client number:{' '}
+                    <Text strong copyable style={{ fontFamily: 'monospace' }}>
+                      {currentUser?.clientNumber}
+                    </Text>
+                  </span>
+                }
+                description="Users you create are automatically assigned to your client account."
+              />
+            </>
+          )}
 
-          <Form.Item
-            label="Can Submit Booking Requests"
-            name="canRequestBookings"
-            valuePropName="checked"
-            tooltip='When enabled, this user sees a "Request for Booking" button instead of a normal Save button.'
-          >
-            <Switch />
-          </Form.Item>
         </Form>
       </Modal>
     </div>

@@ -24,6 +24,7 @@ import PortalGroupsPage from './pages/portal/PortalGroupsPage.jsx';
 import PortalReservationsPage from './pages/portal/PortalReservationsPage.jsx';
 import PortalStaffPage from './pages/portal/PortalStaffPage.jsx';
 import PortalBookingRequestPage from './pages/portal/PortalBookingRequestPage.jsx';
+import PortalRoomAvailabilityPage from './pages/portal/PortalRoomAvailabilityPage.jsx';
 import InvoiceGeneratorPage from './pages/InvoiceGeneratorPage.jsx';
 import useAuthStore from './store/authStore.js';
 
@@ -63,6 +64,7 @@ function App() {
           <Route path="/portal/groups" element={<PortalGroupsPage />} />
           <Route path="/portal/booking-requests" element={<PortalBookingRequestPage />} />
           <Route path="/portal/staff" element={<PortalStaffPage />} />
+          <Route path="/portal/rooms" element={<PortalRoomAvailabilityPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />

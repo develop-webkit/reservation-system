@@ -16,7 +16,7 @@ function ForgotPasswordModal({ open, onCancel, onSubmit, loading }) {
       footer={null}
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" onFinish={handleFinish}>
+      <Form form={form} layout="vertical" onFinish={handleFinish} validateTrigger={[]}>
         <Form.Item
           label="Email address"
           name="email"

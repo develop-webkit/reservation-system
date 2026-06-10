@@ -1,3 +1,37 @@
+## Portal User (portal_user) Role Permissions (2026-06-11)
+
+### Access Control Summary
+Portal users are blocked from all admin paths via `ProtectedRoute.jsx` (`ADMIN_PATHS` list). They only see portal-prefixed routes in the sidebar.
+
+### What portal_user CAN do
+- **Dashboard** (`/portal/dashboard`): view active reservations, upcoming check-ins/outs (7 days), available room inventory count
+- **Reservations** (`/portal/reservations`): create/view/edit/cancel their own company's reservations. Reservations created by portal users are auto-set to `Confirmed` status — no admin approval needed
+- **Group Management** (`/portal/groups`): create groups, add/edit/deactivate members with name, phone, email
+- **Staff Management** (`/portal/staff`): manage traveller profiles (passport, nationality, job title, notes)
+- **Room Availability** (`/portal/rooms`): view room names, types, capacity, features — no booking or housekeeping data shown
+- **Booking Requests** (`/portal/booking-requests`): submit booking requests
+
+### What portal_user CANNOT do
+- Access /tasks, /accounting, /vouchers, /invoice-generator, /users, /bookings, /housekeeping, /booking-requests (admin), /clients, /rooms (admin), /dashboard (admin)
+- See other companies' reservations (scoped by `billingClientNumber = linkedClientNo` in backend)
+- See housekeeping or maintenance data
+- Modify or cancel other clients' reservations (enforced by `ensureReservationScope` in service)
+
+### Backend changes made
+- `reservations.controller.ts`: added `Role.PORTAL_USER` to PUT, PATCH, DELETE, GET/:id endpoints
+- `reservations.service.ts` `create()`: auto-sets status to `'Confirmed'` when creator is `portal_user`
+- `rooms.controller.ts`: added `Role.PORTAL_USER` to GET and GET/:id endpoints
+- `dashboard.service.ts` + `dashboard.module.ts`: added Room model injection, returns `totalRooms` and `availableRooms` in `getPortalStats`
+
+### Frontend changes made
+- `PortalDashboardPage.jsx`: 4-column row — added "Available Rooms" stat card
+- `PortalReservationsPage.jsx`: added Cancel action (Popconfirm → PATCH status=Canceled), Edit button disabled for cancelled reservations
+- `PortalRoomAvailabilityPage.jsx`: new page — card grid showing room name, type, capacity, area, features. Search by name/type/area
+- `navigation.js`: added `/portal/rooms` "Room Availability" nav item for portal_user
+- `App.jsx`: registered `/portal/rooms` route
+
+---
+
 ## Invoice Generator (2026-06-07)
 
 ### Overview
@@ -92,15 +126,17 @@ Full-stack feature for corporate clients (portal_user) to organise their staff i
 - Props: `members[]`, `onChange(members[])` — each member: `{ name, phone, email }`
 
 #### Portal Reservations Page (`src/pages/portal/PortalReservationsPage.jsx`)
-- Added "New Reservation" button with ReservationFormDrawer (enableMemberSearch=true)
-- Added Group Name column
-- Added group name filter and text search covers guestName
+- "New Reservation" button opens ReservationFormDrawer
+- Group Name column, group name filter, text search covers guestName/resNo/clientName
+- Cancel action (Popconfirm → PATCH status=Canceled), Edit disabled for cancelled reservations
 
 #### ReservationFormDrawer (`src/components/reservations/ReservationFormDrawer.jsx`)
-- New prop: `enableMemberSearch` (false by default, true for portal users)
-- When enabled: AutoComplete "Guest Search" calls clientGroupsApi.searchMembers
-- On member select: auto-fills guestName, guestPhone, guestEmail, groupName, company (if matched)
-- New form fields: guestPhone, guestEmail, groupName (all optional)
+- Group member search (AutoComplete) is **always visible** — `enableMemberSearch` prop removed
+- No visible client dropdown — client is resolved automatically from the selected member
+- Hidden `Form.Item name="client" noStyle` holds the resolved Mongo ObjectId for billing
+- `handleMemberSelect`: auto-fills guestName, guestPhone, guestEmail, groupName; resolves `client` by matching `member.linkedClientNo` against `clients` prop; resolves `company` by name match
+- Props: `rooms`, `clients` (normalized array with `clientNo` + `_id`), `companies`, `initialValues`, `onSubmit`, `loading`
+- `clients` prop must be a normalized flat array (not raw API response) — callers use `useMemo` to normalize
 
 #### ReservationTable (`src/components/reservations/ReservationTable.jsx`)
 - Added "Group" column (maps to `groupName`)
@@ -139,6 +175,14 @@ Full-stack feature for corporate clients (portal_user) to organise their staff i
   - All other roles → `clientNumber = currentUser.clientNumber || 'CL-ADMIN'` (internal staff stay under admin client)
 - `linkedClientNo` is now **required** for `portal_user` role (dynamic `rules` with `dependencies: ['role']`)
 - Role `<Select>` calls `form.validateFields(['linkedClientNo'])` on change to trigger re-validation immediately
+
+### User Login Credentials UX Fix (2026-06-10)
+Root cause: The login form has a required "MMV Client No" field, but newly created users were never told what client number to enter. Internal staff are stored under `CL-ADMIN`; portal users under their `linkedClientNo`. Without knowing this, users couldn't log in.
+
+Changes to `UsersPage.jsx`:
+- **Table column "Login Client No"** — shows `record.clientNumber` for every user with a tooltip explaining it maps to "MMV Client No" at login. Orange tag for CL-ADMIN (internal staff), blue for portal users
+- **Live form hint** — `Form.Item shouldUpdate` block between Role and Client Linking sections shows the computed login client number as the admin fills in the form
+- **Post-creation credentials modal** — `Modal.info` shown after successful user creation with copyable MMV Client No and username so the admin always has the info to pass on to the new user
 
 ### Invoice Logo Fix
 - `InvoiceGeneratorPDF.jsx` — replaced the `LOGO` placeholder box with `<Image src={logoSrc} />` using `@react-pdf/renderer`'s `Image` component

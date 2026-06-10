@@ -5,7 +5,7 @@ function AllocateDrawer({ open, onClose, onSubmit, loading, users, rooms, tasks 
 
   return (
     <Drawer title="Allocate housekeeping" open={open} onClose={onClose} width={640} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} validateTrigger={[]}>
         <Form.Item
           label="Housekeeper"
           name="housekeeperId"
