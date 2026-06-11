@@ -92,9 +92,11 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
             startSubCol = startOffset * 2 + 1;
             endSubCol = endOffset * 2 + 3;
         } else {
-            // Bookings: start at PM of check-in (right half), end at PM of checkout (grid end = AM of checkout = left half)
-            startSubCol = startOffset * 2 + 2;
-            endSubCol = endOffset * 2 + 2;
+            // Bar starts at PM sub-col of check-in day and ends at the AM sub-col of checkout day.
+            // gridColumnEnd at (endOffset*2+2) = the line AFTER AM of checkout day, so PM of checkout is NOT included.
+            // This gives: check-in day = right-half coloured, checkout day = left-half coloured, PM free for same-day arrival.
+            startSubCol = startOffset * 2 + 2;   // start of PM on check-in day
+            endSubCol = endOffset * 2 + 2;        // end of AM on checkout day (PM sub-col excluded)
         }
 
         return {

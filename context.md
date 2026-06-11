@@ -151,6 +151,31 @@ Full-stack feature for corporate clients (portal_user) to organise their staff i
 
 ---
 
+## Same-Day Turnover Fix (2026-06-11)
+
+### Root cause
+`checkAvailability` in `booking.service.ts` had a 3-hour turnover buffer:
+```typescript
+const turnoverBufferMs = 3 * 60 * 60 * 1000;
+endDate: { $gt: new Date(start.getTime() - turnoverBufferMs) }
+```
+When a guest checks out June 16 (midnight) and a new guest checks in June 16 (same midnight timestamp), the buffer made `existingEndDate > newStart - 3h` evaluate to `true`, blocking the creation even though the dates share an exact boundary (not an overlap).
+
+### Fix
+Removed the buffer; now uses strict `$gt` on the exact start timestamp:
+```typescript
+endDate: { $gt: start }
+```
+Same-day boundary (`existingEnd == newStart`) correctly evaluates to `false` (no conflict). Genuine overlaps where `existingEnd > newStart` remain blocked.
+
+### Visual (BookingChart.jsx)
+The `getGridPosition` formula was already correct — no visual change needed:
+- `startSubCol = startOffset * 2 + 2` → bar starts at PM sub-column of check-in day
+- `endSubCol = endOffset * 2 + 2` → bar ends at the line AFTER AM sub-col of checkout day (PM not included)
+- Checkout day shows left-half (AM) coloured, right-half (PM) free for a same-day arrival
+
+---
+
 ## Bug Fixes (2026-06-03)
 
 ### Booking Chart Filter Fix
