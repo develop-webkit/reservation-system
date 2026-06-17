@@ -1,6 +1,7 @@
 import { Avatar, Button, Layout, Space, Tag, Typography } from 'antd';
 import { LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { logout as logoutApi } from '../../api/services/auth.js';
 import useAuthStore, {
   selectCurrentClient,
   selectCurrentUser,
@@ -10,11 +11,15 @@ function AppHeader() {
   const navigate = useNavigate();
   const user = useAuthStore(selectCurrentUser);
   const client = useAuthStore(selectCurrentClient);
-  const logout = useAuthStore((state) => state.logout);
+  const clearAuth = useAuthStore((state) => state.logout);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+    } finally {
+      clearAuth();
+      navigate('/login');
+    }
   };
 
   return (

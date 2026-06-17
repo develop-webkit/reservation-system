@@ -9,8 +9,11 @@ import {
 
 const QUERY_KEY = ['client-staff'];
 
-export function useClientStaff() {
-  return useQuery({ queryKey: QUERY_KEY, queryFn: getClientStaff });
+export function useClientStaff(linkedClientNo) {
+  return useQuery({
+    queryKey: [...QUERY_KEY, linkedClientNo ?? null],
+    queryFn: () => getClientStaff(linkedClientNo),
+  });
 }
 
 export function useCreateClientStaff() {

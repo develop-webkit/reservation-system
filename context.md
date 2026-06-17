@@ -1,3 +1,142 @@
+## 2FA, Manager Access, Client Groups Fix & Portal Users — 2026-06-18
+
+### Two-Factor Authentication (2FA)
+
+#### Backend
+- `speakeasy` + `qrcode` installed for TOTP generation and QR code rendering
+- `src/schemas/user.schema.ts` — added `is_2fa_enabled: boolean` (default false) and `two_factor_secret: string` (select: false, encrypted at rest)
+- `src/modules/user/user.service.ts` — added `enable2FA(id, secret)`, `disable2FA(id)`, `findByIdWithSecret(id)` (fetches secret with `+two_factor_secret`)
+- `src/modules/auth/dto/verify-2fa.dto.ts` — new DTO: `{ token: string (len 6) }`
+- `src/modules/auth/dto/setup-2fa.dto.ts` — new DTO: `{ secret: string, token: string (len 6) }`
+- `src/modules/auth/auth.service.ts` — `login()` now checks `is_2fa_enabled`; if enabled: returns `{ requiresTwoFactor: true, pendingToken }` (short-lived 5m JWT) without setting cookies; added `verifyLogin2FA(pendingToken, totpToken)`, `generate2FASecret(userId)`, `verifyAndEnable2FA(userId, dto)`, `verifyAndDisable2FA(userId, totpToken)`; login user payload now includes `is_2fa_enabled`
+- `src/modules/auth/auth.controller.ts` — `POST /auth/login` returns `{ requiresTwoFactor: true, pendingToken }` if 2FA needed (no cookies set); `POST /auth/2fa/verify-login` (@Public) exchanges pendingToken + TOTP → full session cookies; `POST /auth/2fa/setup` (authenticated) generates secret + QR; `POST /auth/2fa/verify-setup` enables 2FA; `POST /auth/2fa/disable` disables after verifying TOTP
+
+#### Frontend
+- `src/api/services/auth.js` — added `verify2FALogin(pendingToken, token)`, `setup2FA()`, `verifySetup2FA(secret, token)`, `disable2FA(token)`
+- `src/store/authStore.js` — added `selectIs2FAEnabled` selector; `is_2fa_enabled` stored in `user` object from login response
+- `src/pages/LoginPage.jsx` — after login, if `response.requiresTwoFactor` → navigate to `/2fa-verify` with `{ pendingToken, from }` state
+- `src/pages/TwoFactorVerifyPage.jsx` — new standalone page; 6-digit input; calls `verify2FALogin`; redirects to dashboard on success; back-to-login link
+- `src/components/auth/TwoFactorSetupSection.jsx` — reusable 2FA enable/disable card; shows QR code + base32 secret + verification input on enable; shows disable confirmation on disable; calls auth API directly
+- `src/pages/UsersPage.jsx` — `TwoFactorSetupSection` rendered inside edit modal when editing own account (`editingUserId === currentUser.id`); `onStatusChange` updates auth store with `setLogin({ user: {..., is_2fa_enabled }, client, expiresIn })`
+- `src/pages/portal/PortalUsersPage.jsx` — new page for portal users; shows own account (read-only fields), password change modal, and `TwoFactorSetupSection`
+- `src/App.jsx` — added `/2fa-verify` route (outside ProtectedRoute); added `/portal/users`, `/portal/clients`, `/portal/bookings` routes
+
+### Manager Access Fix
+- `src/modules/user/user.service.ts` — added `ensureCannotTargetAdmin(requestUser, targetUser)`: throws ForbiddenException if MANAGER tries to update/delete an ADMIN user. Called in `update()` and `remove()`
+- `src/constants/navigation.js` — added `manager` to `/users` nav item so managers see the Users page in the sidebar
+
+### Client Groups Admin/Manager Fix
+**Problem:** `resolveLinkedClientNo` threw ForbiddenException for admin/manager (no `linkedClientNo`), so admin could not use the Group Management page at all.
+
+**Solution:**
+- `src/modules/client-groups/dto/create-client-group.dto.ts` — added optional `linkedClientNo?: string` field
+- `src/modules/client-groups/client-groups.service.ts` — `findAll`: admin/manager sees ALL groups; portal_user scoped to own. `create`: admin/manager must pass `dto.linkedClientNo`; portal_user uses `resolveLinkedClientNo`. `findOne`/`update`/`remove`: admin/manager bypass the client scope check
+- `src/modules/client-staff/client-staff.service.ts` — `findAll(user, linkedClientNo?)`: admin/manager can filter by `linkedClientNo` param or see all staff; portal_user always scoped to own client
+- `src/modules/client-staff/client-staff.controller.ts` — `GET /client-staff` now accepts optional `linkedClientNo` query param; added ADMIN, MANAGER to `@RoleDecorator`
+
+### Frontend Group Management + Members
+- `src/api/services/clientStaff.js` — `getClientStaff(linkedClientNo?)` passes `linkedClientNo` as query param when provided
+- `src/hooks/useClientStaff.js` — `useClientStaff(linkedClientNo?)` passes arg to query fn; query key includes `linkedClientNo` for proper caching
+- `src/components/groups/MembersEditor.jsx` — accepts `linkedClientNo` prop; passes it to `useClientStaff(linkedClientNo)` so admin sees only the selected client's staff; shows "Select a client first" hint when no client selected
+- `src/pages/GroupsManagementPage.jsx` — added AutoComplete Client search field (searches by name or clientNo); on client select: sets `selectedLinkedClientNo`, auto-fills `companyName`, clears members; `linkedClientNo` sent in create/update payload; `MembersEditor` receives `selectedLinkedClientNo`
+- `src/pages/portal/PortalGroupsPage.jsx` — added read-only Client field showing own `linkedClientNo`; passes `linkedClientNo` to `MembersEditor` so portal users see only their own staff
+
+### Portal Navigation Expansion
+- `src/constants/navigation.js` — portal_user sidebar now includes: Bookings (`/portal/bookings`), Clients (`/portal/clients`), Users (`/portal/users`)
+- `src/pages/portal/PortalClientsPage.jsx` — new page; shows own client record (read-only) from auth store
+- `src/pages/portal/PortalUsersPage.jsx` — new page; shows own user account (read-only except password); includes `TwoFactorSetupSection`
+- `src/components/layout/ProtectedRoute.jsx` — added `/groups` to `ADMIN_PATHS` so portal_user is redirected to `/portal/groups`
+
+---
+
+## Refresh Token Strategy + Identity Refactor — 2026-06-12
+
+### Refresh Token Strategy (Backend + Frontend)
+
+**Design:** Short-lived access token (15m) + long-lived refresh token (7d / 30d keepLogged). Both are httpOnly cookies. The refresh token hash is stored in `User.refreshToken` (bcrypt). Token rotation on every refresh call.
+
+#### New Backend Files
+- `src/guards/refresh-jwt.guard.ts` — `RefreshJwtGuard extends AuthGuard('refresh-jwt')`
+- `src/modules/auth/refresh-jwt.strategy.ts` — reads from `refresh_token` cookie, validates with `JWT_REFRESH_SECRET`, populates `req.user = { userId, username, refreshToken }`
+
+#### Updated Backend Files
+- `src/guards/index.ts` — exports `RefreshJwtGuard`
+- `src/constants/jwt.constants.ts` — `expiresIn`/`refreshTokenExpiresIn`/`socialAccessTokenExpiresIn` marked `as const` (required for `JwtSignOptions` type compatibility)
+- `src/modules/user/user.service.ts` — added `setHashedRefreshToken(id, token)`, `getUserIfRefreshTokenMatches(id, token): UserDocument | null`, `clearRefreshToken(id)`
+- `src/modules/auth/auth.service.ts` — `login()` now calls `generateTokens()` (private helper) which issues both tokens; adds `refreshTokens(userId, token)` for rotation; adds `logout(userId)` for DB cleanup; adds `decodeRefreshToken(token)` (no-verify decode for logout cleanup)
+- `src/modules/auth/auth.controller.ts` — `login` sets two cookies (`jwt` 15m, `refresh_token` 7d/30d); `POST /auth/refresh` endpoint `@Public()` + `@UseGuards(RefreshJwtGuard)` rotates tokens; `POST /auth/logout` is `@Public()` — clears both cookies + best-effort DB cleanup via decoded refresh token
+- `src/modules/auth/auth.module.ts` — added `RefreshJwtStrategy` to providers; JwtModule default expiry changed to `'15m'`
+
+#### Cookie Layout
+| Cookie | Path | MaxAge | Flags |
+|--------|------|--------|-------|
+| `jwt` | / | 15m | httpOnly, Secure(prod), SameSite=Lax(dev)/None(prod) |
+| `refresh_token` | / | 7d (30d if keepLogged) | same |
+
+#### Frontend Token Refresh Interceptor (`src/api/http.js`)
+- On any 401 (except `/auth/*` endpoints): queues concurrent requests, calls `POST /auth/refresh`, retries all queued requests on success
+- On refresh failure: clears auth store and rejects — user redirected to login
+- Thundering herd protection: `isRefreshing` flag + `failedRequestQueue` array
+
+#### Frontend `src/api/client.js`
+- Was a duplicate Axios instance with stale console.log error handlers
+- Now re-exports the shared `http` instance — all requests (both `http` and `apiClient` consumers) go through the single instance with the refresh interceptor
+
+---
+
+### ClientGroup → ClientStaff Reference Refactor
+
+**Problem:** `ClientGroupMember` was an embedded sub-document with {name, phone, email}. This duplicated data that already exists in `ClientStaff`. Editing a staff member's details would not update existing group memberships.
+
+**Solution:** `ClientGroup.members` is now `[ObjectId → ClientStaff]`. Groups hold references, not copies.
+
+#### Backend Changes
+- `src/schemas/client-group.schema.ts` — removed `ClientGroupMember` sub-schema; `members` is now `[{ type: ObjectId, ref: 'ClientStaff' }]`
+- `src/modules/client-groups/dto/create-client-group.dto.ts` — `members: CreateClientGroupMemberDto[]` replaced with `memberIds: string[]` (each validated as `@IsMongoId`)
+- `src/modules/client-groups/client-groups.module.ts` — added `ClientStaff` model registration (same schema can be registered in multiple modules)
+- `src/modules/client-groups/client-groups.service.ts` — injected `ClientStaff` model; `findAll`/`findOne`/`create`/`update` all `.populate('members')`; `create`/`update` validate that memberIds belong to the same `linkedClientNo`; `searchMembers` now searches `ClientStaff` directly and enriches results with group context (first matching group per staff member)
+
+#### Frontend Changes
+- `src/components/groups/MembersEditor.jsx` — replaced manual name/phone/email grid with staff search-and-select using `useClientStaff()` hook (cached). Shows selected members as closable tags.
+- `src/pages/portal/PortalGroupsPage.jsx` — `openEdit` sets members to populated staff objects; `handleSubmit` sends `memberIds`; expanded row uses `fullName` and `jobTitle` columns
+- `src/pages/GroupsManagementPage.jsx` — same changes as PortalGroupsPage
+
+#### Search Result Compatibility (`GET /client-groups/members/search`)
+The response shape for `ReservationFormDrawer`'s member search is unchanged:
+`{ name, phone, email, groupName, companyName, linkedClientNo }` — `staffId` replaces the unused `memberId` field.
+
+---
+
+## Security Hardening (OWASP Top 10) — 2026-06-12
+
+### Authentication
+- JWT is now stored in an **httpOnly cookie** (not localStorage). Backend sets `Set-Cookie: jwt=...; HttpOnly; SameSite=Lax` on login; frontend never touches the token.
+- Cookie is `SameSite=Lax` in development, `SameSite=None; Secure` in production.
+- `keepLogged` sets maxAge to 7d vs 1d on the cookie (same as before, but now in a secure cookie).
+- `POST /auth/logout` endpoint added — clears the `jwt` cookie server-side.
+- AppHeader calls `POST /auth/logout` before clearing client-side state.
+
+### Frontend
+- `src/store/authStore.js` — `token` field removed from state and persisted storage. `isAuthenticated` now derived from `Boolean(payload.user)` instead of token presence.
+- `src/api/http.js` — `withCredentials: true` added; Authorization header interceptor removed (cookie is automatic).
+- `src/api/services/auth.js` — `logout()` function added.
+- `src/pages/LoginPage.jsx` — `localStorage.setItem('authToken', ...)` removed.
+
+### Backend
+- **CORS** — `origin: '*'` replaced with `FRONT_END_CORS_URL` env var via `buildCorsConfig()`. (`src/helpers/cors.config.ts` changed to export a function.)
+- **`@Public()` decorator** — `src/decorators/public.decorator.ts` (new). Applied to all auth endpoints.
+- **`RoleGuard`** — Default changed from `return true` to throw `ForbiddenException`. Routes with no `@Role()` and no `@Public()` are denied.
+- **Rate limiting** — `@nestjs/throttler` added. Login: 10 req/60s. ForgotPassword: 5 req/3600s. (`AuthModule` registers `ThrottlerModule.forRoot()`).
+- **`helmet()`** — Added globally in `main.ts` for security headers (CSP, X-Frame-Options, HSTS, etc.).
+- **Cookie parser** — `cookie-parser` middleware added in `main.ts`. `JwtStrategy` extracts JWT from `req.cookies.jwt` first, then falls back to `Authorization: Bearer`.
+- **Swagger** — Disabled in `NODE_ENV=production`.
+- **`forgotPassword()`** — No longer throws `NotFoundException` for unknown emails. Always returns the same generic message (prevents email enumeration).
+- **Password validation** — `MinLength(8)` + `@Matches()` complexity regex on `CreateUserDto` and `ResetPasswordDto`.
+- **Error logging** — `GlobalExceptionFilter` now uses `Logger.error()` instead of `console.log()` and logs only error name + message (no stack traces).
+- **`forbidNonWhitelisted: true`** added to global `ValidationPipe`.
+
+---
+
 ## Portal User (portal_user) Role Permissions (2026-06-11)
 
 ### Access Control Summary

@@ -10,7 +10,8 @@ import {
 import { Navigate } from 'react-router-dom';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
 import { useClients } from '../hooks/useClients';
-import useAuthStore, { selectCurrentUser } from '../store/authStore';
+import useAuthStore, { selectCurrentUser, selectIs2FAEnabled } from '../store/authStore';
+import TwoFactorSetupSection from '../components/auth/TwoFactorSetupSection.jsx';
 
 const { Title, Text } = Typography;
 
@@ -43,7 +44,12 @@ const UsersPage = () => {
   const [form] = Form.useForm();
 
   const currentUser = useAuthStore(selectCurrentUser);
+  const currentClient = useAuthStore((s) => s.client);
+  const currentExpiresIn = useAuthStore((s) => s.expiresIn);
+  const is2FAEnabled = useAuthStore(selectIs2FAEnabled);
+  const setLogin = useAuthStore((state) => state.login);
   const isAdmin = currentUser?.role === 'admin';
+  const [editingUserId, setEditingUserId] = useState(null);
 
   const { data: usersRaw, isLoading } = useUsers();
   const { data: clientsRaw } = useClients();
@@ -73,6 +79,7 @@ const UsersPage = () => {
 
   const openEdit = (user) => {
     setEditingUser(user);
+    setEditingUserId(user._id || user.id);
     form.setFieldsValue({
       fullName: user.fullName || '',
       email: user.email || '',
@@ -208,6 +215,8 @@ const UsersPage = () => {
   ];
 
   const isSaving = createUser.isPending || updateUser.isPending;
+
+  const isManager = currentUser?.role === 'manager';
 
   // Only admin and manager can access this page.
   if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'manager') {
@@ -365,6 +374,18 @@ const UsersPage = () => {
             </>
           )}
 
+          {editingUser && editingUserId === (currentUser?._id || currentUser?.id) && (
+            <TwoFactorSetupSection
+              is2FAEnabled={is2FAEnabled}
+              onStatusChange={(enabled) => {
+                setLogin({
+                  user: { ...currentUser, is_2fa_enabled: enabled },
+                  client: currentClient,
+                  expiresIn: currentExpiresIn,
+                });
+              }}
+            />
+          )}
         </Form>
       </Modal>
     </div>

@@ -1,70 +1,77 @@
-import { Button, Input, Typography } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Select, Tag, Typography } from 'antd';
+import { useClientStaff } from '../../hooks/useClientStaff.js';
 
 const { Text } = Typography;
 
-const EMPTY_MEMBER = { name: '', phone: '', email: '' };
+function MembersEditor({ members, onChange, linkedClientNo }) {
+  const { data: staffRaw } = useClientStaff(linkedClientNo);
+  const allStaff = Array.isArray(staffRaw) ? staffRaw : (staffRaw?.data || []);
 
-function MembersEditor({ members, onChange }) {
-  const add = () => onChange([...members, { ...EMPTY_MEMBER }]);
+  const selectedIds = new Set(members.map((m) => m._id?.toString()));
 
-  const update = (index, field, value) => {
-    const updated = members.map((m, i) => (i === index ? { ...m, [field]: value } : m));
-    onChange(updated);
+  const handleSelect = (staffId) => {
+    const staff = allStaff.find((s) => s._id?.toString() === staffId);
+    if (!staff || selectedIds.has(staffId)) return;
+    onChange([...members, staff]);
   };
 
-  const remove = (index) => onChange(members.filter((_, i) => i !== index));
+  const handleRemove = (staffId) => {
+    onChange(members.filter((m) => m._id?.toString() !== staffId));
+  };
+
+  const selectOptions = allStaff
+    .filter((s) => s.isActive !== false && !selectedIds.has(s._id?.toString()))
+    .map((s) => ({
+      value: s._id?.toString(),
+      label: s.jobTitle ? `${s.fullName} — ${s.jobTitle}` : s.fullName,
+    }));
+
+  const isEmpty = !linkedClientNo && allStaff.length === 0;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text strong style={{ fontSize: 13 }}>Members</Text>
-        <Button size="small" icon={<PlusOutlined />} onClick={add}>Add Member</Button>
       </div>
 
-      {members.length === 0 && (
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          No members yet. Click &quot;Add Member&quot; to add your first group member.
-        </Text>
-      )}
+      <Select
+        showSearch
+        allowClear
+        placeholder={isEmpty ? 'Select a client first to see staff members' : 'Search and add staff members...'}
+        style={{ width: '100%', marginBottom: 12 }}
+        options={selectOptions}
+        filterOption={(input, option) =>
+          (option?.label?.toString() ?? '').toLowerCase().includes(input.toLowerCase())
+        }
+        onSelect={handleSelect}
+        value={null}
+        disabled={isEmpty}
+        notFoundContent={allStaff.length === 0 ? 'No staff members found' : 'No matching staff'}
+      />
 
-      {members.map((member, index) => (
-        <div
-          key={index}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr auto',
-            gap: 8,
-            marginBottom: 8,
-            alignItems: 'center',
-          }}
-        >
-          <Input
-            placeholder="Full name *"
-            value={member.name}
-            onChange={(e) => update(index, 'name', e.target.value)}
-            size="small"
-          />
-          <Input
-            placeholder="Phone"
-            value={member.phone}
-            onChange={(e) => update(index, 'phone', e.target.value)}
-            size="small"
-          />
-          <Input
-            placeholder="Email"
-            value={member.email}
-            onChange={(e) => update(index, 'email', e.target.value)}
-            size="small"
-          />
-          <Button
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => remove(index)}
-          />
+      {members.length === 0 ? (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          No members yet. Search and select staff members above.
+        </Text>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {members.map((m) => (
+            <Tag
+              key={m._id?.toString()}
+              closable
+              onClose={() => handleRemove(m._id?.toString())}
+              style={{ marginBottom: 4, padding: '2px 8px' }}
+            >
+              {m.fullName}
+              {m.jobTitle && (
+                <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                  ({m.jobTitle})
+                </Text>
+              )}
+            </Tag>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }

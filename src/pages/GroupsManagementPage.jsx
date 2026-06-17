@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Button, Form, Input, Modal, Popconfirm, Space, Table, Tag, Typography, message,
+  AutoComplete, Button, Form, Input, Modal, Popconfirm, Space, Table, Tag, Typography, message,
 } from 'antd';
 import {
   DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, TeamOutlined, UserOutlined,
@@ -11,6 +11,7 @@ import {
   useDeleteClientGroup,
   useUpdateClientGroup,
 } from '../hooks/useClientGroups.js';
+import { useClients } from '../hooks/useClients.js';
 import MembersEditor from '../components/groups/MembersEditor.jsx';
 
 const { Title, Text } = Typography;
@@ -20,9 +21,12 @@ function GroupsManagementPage() {
   const [editing, setEditing] = useState(null);
   const [members, setMembers] = useState([]);
   const [companyFilter, setCompanyFilter] = useState('');
+  const [selectedLinkedClientNo, setSelectedLinkedClientNo] = useState(null);
+  const [clientSearch, setClientSearch] = useState('');
   const [form] = Form.useForm();
 
   const { data: groupsRaw, isLoading } = useClientGroups();
+  const { data: clientsRaw } = useClients();
   const createGroup = useCreateClientGroup();
   const updateGroup = useUpdateClientGroup();
   const deleteGroup = useDeleteClientGroup();
@@ -32,23 +36,47 @@ function GroupsManagementPage() {
     [groupsRaw],
   );
 
+  const allClients = useMemo(
+    () => (Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data ?? [])),
+    [clientsRaw],
+  );
+
   const groups = useMemo(() => {
     if (!companyFilter.trim()) return allGroups;
     const needle = companyFilter.trim().toLowerCase();
     return allGroups.filter((g) => (g.companyName || '').toLowerCase().includes(needle));
   }, [allGroups, companyFilter]);
 
+  const clientOptions = useMemo(() => {
+    const needle = clientSearch.trim().toLowerCase();
+    return allClients
+      .filter((c) => !needle || (c.clientName || '').toLowerCase().includes(needle) || (c.clientNo || '').toLowerCase().includes(needle))
+      .map((c) => ({
+        value: c.clientNo,
+        label: `${c.clientName || c.given || 'Client'} (${c.clientNo})`,
+        clientName: c.clientName || c.given || 'Client',
+      }));
+  }, [allClients, clientSearch]);
+
   const openCreate = () => {
     setEditing(null);
     setMembers([]);
+    setSelectedLinkedClientNo(null);
+    setClientSearch('');
     form.resetFields();
     setModalOpen(true);
   };
 
   const openEdit = (record) => {
     setEditing(record);
-    setMembers((record.members || []).map((m) => ({ name: m.name, phone: m.phone || '', email: m.email || '' })));
-    form.setFieldsValue({ groupName: record.groupName, companyName: record.companyName });
+    setMembers(record.members || []);
+    setSelectedLinkedClientNo(record.linkedClientNo || null);
+    setClientSearch(record.companyName || '');
+    form.setFieldsValue({
+      groupName: record.groupName,
+      companyName: record.companyName,
+      clientSearch: record.companyName,
+    });
     setModalOpen(true);
   };
 
@@ -56,20 +84,29 @@ function GroupsManagementPage() {
     setModalOpen(false);
     setEditing(null);
     setMembers([]);
+    setSelectedLinkedClientNo(null);
+    setClientSearch('');
     form.resetFields();
   };
 
+  const handleClientSelect = (clientNo, option) => {
+    setSelectedLinkedClientNo(clientNo);
+    setClientSearch(option.label);
+    setMembers([]);
+    form.setFieldsValue({ companyName: option.clientName });
+  };
+
   const handleSubmit = (values) => {
-    const invalidMembers = members.some((m) => !m.name.trim());
-    if (invalidMembers) {
-      message.error('All member entries must have a name.');
+    if (!selectedLinkedClientNo) {
+      message.error('Please select a client before creating a group.');
       return;
     }
 
     const payload = {
       groupName: values.groupName.trim(),
       companyName: values.companyName.trim(),
-      members: members.map((m) => ({ name: m.name.trim(), phone: m.phone.trim(), email: m.email.trim() })),
+      linkedClientNo: selectedLinkedClientNo,
+      memberIds: members.map((m) => (typeof m === 'string' ? m : m._id)),
     };
 
     if (editing) {
@@ -98,12 +135,12 @@ function GroupsManagementPage() {
       <Table
         size="small"
         dataSource={mems}
-        rowKey={(m, i) => m._id || i}
+        rowKey={(m) => m._id || m}
         pagination={false}
         columns={[
           {
             title: 'Name',
-            dataIndex: 'name',
+            dataIndex: 'fullName',
             render: (name) => (
               <Space size={6}>
                 <UserOutlined style={{ color: '#1890ff' }} />
@@ -113,6 +150,7 @@ function GroupsManagementPage() {
           },
           { title: 'Phone', dataIndex: 'phone', render: (v) => v || '—' },
           { title: 'Email', dataIndex: 'email', render: (v) => v || '—' },
+          { title: 'Job Title', dataIndex: 'jobTitle', render: (v) => v || '—' },
         ]}
       />
     );
@@ -131,6 +169,7 @@ function GroupsManagementPage() {
       ),
     },
     { title: 'Company', dataIndex: 'companyName', key: 'companyName' },
+    { title: 'Client No', dataIndex: 'linkedClientNo', key: 'linkedClientNo', render: (v) => v ? <Tag color="geekblue">{v}</Tag> : '—' },
     {
       title: 'Members',
       key: 'memberCount',
@@ -151,7 +190,7 @@ function GroupsManagementPage() {
             </Button>
             <Popconfirm
               title="Delete this group?"
-              description="All members in this group will be removed."
+              description="This will remove the group but will not delete the staff members."
               okType="danger"
               onConfirm={() =>
                 deleteGroup.mutate(id, {
@@ -236,8 +275,41 @@ function GroupsManagementPage() {
             </Form.Item>
           </div>
 
+          <Form.Item
+            label={
+              <span>
+                Client{' '}
+                {selectedLinkedClientNo && (
+                  <Tag color="geekblue" style={{ marginLeft: 4, fontSize: 11 }}>{selectedLinkedClientNo}</Tag>
+                )}
+              </span>
+            }
+            required
+            style={{ marginBottom: 16 }}
+          >
+            <AutoComplete
+              value={clientSearch}
+              options={clientOptions}
+              onSearch={(v) => { setClientSearch(v); if (!v) setSelectedLinkedClientNo(null); }}
+              onSelect={handleClientSelect}
+              placeholder="Search client by name or client number..."
+              style={{ width: '100%' }}
+              allowClear
+              onClear={() => { setSelectedLinkedClientNo(null); setClientSearch(''); setMembers([]); }}
+            />
+            {!selectedLinkedClientNo && (
+              <Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+                Select a client — this links the group and determines which staff members are available.
+              </Text>
+            )}
+          </Form.Item>
+
           <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-            <MembersEditor members={members} onChange={setMembers} />
+            <MembersEditor
+              members={members}
+              onChange={setMembers}
+              linkedClientNo={selectedLinkedClientNo}
+            />
           </div>
         </Form>
       </Modal>

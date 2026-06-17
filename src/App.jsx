@@ -10,6 +10,7 @@ import ClientsPage from './pages/ClientsPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import HousekeepingPage from './pages/HousekeepingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import TwoFactorVerifyPage from './pages/TwoFactorVerifyPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import ReservationEditPage from './pages/ReservationEditPage.jsx';
 import ReservationsListPage from './pages/ReservationsListPage.jsx';
@@ -25,6 +26,8 @@ import PortalReservationsPage from './pages/portal/PortalReservationsPage.jsx';
 import PortalStaffPage from './pages/portal/PortalStaffPage.jsx';
 import PortalBookingRequestPage from './pages/portal/PortalBookingRequestPage.jsx';
 import PortalRoomAvailabilityPage from './pages/portal/PortalRoomAvailabilityPage.jsx';
+import PortalUsersPage from './pages/portal/PortalUsersPage.jsx';
+import PortalClientsPage from './pages/portal/PortalClientsPage.jsx';
 import InvoiceGeneratorPage from './pages/InvoiceGeneratorPage.jsx';
 import useAuthStore from './store/authStore.js';
 
@@ -35,6 +38,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/2fa-verify" element={<TwoFactorVerifyPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route index element={<Navigate to={defaultRedirect} replace />} />
@@ -65,6 +69,9 @@ function App() {
           <Route path="/portal/booking-requests" element={<PortalBookingRequestPage />} />
           <Route path="/portal/staff" element={<PortalStaffPage />} />
           <Route path="/portal/rooms" element={<PortalRoomAvailabilityPage />} />
+          <Route path="/portal/users" element={<PortalUsersPage />} />
+          <Route path="/portal/clients" element={<PortalClientsPage />} />
+          <Route path="/portal/bookings" element={<BookingChartPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />

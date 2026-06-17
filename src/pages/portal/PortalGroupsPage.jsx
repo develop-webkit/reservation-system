@@ -12,6 +12,7 @@ import {
   useUpdateClientGroup,
 } from '../../hooks/useClientGroups.js';
 import MembersEditor from '../../components/groups/MembersEditor.jsx';
+import useAuthStore, { selectCurrentUser, selectLinkedClientNo } from '../../store/authStore.js';
 
 const { Title, Text } = Typography;
 
@@ -20,6 +21,9 @@ function PortalGroupsPage() {
   const [editing, setEditing] = useState(null);
   const [members, setMembers] = useState([]);
   const [form] = Form.useForm();
+
+  const currentUser = useAuthStore(selectCurrentUser);
+  const linkedClientNo = useAuthStore(selectLinkedClientNo);
 
   const { data: groupsRaw, isLoading } = useClientGroups();
   const createGroup = useCreateClientGroup();
@@ -37,7 +41,7 @@ function PortalGroupsPage() {
 
   const openEdit = (record) => {
     setEditing(record);
-    setMembers((record.members || []).map((m) => ({ name: m.name, phone: m.phone || '', email: m.email || '' })));
+    setMembers(record.members || []);
     form.setFieldsValue({ groupName: record.groupName, companyName: record.companyName });
     setModalOpen(true);
   };
@@ -50,16 +54,10 @@ function PortalGroupsPage() {
   };
 
   const handleSubmit = (values) => {
-    const invalidMembers = members.some((m) => !m.name.trim());
-    if (invalidMembers) {
-      message.error('All member entries must have a name.');
-      return;
-    }
-
     const payload = {
       groupName: values.groupName.trim(),
       companyName: values.companyName.trim(),
-      members: members.map((m) => ({ name: m.name.trim(), phone: m.phone.trim(), email: m.email.trim() })),
+      memberIds: members.map((m) => (typeof m === 'string' ? m : m._id)),
     };
 
     if (editing) {
@@ -88,12 +86,12 @@ function PortalGroupsPage() {
       <Table
         size="small"
         dataSource={mems}
-        rowKey={(m, i) => m._id || i}
+        rowKey={(m) => m._id || m}
         pagination={false}
         columns={[
           {
             title: 'Name',
-            dataIndex: 'name',
+            dataIndex: 'fullName',
             render: (name) => (
               <Space size={6}>
                 <UserOutlined style={{ color: '#1890ff' }} />
@@ -103,6 +101,7 @@ function PortalGroupsPage() {
           },
           { title: 'Phone', dataIndex: 'phone', render: (v) => v || '—' },
           { title: 'Email', dataIndex: 'email', render: (v) => v || '—' },
+          { title: 'Job Title', dataIndex: 'jobTitle', render: (v) => v || '—' },
         ]}
       />
     );
@@ -141,7 +140,7 @@ function PortalGroupsPage() {
             </Button>
             <Popconfirm
               title="Delete this group?"
-              description="All members in this group will be removed."
+              description="This will remove the group but will not delete the staff members."
               okType="danger"
               onConfirm={() =>
                 deleteGroup.mutate(id, {
@@ -215,8 +214,24 @@ function PortalGroupsPage() {
             </Form.Item>
           </div>
 
+          <Form.Item label="Client" style={{ marginBottom: 16 }}>
+            <Input
+              value={linkedClientNo || currentUser?.clientNumber || ''}
+              disabled
+              style={{ background: '#f5f5f5', color: '#595959' }}
+              suffix={<Tag color="geekblue" style={{ marginRight: -8 }}>{linkedClientNo}</Tag>}
+            />
+            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+              Groups are automatically linked to your client account.
+            </Text>
+          </Form.Item>
+
           <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-            <MembersEditor members={members} onChange={setMembers} />
+            <MembersEditor
+              members={members}
+              onChange={setMembers}
+              linkedClientNo={linkedClientNo}
+            />
           </div>
         </Form>
       </Modal>

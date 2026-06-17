@@ -22,10 +22,15 @@ function LoginPage() {
 
     try {
       const response = await login(values);
-      loginStore(response);
-      if (response?.access_token) {
-        localStorage.setItem('authToken', response.access_token);
+
+      if (response.requiresTwoFactor) {
+        navigate('/2fa-verify', {
+          state: { pendingToken: response.pendingToken, from: location.state?.from },
+        });
+        return;
       }
+
+      loginStore(response);
       message.success('Welcome back.');
       const redirect = location.state?.from?.pathname || '/dashboard';
       navigate(redirect, { replace: true });

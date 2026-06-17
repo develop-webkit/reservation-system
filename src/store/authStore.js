@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 const initialState = {
-  token: null,
   expiresIn: null,
   user: null,
   client: null,
@@ -15,18 +14,17 @@ const useAuthStore = create(
       ...initialState,
       login: (payload) =>
         set({
-          token: payload.access_token,
           expiresIn: payload.expiresIn ?? null,
           user: payload.user ?? null,
           client: payload.client ?? null,
-          isAuthenticated: Boolean(payload.access_token),
+          // JWT is in httpOnly cookie — authentication is confirmed by the presence of user data
+          isAuthenticated: Boolean(payload.user),
         }),
       logout: () => set({ ...initialState }),
     }),
     {
       name: 'rms-auth',
       partialize: (state) => ({
-        token: state.token,
         expiresIn: state.expiresIn,
         user: state.user,
         client: state.client,
@@ -40,5 +38,6 @@ export const selectCurrentUser = (state) => state.user;
 export const selectCurrentRole = (state) => state.user?.role ?? null;
 export const selectCurrentClient = (state) => state.client;
 export const selectLinkedClientNo = (state) => state.user?.linkedClientNo ?? null;
+export const selectIs2FAEnabled = (state) => state.user?.is_2fa_enabled ?? false;
 
 export default useAuthStore;

@@ -1,8 +1,9 @@
 import http from '../http.js';
 import { unwrapResponse } from '../utils.js';
 
-export async function getClientStaff() {
-  const response = await http.get('/client-staff');
+export async function getClientStaff(linkedClientNo) {
+  const params = linkedClientNo ? { linkedClientNo } : {};
+  const response = await http.get('/client-staff', { params });
   return unwrapResponse(response);
 }
 

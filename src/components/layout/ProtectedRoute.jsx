@@ -12,6 +12,7 @@ const ADMIN_PATHS = [
   '/rooms',
   '/vouchers',
   '/users',
+  '/groups',
   '/booking-requests',
   '/invoice-generator',
 ];
