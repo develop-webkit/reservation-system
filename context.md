@@ -1,3 +1,23 @@
+## 2FA Access for All Roles, Dead Reservation-Sidebar Tabs Removed, Client Shortcut — 2026-06-21
+
+**2FA was unreachable for `user`/`housekeeper`:** `TwoFactorSetupSection` only ever rendered inside `UsersPage.jsx` (admin/manager editing their own account — that page is gated to admin/manager) or `PortalUsersPage.jsx` (portal_user). Plain `user`/`housekeeper` accounts had no nav entry to either, so no way to ever set up 2FA.
+
+- New `src/components/account/MyAccountCard.jsx` — extracted from `PortalUsersPage.jsx`'s existing self-view + Change Password + 2FA UI, parameterized by `title`/`subtitle`/`extraItems` (array of `{label, value}` for portal's Linked Client / Client Account rows).
+- `src/pages/portal/PortalUsersPage.jsx` — now a thin wrapper around `MyAccountCard`.
+- New `src/pages/MyAccountPage.jsx` — thin wrapper around `MyAccountCard` (no extraItems), routed at `/account` (`App.jsx`).
+- `src/constants/navigation.js` — new nav item `{ key: '/account', label: 'My Account', roles: ['user', 'housekeeper'] }`. Admin/manager don't get this (they already have 2FA via Users page).
+- `src/components/layout/ProtectedRoute.jsx` — `/account` added to `ADMIN_PATHS` so portal_user is still redirected away from it like every other non-portal route.
+
+**`ReservationsListPage.jsx`'s nested left sidebar had 7 dead tabs:** `sidebarItems` listed Reservation/Area/Client/Correspondence/Triggers/Requirement-Trace/Audit-Trail/Add-On/Transfers, but the component never branched on `selectedTab` for content — clicking any of them just highlighted the tab. Trimmed to Reservation + Client only; removed the now-unused icon imports.
+
+**The remaining "Client" tab now does something:** clicking it opens the existing `ClientFormDrawer` (the same one `ClientsPage.jsx` uses, reused as-is) as an inline drawer, pre-filled with `allClients.find(c => c.clientNo === currentUser?.linkedClientNo)` — the logged-in user's own client record, editable, saved via the existing `useUpdateClient` hook (`src/hooks/useClients.js`). If no matching client exists (e.g. admin's `CL-ADMIN`), shows an info message instead of an empty drawer.
+
+**Found but not yet removed:** 6 files with zero importers anywhere in the codebase (`src/components/UserDropdown.jsx`, `UserDetailsModal.jsx`, `AddUserProfileModal.jsx`, `AntdTopBar.jsx`, and the orphaned `src/pages/Clients/` folder — `ClientForm.jsx`/`ClientList.jsx`, never routed to). All contain hardcoded mock data, confirmed dead. Deletion was blocked by the permission system (irreversible file deletion the user hadn't named directly, even though it was in the approved plan) — left as-is pending explicit go-ahead.
+
+**Verified:** created disposable manager/user/housekeeper test accounts (deleted after) — manager's Client-tab shortcut correctly opened and saved CL-998's record; user's and housekeeper's new "My Account" page rendered and the 2FA QR/secret generation flow completed successfully for both. Admin's Reservations sidebar trimmed correctly, Client-tab gracefully no-ops for admin's non-client account. Re-confirmed portal_user's existing restrictions untouched.
+
+---
+
 ## Portal User Restrictions Fixed — 2026-06-21
 
 **Problem:** A "portal user" account (client-facing, restricted role) had been created with role `user` instead of `portal_user`, because the admin "New/Edit User" role dropdown never offered `portal_user` as an option. The `user` role behaves close to admin/manager for most modules, so the account saw the full admin UI (Open Tasks, Task workload, Bookings timeline, etc.) instead of the already-built, already-restricted portal experience (`PortalDashboardPage`, `PortalReservationsPage`, `PortalClientsPage`, `PortalUsersPage`, `PortalGroupsPage` — all pre-existing and correctly scoped to `linkedClientNo`).
