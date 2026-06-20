@@ -111,6 +111,7 @@ const BookingChartHeader = ({
     onChartOptionsSave,
     onChartOptionsRestore,
     onExport,
+    isPortalUser = false,
 }) => {
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
@@ -224,7 +225,9 @@ const BookingChartHeader = ({
                         Filter {hasActiveFilters && <Badge count={Object.values(filters).filter(f => f && (Array.isArray(f) ? f.length > 0 : true)).length} style={{ backgroundColor: '#ff4d4f' }} />}
                     </Button>
                     <Button icon={<RedoOutlined />} onClick={() => window.location.reload()}>Refresh</Button>
-                    <Button icon={<SettingOutlined />} onClick={() => setIsOptionsVisible(true)} />
+                    {!isPortalUser && (
+                        <Button icon={<SettingOutlined />} onClick={() => setIsOptionsVisible(true)} />
+                    )}
                 </Space>
 
                 <BookingChartOptionsModal

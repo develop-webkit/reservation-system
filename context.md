@@ -1,3 +1,53 @@
+## Portal User Restrictions Fixed — 2026-06-21
+
+**Problem:** A "portal user" account (client-facing, restricted role) had been created with role `user` instead of `portal_user`, because the admin "New/Edit User" role dropdown never offered `portal_user` as an option. The `user` role behaves close to admin/manager for most modules, so the account saw the full admin UI (Open Tasks, Task workload, Bookings timeline, etc.) instead of the already-built, already-restricted portal experience (`PortalDashboardPage`, `PortalReservationsPage`, `PortalClientsPage`, `PortalUsersPage`, `PortalGroupsPage` — all pre-existing and correctly scoped to `linkedClientNo`).
+
+**Fixes:**
+- `src/pages/UsersPage.jsx` — added `{ value: 'portal_user', label: 'Portal User' }` to `ROLE_OPTIONS` so admins can actually create/assign this role.
+- `src/components/layout/ProtectedRoute.jsx` — added `'/charts'` to `ADMIN_PATHS` (the `/charts/bookingchart` alias route for `BookingChartPage` wasn't covered by any existing prefix; `/reservations/*` and `/bookings/*` already were, via `startsWith` prefix matching).
+- `src/pages/BookingChart.jsx` / `src/components/BookingChart.jsx` / `src/components/BookingChartHeader.jsx` — `/bookings` (admin) and `/portal/bookings` share the same `BookingChartPage` → `CoreBookingChart` components. Added an `isPortalUser` prop (computed once via `useAuthStore` in `BookingChartPage`, threaded down) that: hides the Export button and Settings/gear icon; filters rooms with `category === 'Staff Accommodation'` out of the grid; removes the "Out Of Service"/"Out Of Order" context-menu items (keeps Add Reservation, Change Room Status Clean/Dirty/Inspect, Close Menu). Admin/manager/etc. behavior is unchanged.
+- `src/components/reservations/ReservationFormDrawer.jsx` — added a `hideBillingFields` prop (default `false`) that hides Booking source/Voucher No/Total tariff/Balance. `src/pages/portal/PortalReservationsPage.jsx` passes `hideBillingFields` (hard-coded, since that page is portal-only); admin's `ReservationsPage.jsx` passes nothing.
+- **Backend** `src/modules/booking/booking.controller.ts` — `GET /bookings`, `GET /bookings/chart`, `GET /bookings/:id`, `GET /bookings/:id/status` now also allow `Role.PORTAL_USER` (found while verifying the above: the Bookings/Timeline screen 403'd entirely for portal_user before this — discovered live, not part of the original ask, but required for the screen to work at all). The service layer already scopes any non-admin role to `requestUser.clientNumber` (`booking.service.ts`), so no service changes were needed. Write endpoints (create/update/delete on bookings) were deliberately left admin/manager/user-only — portal_user creates/edits via the separate `/reservations` flow instead.
+
+**Verified:** logged in as a portal_user test account — sidebar shows only the 8 portal nav items, Dashboard/Reservations/Clients/Users/Groups all already matched the restricted spec with no changes needed, Bookings now loads and shows the trimmed Export/gear/context-menu/Staff-Accommodation behavior. Logged back in as admin and confirmed all of the above are unchanged for admin (Export, gear, Out Of Service/Out Of Order, Staff Accommodation, billing fields all still present).
+
+---
+
+## Reservation SmartSearch Now Includes Group Members — 2026-06-20
+
+**Problem:** The "MMV SmartSearch" panel on `ReservationsListPage` (the desktop-style New/Edit Reservation screen, route `/reservations/list`) only searched `Client` records. Group members added via Group Management's "Add Member" never appeared there, so there was no way to pick a member as the reservation guest and have their linked client auto-fill.
+
+**Solution:** `ReservationsListPage.jsx` now also calls `useSearchGroupMembers(smartSearch.term)` (existing hook, hits `GET /client-groups/members/search` — already role-scoped server-side: portal_user sees only their own client's members, admin/manager sees all). Member results are normalized into the same row shape as client results (`clientNo` ← `linkedClientNo`, `clientName` ← `name`, `company` ← `companyName`, `mobile` ← `phone`) and concatenated with the existing client-side-filtered client list into one `smartSearchResults` array, with each row tagged `_source: 'client' | 'member'`. A new "Type" column (Tag) shows which is which.
+
+Double-clicking a member row calls the new `handleSelectMember(member)`: it looks up the client by `allClients.find(c => c.clientNo === member.linkedClientNo)` and reuses `handleSelectClient` to fill the company/client-level fields, then overrides the guest-identity fields (`smartSearch`, `given`/`surname` split from `member.name`, `email`, `mobile`, `groupname`) with the member's own data — mirroring the pattern already used in `ReservationFormDrawer`'s simpler "Search Group Member" field.
+
+**Also fixed:** the Account panel (rightmost column) used `flex: 1` + `overflowY: 'auto'` with no `minWidth`. Per the flexbox spec, setting `overflow` to anything but `visible` resets a flex item's automatic minimum width to `0`, so under a narrow viewport the panel collapsed to a sliver (each field label wrapped one character per line) instead of the layout scrolling horizontally. Fix: `Sidebar`/`Client Panel`/`Reservation Panel` got `flexShrink: 0` (they're fixed-width and should never shrink), `Account Panel` got `minWidth: '380px'`, and the `Main Content Area` wrapper switched from `overflow: 'hidden'` to `overflowX: 'auto', overflowY: 'hidden'` so it scrolls horizontally instead of crushing a column when the window is too narrow.
+
+**Note:** `ReservationEditPage.jsx` (route `/reservations/edit`) has the same panel-layout structure (Reservation Panel is the one at risk there, Account Panel is fixed-width) and likely has the same latent squish bug, but it wasn't touched here since it wasn't the screen reported.
+
+---
+
+## Group Members: Inline "Add Member" Replaces Staff Search — 2026-06-20
+
+**Problem:** `MembersEditor` only let you pick from staff that already existed for the linked client (`useClientStaff` search-select). There was no way to add a brand-new member while editing a group, and admin/manager couldn't create `ClientStaff` records at all (the `POST /client-staff` endpoint was `PORTAL_USER`-only and unconditionally called `resolveLinkedClientNo`, which throws for admin/manager since they have no `linkedClientNo`).
+
+**Solution:** `MembersEditor` now has an inline "Add Member" row (Full Name*, Job Title, Phone, Email) that creates a new `ClientStaff` record on click and immediately appends it to the group's member list. Multiple members can be added one at a time. Removing a member (the closable tag) only detaches it from this group's `memberIds` — it does not delete the underlying `ClientStaff` record.
+
+Because new members are persisted as real `ClientStaff` documents (not embedded copies), they are immediately visible to `GET /client-groups/members/search` — used by `ReservationFormDrawer`'s "Search Group Member" autocomplete — without any extra wiring, since that endpoint queries `ClientStaff` directly by `linkedClientNo`/`isActive`, independent of group membership.
+
+#### Backend Changes
+- `src/modules/client-staff/dto/create-client-staff.dto.ts` — added optional `linkedClientNo?: string`
+- `src/modules/client-staff/client-staff.controller.ts` — `POST /client-staff` now allows `Role.ADMIN`, `Role.MANAGER` in addition to `Role.PORTAL_USER`
+- `src/modules/client-staff/client-staff.service.ts` — `create()` mirrors the admin/manager pattern already used in `client-groups.service.ts`: admin/manager must pass `dto.linkedClientNo` (`BadRequestException` if missing); portal_user still uses `resolveLinkedClientNo(requestUser)`
+
+#### Frontend Changes
+- `src/components/groups/MembersEditor.jsx` — removed the `Select` staff-search dropdown and `useClientStaff` query; added a 4-field inline form + `+` button using `useCreateClientStaff`. Disabled (with a hint) until a client is selected, same as before. Selected-members tag list/removal logic unchanged.
+- `src/pages/GroupsManagementPage.jsx` / `src/pages/portal/PortalGroupsPage.jsx` — no changes needed; they only pass `members`/`onChange`/`linkedClientNo` props to `MembersEditor`.
+
+**Note:** Each "Add Member" click always creates a new `ClientStaff` record — there is no longer a way to attach an *existing* staff member to a group from this UI. If the same person needs to be in multiple groups, they will currently get a separate `ClientStaff` record per group. Revisit if staff reuse across groups becomes a requirement.
+
+---
+
 ## 2FA, Manager Access, Client Groups Fix & Portal Users — 2026-06-18
 
 ### Two-Factor Authentication (2FA)

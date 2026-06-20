@@ -19,6 +19,7 @@ const ROLE_OPTIONS = [
   { value: 'user', label: 'User' },
   { value: 'housekeeper', label: 'Housekeeper' },
   { value: 'manager', label: 'Manager' },
+  { value: 'portal_user', label: 'Portal User' },
 ];
 
 const ROLE_COLORS = {

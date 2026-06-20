@@ -1,15 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Input, Select, DatePicker, Button, Typography, Divider, Table, AutoComplete, Spin } from 'antd';
+import { Input, Select, DatePicker, Button, Typography, Divider, Table, AutoComplete, Spin, Tag } from 'antd';
 import {
     HomeOutlined,
-    EnvironmentOutlined,
     UserOutlined,
-    MailOutlined,
-    ThunderboltOutlined,
-    FileTextOutlined,
-    AuditOutlined,
-    AppstoreAddOutlined,
-    SwapOutlined,
     SearchOutlined,
     SaveOutlined,
     CopyOutlined,
@@ -25,13 +18,16 @@ import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
 import InvoiceModal from '../components/InvoiceModal';
+import ClientFormDrawer from '../components/clients/ClientFormDrawer.jsx';
 import { useRooms } from '../hooks/useRooms';
 import { useCreateReservation, useUpdateReservation, useReservations } from '../hooks/useReservations';
 import { useUpdateRoomStatus } from '../hooks/useRooms';
 import { useBookings } from '../hooks/useBookings';
-import { useClients } from '../hooks/useClients';
+import { useClients, useUpdateClient } from '../hooks/useClients';
 import { useCompanies } from '../hooks/useCompanies';
 import { useVouchers } from '../hooks/useVouchers';
+import { useSearchGroupMembers } from '../hooks/useClientGroups';
+import useAuthStore, { selectCurrentUser } from '../store/authStore.js';
 import { COUNTRY_CODES } from '../data/countryCodes';
 import {
     TITLE_OPTIONS,
@@ -271,9 +267,11 @@ const FormField = ({
 };
 
 const ReservationsListPage = () => {
+    const currentUser = useAuthStore(selectCurrentUser);
     const [selectedTab, setSelectedTab] = useState('Reservation');
     const [savedReservationId, setSavedReservationId] = useState(null);
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+    const [ownClientDrawerOpen, setOwnClientDrawerOpen] = useState(false);
     const [searchParams] = useSearchParams();
 
     // Extract values from query params
@@ -306,6 +304,7 @@ const ReservationsListPage = () => {
     const createReservationMutation = useCreateReservation();
     const updateReservationMutation = useUpdateReservation();
     const updateRoomStatusMutation = useUpdateRoomStatus();
+    const updateClientMutation = useUpdateClient();
 
     const isSaving = createReservationMutation.isPending || updateReservationMutation.isPending || updateRoomStatusMutation.isPending;
 
@@ -477,6 +476,10 @@ const ReservationsListPage = () => {
         term: '',
     });
 
+    // Group members are searched server-side — the backend scopes results to the
+    // logged-in client's own members, or to all members for admin/manager.
+    const { data: memberSearchResults } = useSearchGroupMembers(smartSearch.term);
+
     const filteredClients = useMemo(() => {
         if (!smartSearch.term) return [];
         const term = smartSearch.term.toLowerCase();
@@ -487,6 +490,27 @@ const ReservationsListPage = () => {
             (c.email || '').toLowerCase().includes(term)
         );
     }, [smartSearch.term, allClients]);
+
+    // Combine client records with group members (staff added via Group Management)
+    // into one SmartSearch result list. Each row is tagged with its source so
+    // double-click can route to the right selection handler.
+    const smartSearchResults = useMemo(() => {
+        const memberRows = (memberSearchResults || []).map(m => ({
+            ...m,
+            key: `member-${m.staffId}`,
+            _source: 'member',
+            clientNo: m.linkedClientNo,
+            clientName: m.name,
+            company: m.companyName,
+            mobile: m.phone,
+        }));
+        const clientRows = filteredClients.map(c => ({
+            ...c,
+            key: `client-${c._id || c.id || c.clientNo}`,
+            _source: 'client',
+        }));
+        return [...memberRows, ...clientRows];
+    }, [memberSearchResults, filteredClients]);
 
     const filteredAreaOptions = useMemo(() => {
         return dynamicAreaOptions.filter(opt => opt.category === clientData.roomType);
@@ -582,6 +606,50 @@ const ReservationsListPage = () => {
             dateModified: client.updatedAt ? dayjs(client.updatedAt).format('DD MMM YYYY') : '05 Nov 2025'
         }));
         setSmartSearch({ isOpen: false, term: '' });
+    };
+
+    // Selecting a group member fills the client/company fields from the client
+    // they're linked to (same as handleSelectClient), then overrides the guest
+    // identity fields with the member's own details.
+    const handleSelectMember = (member) => {
+        const matchedClient = allClients.find(c => c.clientNo === member.linkedClientNo);
+        if (matchedClient) {
+            handleSelectClient(matchedClient);
+        } else {
+            message.warning(`No client record found for "${member.name}" (${member.linkedClientNo}).`);
+        }
+
+        const [given, ...surnameParts] = (member.name || '').trim().split(' ');
+
+        setClientData(prev => ({
+            ...prev,
+            smartSearch: member.name || prev.smartSearch,
+            given: given || prev.given,
+            surname: surnameParts.join(' ') || prev.surname,
+            email: member.email || prev.email,
+            mobile: member.phone || prev.mobile,
+            groupname: member.groupName || prev.groupname,
+        }));
+        setSmartSearch({ isOpen: false, term: '' });
+    };
+
+    // "Client" sidebar tab — jump straight to the logged-in user's own client
+    // record instead of a separate client-selection screen.
+    const handleOpenOwnClient = () => {
+        const ownClient = allClients.find(c => c.clientNo === currentUser?.linkedClientNo);
+        if (!ownClient) {
+            message.info('No client record is linked to your account.');
+            return;
+        }
+        setOwnClientDrawerOpen(true);
+    };
+
+    const handleUpdateOwnClient = async (values) => {
+        const ownClient = allClients.find(c => c.clientNo === currentUser?.linkedClientNo);
+        if (!ownClient) return;
+        await updateClientMutation.mutateAsync({ id: ownClient._id, data: values });
+        message.success('Client details updated.');
+        setOwnClientDrawerOpen(false);
     };
 
     const handleSaveReservation = () => {
@@ -850,17 +918,27 @@ const ReservationsListPage = () => {
     // Sidebar navigation items
     const sidebarItems = [
         { key: 'Reservation', label: 'Reservation', icon: <HomeOutlined /> },
-        { key: 'Area', label: 'Area', icon: <EnvironmentOutlined /> },
         { key: 'Client', label: 'Client', icon: <UserOutlined /> },
-        { key: 'Correspondence', label: 'Correspondence', icon: <MailOutlined /> },
-        { key: 'Triggers', label: 'Triggers', icon: <ThunderboltOutlined /> },
-        { key: 'Requirement/Trace', label: 'Requirement/Trace', icon: <FileTextOutlined /> },
-        { key: 'Audit Trail', label: 'Audit Trail', icon: <AuditOutlined /> },
-        { key: 'Add On', label: 'Add On', icon: <AppstoreAddOutlined /> },
-        { key: 'Transfers', label: 'Transfers', icon: <SwapOutlined /> },
     ];
 
+    const handleSidebarItemClick = (key) => {
+        setSelectedTab(key);
+        if (key === 'Client') {
+            handleOpenOwnClient();
+        }
+    };
+
     const smartSearchColumns = [
+        {
+            title: 'Type',
+            key: '_source',
+            width: 70,
+            render: (_, record) => (
+                <Tag color={record._source === 'member' ? 'purple' : 'blue'} style={{ margin: 0 }}>
+                    {record._source === 'member' ? 'Member' : 'Client'}
+                </Tag>
+            ),
+        },
         { title: 'Client No', dataIndex: 'clientNo', key: 'clientNo', width: 80 },
         { title: 'Groupname', dataIndex: 'groupName', key: 'groupName', width: 120 },
         { title: 'Client Name', dataIndex: 'clientName', key: 'clientName', width: 150 },
@@ -889,7 +967,7 @@ const ReservationsListPage = () => {
         >
         <div style={{ display: 'flex', height: 'calc(100vh - 64px)', backgroundColor: '#f5f5f5', position: 'relative' }}>
             {/* Sidebar Navigation */}
-            <div style={{ width: '160px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px 0' }}>
+            <div style={{ width: '160px', flexShrink: 0, backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px 0' }}>
                 <div style={{ padding: '0 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <HomeOutlined style={{ fontSize: '16px', color: '#1890ff' }} />
@@ -919,7 +997,7 @@ const ReservationsListPage = () => {
                 {sidebarItems.map(item => (
                     <div
                         key={item.key}
-                        onClick={() => setSelectedTab(item.key)}
+                        onClick={() => handleSidebarItemClick(item.key)}
                         style={{
                             padding: '8px 16px',
                             cursor: 'pointer',
@@ -942,7 +1020,7 @@ const ReservationsListPage = () => {
             </div>
 
             {/* Client Panel */}
-            <div style={{ width: '450px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
+            <div style={{ width: '450px', flexShrink: 0, backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <Text strong style={{ fontSize: '16px' }}>Client</Text>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -996,7 +1074,7 @@ const ReservationsListPage = () => {
             </div>
 
             {/* Main Content Area (Reservation + Account) with Overlay Container */}
-            <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', position: 'relative', overflowX: 'auto', overflowY: 'hidden' }}>
 
                 {/* Smart Search Overlay */}
                 {smartSearch.isOpen && (
@@ -1014,7 +1092,7 @@ const ReservationsListPage = () => {
                     }}>
                         <div style={{ padding: '12px 16px', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text strong style={{ fontSize: '16px' }}>
-                                Client MMV SmartSearch - {filteredClients.length} Found
+                                Client MMV SmartSearch - {smartSearchResults.length} Found
                             </Text>
                             <Button
                                 type="text"
@@ -1025,12 +1103,12 @@ const ReservationsListPage = () => {
                         <div style={{ flex: 1, overflow: 'auto' }}>
                             <Table
                                 columns={smartSearchColumns}
-                                dataSource={filteredClients}
-                                rowKey="id"
+                                dataSource={smartSearchResults}
+                                rowKey="key"
                                 pagination={false}
                                 size="small"
                                 onRow={(record) => ({
-                                    onDoubleClick: () => handleSelectClient(record),
+                                    onDoubleClick: () => record._source === 'member' ? handleSelectMember(record) : handleSelectClient(record),
                                     style: { cursor: 'pointer' }
                                 })}
                             />
@@ -1039,7 +1117,7 @@ const ReservationsListPage = () => {
                 )}
 
                 {/* Reservation Panel */}
-                <div style={{ width: '520px', backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
+                <div style={{ width: '520px', flexShrink: 0, backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <Text strong style={{ fontSize: '16px' }}>{isEditMode ? 'Edit Reservation' : 'New Reservation'}</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -1080,7 +1158,7 @@ const ReservationsListPage = () => {
                 </div>
 
                 {/* Account Panel */}
-                <div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', overflowY: 'auto' }}>
+                <div style={{ flex: 1, minWidth: '380px', backgroundColor: '#fff', padding: '16px', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <Text strong style={{ fontSize: '16px' }}>Account</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -1123,6 +1201,15 @@ const ReservationsListPage = () => {
                 onConfirm={handleConfirmInvoice}
                 invoiceData={invoiceData}
                 isConfirming={updateReservationMutation.isPending}
+            />
+
+            <ClientFormDrawer
+                open={ownClientDrawerOpen}
+                onClose={() => setOwnClientDrawerOpen(false)}
+                onSubmit={handleUpdateOwnClient}
+                loading={updateClientMutation.isPending}
+                companies={allCompanies}
+                initialValues={allClients.find(c => c.clientNo === currentUser?.linkedClientNo)}
             />
         </div>
         </Spin>

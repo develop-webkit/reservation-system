@@ -32,7 +32,7 @@ const ROOM_STATUS_COLORS = {
     'OOO': '#722ed1',   // Out of Order (Purple)
 };
 
-const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightProp, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {}, chartOptions = {} }) => {
+const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightProp, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {}, chartOptions = {}, isPortalUser = false }) => {
     const rowHeight = rowHeightProp || 30;
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
 
@@ -57,11 +57,11 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     // Prioritize API rooms, fallback to local data if needed
     // Ensure API rooms have 'id' property mapped from '_id' if missing
     const rooms = useMemo(() => {
-        if (chartData?.rooms) {
-            return chartData.rooms.map(r => ({ ...r, id: r._id || r.id }));
-        }
-        return roomsFromData;
-    }, [chartData]);
+        const source = chartData?.rooms
+            ? chartData.rooms.map(r => ({ ...r, id: r._id || r.id }))
+            : roomsFromData;
+        return isPortalUser ? source.filter(r => r.category !== 'Staff Accommodation') : source;
+    }, [chartData, isPortalUser]);
 
 
     // 1. Generate column dates (Immutable)
@@ -852,21 +852,25 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
                             {contextMenu.room && (
                                 <>
-                                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
-                                    <div
-                                        className="context-menu-item"
-                                        style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#003a8c', fontWeight: 500 }}
-                                        onClick={() => handleOpenServiceModal('out_of_service')}
-                                    >
-                                        Out Of Service
-                                    </div>
-                                    <div
-                                        className="context-menu-item"
-                                        style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#722ed1', fontWeight: 500 }}
-                                        onClick={() => handleOpenServiceModal('out_of_order')}
-                                    >
-                                        Out Of Order
-                                    </div>
+                                    {!isPortalUser && (
+                                        <>
+                                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                                            <div
+                                                className="context-menu-item"
+                                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#003a8c', fontWeight: 500 }}
+                                                onClick={() => handleOpenServiceModal('out_of_service')}
+                                            >
+                                                Out Of Service
+                                            </div>
+                                            <div
+                                                className="context-menu-item"
+                                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#722ed1', fontWeight: 500 }}
+                                                onClick={() => handleOpenServiceModal('out_of_order')}
+                                            >
+                                                Out Of Order
+                                            </div>
+                                        </>
+                                    )}
                                     <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                                     <div style={{ padding: '4px 16px', fontSize: '11px', color: '#8c8c8c', fontWeight: 600, letterSpacing: '0.5px' }}>
                                         CHANGE ROOM STATUS

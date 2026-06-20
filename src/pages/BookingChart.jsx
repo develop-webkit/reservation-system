@@ -6,6 +6,7 @@ import BookingChartHeader from '../components/BookingChartHeader';
 import { useChartOptions } from '../hooks/useChartOptions';
 import { useBookingChart } from '../hooks/useBookings';
 import { downloadCsv } from '../utils/exportCsv.js';
+import useAuthStore from '../store/authStore.js';
 
 const AREA_HEIGHT_MAP = { Small: 30, Medium: 42, Large: 54 };
 
@@ -97,6 +98,7 @@ function buildExportRows(bookings, rooms) {
 }
 
 const BookingChartPage = () => {
+    const isPortalUser = useAuthStore((s) => s.user?.role === 'portal_user');
     const [startDate, setStartDate] = useState(dayjs().format('YYYY-MM-DD'));
     const [collapsedCategories, setCollapsedCategories] = useState(new Set());
     const { options, saveOptions, restoreDefaults } = useChartOptions();
@@ -161,7 +163,8 @@ const BookingChartPage = () => {
                 chartOptions={options}
                 onChartOptionsSave={saveOptions}
                 onChartOptionsRestore={restoreDefaults}
-                onExport={handleExport}
+                onExport={isPortalUser ? undefined : handleExport}
+                isPortalUser={isPortalUser}
             />
             <CoreBookingChart
                 startDate={startDate}
@@ -171,6 +174,7 @@ const BookingChartPage = () => {
                 onToggleCategory={toggleCategory}
                 filters={filters}
                 chartOptions={options}
+                isPortalUser={isPortalUser}
             />
         </div>
     );

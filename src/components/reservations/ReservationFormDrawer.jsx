@@ -36,6 +36,7 @@ function ReservationFormDrawer({
   clients,
   companies,
   initialValues,
+  hideBillingFields = false,
 }) {
   const [form] = Form.useForm();
   const [memberOptions, setMemberOptions] = useState([]);
@@ -264,21 +265,25 @@ function ReservationFormDrawer({
           </Select>
         </Form.Item>
 
-        <Form.Item label="Booking source" name="bookingSource">
-          <Input placeholder="Direct" />
-        </Form.Item>
+        {!hideBillingFields && (
+          <>
+            <Form.Item label="Booking source" name="bookingSource">
+              <Input placeholder="Direct" />
+            </Form.Item>
 
-        <Form.Item label="Voucher No" name="voucherNo">
-          <Input placeholder="VCHR-2026-001" />
-        </Form.Item>
+            <Form.Item label="Voucher No" name="voucherNo">
+              <Input placeholder="VCHR-2026-001" />
+            </Form.Item>
 
-        <Form.Item label="Total tariff" name="totalTariff">
-          <InputNumber min={0} className="full-width" prefix="$" />
-        </Form.Item>
+            <Form.Item label="Total tariff" name="totalTariff">
+              <InputNumber min={0} className="full-width" prefix="$" />
+            </Form.Item>
 
-        <Form.Item label="Balance" name="balance">
-          <InputNumber min={0} className="full-width" prefix="$" />
-        </Form.Item>
+            <Form.Item label="Balance" name="balance">
+              <InputNumber min={0} className="full-width" prefix="$" />
+            </Form.Item>
+          </>
+        )}
 
         <Form.Item label="Adults" name="adults">
           <InputNumber min={0} className="full-width" />

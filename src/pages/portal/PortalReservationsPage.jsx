@@ -239,6 +239,7 @@ function PortalReservationsPage() {
         rooms={roomsQuery.data}
         clients={clients}
         companies={companiesQuery.data}
+        hideBillingFields
       />
     </div>
   );

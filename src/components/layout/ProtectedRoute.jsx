@@ -5,6 +5,7 @@ const ADMIN_PATHS = [
   '/dashboard',
   '/reservations',
   '/bookings',
+  '/charts',
   '/tasks',
   '/housekeeping',
   '/accounting',
@@ -15,6 +16,7 @@ const ADMIN_PATHS = [
   '/groups',
   '/booking-requests',
   '/invoice-generator',
+  '/account',
 ];
 
 function ProtectedRoute() {
