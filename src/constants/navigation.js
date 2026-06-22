@@ -3,7 +3,6 @@ import {
   AppstoreOutlined,
   BuildOutlined,
   CalendarOutlined,
-  DollarOutlined,
   FileSearchOutlined,
   FileTextOutlined,
   HomeOutlined,
@@ -24,7 +23,6 @@ export const navigationItems = [
   { key: '/bookings',          label: 'Bookings',          icon: ScheduleOutlined,   roles: ['admin', 'manager'] },
   { key: '/tasks',             label: 'Tasks',             icon: ReadOutlined,       roles: ['admin', 'manager', 'housekeeper'] },
   { key: '/housekeeping',      label: 'Housekeeping',      icon: SolutionOutlined,   roles: ['admin', 'manager', 'housekeeper'] },
-  { key: '/accounting',        label: 'Accounting',        icon: DollarOutlined,     roles: ['admin', 'manager'] },
   {
     key: 'clients-group',
     label: 'Clients',
@@ -39,7 +37,7 @@ export const navigationItems = [
   { key: '/vouchers',          label: 'Vouchers',          icon: WalletOutlined,     roles: ['admin', 'manager'] },
   { key: '/users',             label: 'Users',             icon: UserAddOutlined,    roles: ['admin', 'manager'] },
   { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
-  { key: '/invoice-generator', label: 'Invoice Generator', icon: FileTextOutlined,   roles: ['admin'] },
+  { key: '/invoice-generator', label: 'Invoice Generator', icon: FileTextOutlined,   roles: ['admin', 'manager'] },
   { key: '/account',           label: 'My Account',        icon: UserOutlined,       roles: ['user', 'housekeeper'] },
   // Portal user (corporate client) navigation
   { key: '/portal/dashboard',   label: 'Dashboard',        icon: HomeOutlined,       roles: ['portal_user'] },

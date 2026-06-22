@@ -43,6 +43,15 @@ function InvoiceLineItemsTable({ lineItems, onAdd, onRemove, onUpdate }) {
       ),
     },
     {
+      title: 'Meal Only',
+      dataIndex: 'mealOnly',
+      width: 88,
+      align: 'center',
+      render: (val, _, index) => (
+        <Checkbox checked={val} onChange={(e) => onUpdate(index, 'mealOnly', e.target.checked)} />
+      ),
+    },
+    {
       title: 'Room Only',
       dataIndex: 'roomOnly',
       width: 88,
@@ -126,7 +135,7 @@ function InvoiceLineItemsTable({ lineItems, onAdd, onRemove, onUpdate }) {
         rowKey="id"
         pagination={false}
         size="small"
-        scroll={{ x: 860 }}
+        scroll={{ x: 948 }}
       />
     </div>
   );

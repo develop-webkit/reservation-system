@@ -1,6 +1,6 @@
 import { Button, Popconfirm, Space, Table } from 'antd';
 import StatusTag from '../common/StatusTag.jsx';
-import { formatCurrency, formatDate } from '../../utils/format.js';
+import { formatDate } from '../../utils/format.js';
 
 function ReservationTable({ data, loading, onEdit, onDelete }) {
   const columns = [
@@ -21,12 +21,6 @@ function ReservationTable({ data, loading, onEdit, onDelete }) {
       title: 'Stay',
       key: 'stay',
       render: (_, record) => `${formatDate(record.checkIn)} - ${formatDate(record.checkOut)}`,
-    },
-    {
-      title: 'Balance',
-      dataIndex: 'balance',
-      key: 'balance',
-      render: (value) => formatCurrency(value),
     },
     {
       title: 'Voucher',

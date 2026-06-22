@@ -25,12 +25,6 @@ function BookingsTable({ data, loading, onStatusClick }) {
       render: (_, record) => record.client?.clientName || record.clientNumber || '-',
     },
     {
-      title: 'Balance',
-      dataIndex: 'balance',
-      key: 'balance',
-      render: (value) => formatCurrency(value),
-    },
-    {
       title: 'Voucher Amount',
       dataIndex: 'voucherAmount',
       key: 'voucherAmount',

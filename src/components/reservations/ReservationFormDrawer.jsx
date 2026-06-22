@@ -59,7 +59,11 @@ function ReservationFormDrawer({
         children: Number(initialValues.children) || 0,
         infants: Number(initialValues.infants) || 0,
       }
-    : { adults: 1, children: 0, infants: 0, isFixed: false, totalTariff: 0, balance: 0 };
+    : {
+        adults: 1, children: 0, infants: 0, isFixed: false, totalTariff: 0, balance: 0,
+        checkIn: dayjs().hour(15).minute(0).second(0),
+        checkOut: dayjs().add(1, 'day').hour(6).minute(0).second(0),
+      };
 
   const isCanceled = normalizeStatusForForm(initialValues?.status) === 'Canceled';
 
@@ -276,10 +280,6 @@ function ReservationFormDrawer({
             </Form.Item>
 
             <Form.Item label="Total tariff" name="totalTariff">
-              <InputNumber min={0} className="full-width" prefix="$" />
-            </Form.Item>
-
-            <Form.Item label="Balance" name="balance">
               <InputNumber min={0} className="full-width" prefix="$" />
             </Form.Item>
           </>

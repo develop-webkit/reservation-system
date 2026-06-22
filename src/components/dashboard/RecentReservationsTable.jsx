@@ -1,6 +1,6 @@
 import { Table } from 'antd';
 import StatusTag from '../common/StatusTag.jsx';
-import { formatCurrency, formatDate } from '../../utils/format.js';
+import { formatDate } from '../../utils/format.js';
 
 function RecentReservationsTable({ data, loading }) {
   const columns = [
@@ -17,12 +17,6 @@ function RecentReservationsTable({ data, loading }) {
       dataIndex: 'checkOut',
       key: 'checkOut',
       render: (value) => formatDate(value),
-    },
-    {
-      title: 'Balance',
-      dataIndex: 'balance',
-      key: 'balance',
-      render: (value) => formatCurrency(value),
     },
     {
       title: 'Status',

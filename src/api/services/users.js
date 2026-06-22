@@ -26,12 +26,18 @@ export async function deleteUser(id) {
   return unwrapResponse(response);
 }
 
+export async function resetUser2FA(id) {
+  const response = await http.post(`/user/${id}/2fa/reset`);
+  return unwrapResponse(response);
+}
+
 const usersApi = {
   getAll: getUsers,
   getById: getUserById,
   create: createUser,
   update: updateUser,
   delete: deleteUser,
+  resetTwoFactor: resetUser2FA,
 };
 
 export default usersApi;

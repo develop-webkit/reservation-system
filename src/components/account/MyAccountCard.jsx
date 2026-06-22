@@ -102,6 +102,7 @@ function MyAccountCard({
 
         <TwoFactorSetupSection
           is2FAEnabled={is2FAEnabled}
+          canDisable={currentUser?.role === 'admin'}
           onStatusChange={(enabled) => {
             setLogin({
               user: { ...currentUser, is_2fa_enabled: enabled },

@@ -40,3 +40,8 @@ export async function forgotPassword(payload) {
   const response = await http.post('/auth/forgot-password', payload);
   return unwrapResponse(response) || response.data;
 }
+
+export async function resetPassword(token, newPassword) {
+  const response = await http.post('/auth/reset-password', { token, newPassword });
+  return unwrapResponse(response) || response.data;
+}

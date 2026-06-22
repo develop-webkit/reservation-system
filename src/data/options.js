@@ -20,9 +20,9 @@ export const STATUS_OPTIONS = [
 ];
 
 export const BKG_SOURCE_OPTIONS = [
-    "Contracted with Meals", 
-    "Contracted Hold Night", 
-    "Non-Contracted", 
-    "Room Only - NO MEALS", 
-    "WalkIn"
+    "Contracted with Meals",
+    "Contracted Hold Night",
+    "Non-Contracted",
+    "Room Only - NO MEALS",
+    "Meals Only"
 ];

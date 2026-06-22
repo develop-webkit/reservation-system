@@ -8,7 +8,7 @@ import {
   LoginOutlined,
 } from '@ant-design/icons';
 import { Navigate } from 'react-router-dom';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUser2FA } from '../hooks/useUsers';
 import { useClients } from '../hooks/useClients';
 import useAuthStore, { selectCurrentUser, selectIs2FAEnabled } from '../store/authStore';
 import TwoFactorSetupSection from '../components/auth/TwoFactorSetupSection.jsx';
@@ -57,6 +57,7 @@ const UsersPage = () => {
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
+  const resetUser2FA = useResetUser2FA();
 
   const users = useMemo(() => {
     if (!usersRaw) return [];
@@ -378,6 +379,7 @@ const UsersPage = () => {
           {editingUser && editingUserId === (currentUser?._id || currentUser?.id) && (
             <TwoFactorSetupSection
               is2FAEnabled={is2FAEnabled}
+              canDisable={isAdmin}
               onStatusChange={(enabled) => {
                 setLogin({
                   user: { ...currentUser, is_2fa_enabled: enabled },
@@ -385,6 +387,39 @@ const UsersPage = () => {
                   expiresIn: currentExpiresIn,
                 });
               }}
+            />
+          )}
+
+          {editingUser && editingUserId !== (currentUser?._id || currentUser?.id) && isAdmin && editingUser.is_2fa_enabled && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginTop: 16 }}
+              message="Two-factor authentication is enabled on this account"
+              description={
+                <Space direction="vertical" size={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Only a Super Admin can reset another user&apos;s 2FA — for example if they lost their authenticator device.
+                  </Text>
+                  <Button
+                    danger
+                    size="small"
+                    loading={resetUser2FA.isPending}
+                    onClick={() => {
+                      const targetId = editingUser._id || editingUser.id;
+                      resetUser2FA.mutate(targetId, {
+                        onSuccess: () => {
+                          message.success('2FA has been reset for this user. They will be asked to set it up again on next login.');
+                          setEditingUser((prev) => (prev ? { ...prev, is_2fa_enabled: false } : prev));
+                        },
+                        onError: (err) => message.error(err.response?.data?.message || 'Failed to reset 2FA'),
+                      });
+                    }}
+                  >
+                    Reset 2FA
+                  </Button>
+                </Space>
+              }
             />
           )}
         </Form>

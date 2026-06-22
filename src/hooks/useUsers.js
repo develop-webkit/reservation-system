@@ -72,3 +72,17 @@ export const useDeleteUser = () => {
         },
     });
 };
+
+/**
+ * Hook for a Super Admin to reset (disable) another user's 2FA
+ */
+export const useResetUser2FA = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id) => usersApi.resetTwoFactor(id),
+        onSuccess: (_, id) => {
+            queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
+        },
+    });
+};

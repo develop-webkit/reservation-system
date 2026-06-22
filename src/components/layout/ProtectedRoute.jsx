@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import useAuthStore from '../../store/authStore.js';
+import useAuthStore, { selectIs2FAEnabled } from '../../store/authStore.js';
 
 const ADMIN_PATHS = [
   '/dashboard',
@@ -8,7 +8,6 @@ const ADMIN_PATHS = [
   '/charts',
   '/tasks',
   '/housekeeping',
-  '/accounting',
   '/clients',
   '/rooms',
   '/vouchers',
@@ -22,10 +21,20 @@ const ADMIN_PATHS = [
 function ProtectedRoute() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const role = useAuthStore((state) => state.user?.role ?? null);
+  const is2FAEnabled = useAuthStore(selectIs2FAEnabled);
   const location = useLocation();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  // 2FA is mandatory for every role except admin — block all other routes until it's set up
+  const requires2FASetup = role && role !== 'admin' && !is2FAEnabled;
+  if (requires2FASetup && location.pathname !== '/setup-2fa') {
+    return <Navigate to="/setup-2fa" replace />;
+  }
+  if (!requires2FASetup && location.pathname === '/setup-2fa') {
+    return <Navigate to="/" replace />;
   }
 
   // Portal users may only access portal routes

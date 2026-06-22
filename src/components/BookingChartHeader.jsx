@@ -73,18 +73,6 @@ const LegendContent = () => (
 
         <Divider style={{ margin: '12px 0' }} />
 
-        {/* Credit Status */}
-        <div style={{ marginBottom: '12px' }}>
-            <Text strong style={{ fontSize: '12px' }}>Credit Status</Text>
-            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <Badge color="#faad14" text={<span style={{ fontSize: '12px' }}>Account In Debit</span>} />
-                <Badge color="#52c41a" text={<span style={{ fontSize: '12px' }}>Account In Credit</span>} />
-                <Badge color="#d9d9d9" text={<span style={{ fontSize: '12px' }}>Zero Balance</span>} />
-            </div>
-        </div>
-
-        <Divider style={{ margin: '12px 0' }} />
-
         {/* Area Status */}
         <div>
             <Text strong style={{ fontSize: '12px' }}>Area Status</Text>

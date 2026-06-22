@@ -13,7 +13,7 @@ const AREA_HEIGHT_MAP = { Small: 30, Medium: 42, Large: 54 };
 const EXPORT_COLUMNS = [
     'room', 'wing', 'guestName', 'masterResNo', 'resNo', 'company',
     'checkIn', 'checkOut', 'nights', 'status', 'adults', 'tariffType',
-    'balance', 'voucherNo', 'bkgSource',
+    'voucherNo', 'bkgSource',
 ];
 
 const EXPORT_HEADERS = {
@@ -29,7 +29,6 @@ const EXPORT_HEADERS = {
     status: 'Status',
     adults: 'Adults',
     tariffType: 'Tariff Type',
-    balance: 'Balance',
     voucherNo: 'Voucher No',
     bkgSource: 'Booking Source',
 };
@@ -90,7 +89,6 @@ function buildExportRows(bookings, rooms) {
             status: b.status || '-',
             adults: b.people || b.adults || '-',
             tariffType: b.tariffType || '-',
-            balance: b.balance != null ? b.balance : '-',
             voucherNo: b.voucherNo || '-',
             bkgSource: b.bkgSource || '-',
         };

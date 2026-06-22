@@ -5,7 +5,7 @@ import { disable2FA, setup2FA, verifySetup2FA } from '../../api/services/auth.js
 
 const { Text, Paragraph } = Typography;
 
-function TwoFactorSetupSection({ is2FAEnabled, onStatusChange }) {
+function TwoFactorSetupSection({ is2FAEnabled, onStatusChange, canDisable = true }) {
   const [setting, setSetting] = useState(false);
   const [setupData, setSetupData] = useState(null);
   const [disableForm] = Form.useForm();
@@ -67,6 +67,7 @@ function TwoFactorSetupSection({ is2FAEnabled, onStatusChange }) {
             checked={is2FAEnabled}
             onChange={handleToggle}
             loading={setting && !setupData}
+            disabled={is2FAEnabled && !canDisable}
             checkedChildren="On"
             unCheckedChildren="Off"
           />
@@ -74,7 +75,9 @@ function TwoFactorSetupSection({ is2FAEnabled, onStatusChange }) {
         <div>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {is2FAEnabled
-              ? 'Your account is protected with 2FA. You will need your authenticator app to log in.'
+              ? canDisable
+                ? 'Your account is protected with 2FA. You will need your authenticator app to log in.'
+                : 'Two-factor authentication is required on your account. Contact your Super Admin if you need it reset.'
               : 'Add an extra layer of security. Works with Google Authenticator, Microsoft Authenticator, or Authy.'}
           </Text>
         </div>
@@ -144,7 +147,7 @@ function TwoFactorSetupSection({ is2FAEnabled, onStatusChange }) {
         </div>
       )}
 
-      {is2FAEnabled && (
+      {is2FAEnabled && canDisable && (
         <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8, padding: 16, marginTop: 12 }}>
           <Text strong style={{ display: 'block', marginBottom: 8 }}>Disable Two-Factor Authentication</Text>
           <Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 12 }}>

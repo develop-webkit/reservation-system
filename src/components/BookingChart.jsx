@@ -518,7 +518,6 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                         { label: 'People', value: displayBooking.people },
                                         { label: 'Bkg Source', value: displayBooking.bkgSource },
                                         { label: 'Tariff Type', value: displayBooking.tariffType },
-                                        { label: 'Balance Owing', value: displayBooking.balance },
                                         { label: 'Caravan Sales Slide', value: displayBooking.caravanSalesSlide },
                                         { label: 'Company', value: displayBooking.company },
                                         { label: 'Fixed', value: displayBooking.isFixed ? 'Yes' : 'No' },
@@ -823,6 +822,10 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                 {contextMenu.serviceEntry.type === 'out_of_service' ? 'Out Of Service' : 'Out Of Order'}
                                 {contextMenu.serviceEntry.description ? `: ${contextMenu.serviceEntry.description}` : ''}
                             </div>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>
+                                Add Reservation
+                            </div>
+                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                             <div
                                 className="context-menu-item"
                                 style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#cf1322' }}

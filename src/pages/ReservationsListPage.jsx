@@ -5,19 +5,16 @@ import {
     UserOutlined,
     SearchOutlined,
     SaveOutlined,
-    CopyOutlined,
     MoreOutlined,
     CloseOutlined,
     DollarOutlined,
     UserSwitchOutlined,
     CaretDownOutlined,
     EllipsisOutlined,
-    FilePdfOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'react-router-dom';
 import { message } from 'antd'; // Added message import
-import InvoiceModal from '../components/InvoiceModal';
 import ClientFormDrawer from '../components/clients/ClientFormDrawer.jsx';
 import { useRooms } from '../hooks/useRooms';
 import { useCreateReservation, useUpdateReservation, useReservations } from '../hooks/useReservations';
@@ -135,8 +132,8 @@ const FormField = ({
                                 format: 'h:mm A',
                                 use12Hours: true,
                                 defaultValue: [
-                                    dayjs('14:00', 'HH:mm'),
-                                    dayjs('10:00', 'HH:mm')
+                                    dayjs('15:00', 'HH:mm'),
+                                    dayjs('06:00', 'HH:mm')
                                 ]
                             }}
                             style={{ width: '100%', backgroundColor: finalBgColor }}
@@ -270,7 +267,6 @@ const ReservationsListPage = () => {
     const currentUser = useAuthStore(selectCurrentUser);
     const [selectedTab, setSelectedTab] = useState('Reservation');
     const [savedReservationId, setSavedReservationId] = useState(null);
-    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [ownClientDrawerOpen, setOwnClientDrawerOpen] = useState(false);
     const [searchParams] = useSearchParams();
 
@@ -393,7 +389,7 @@ const ReservationsListPage = () => {
         masterResNo: '(New Reservation)',
         status: 'Unconfirmed',
         arrive: arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0).toDate() : dayjs().hour(15).minute(0).second(0).toDate(),
-        depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(7).minute(0).second(0).toDate() : dayjs().add(1, 'day').hour(7).minute(0).second(0).toDate(),
+        depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(6).minute(0).second(0).toDate() : dayjs().add(1, 'day').hour(6).minute(0).second(0).toDate(),
         nights: 1,
         adults: 1,
         tariffType: 'Occupied Room Rate PRPN',
@@ -555,14 +551,14 @@ const ReservationsListPage = () => {
                         arrive = arrive.hour(15).minute(0).second(0);
                     }
                     if (depart.hour() === 0 && depart.minute() === 0) {
-                        depart = depart.hour(7).minute(0).second(0);
+                        depart = depart.hour(6).minute(0).second(0);
                     }
 
                     // 2. Enforce Minimum 1 Night stay
                     // If the user selects the same day or a day before,
-                    // we force the departure to be the next day at 7 AM.
+                    // we force the departure to be the next day at 6 AM.
                     if (depart.isBefore(arrive, 'day') || depart.isSame(arrive, 'day')) {
-                        depart = arrive.add(1, 'day').hour(7).minute(0).second(0);
+                        depart = arrive.add(1, 'day').hour(6).minute(0).second(0);
                     }
 
                     newData.arrive = arrive.toDate();
@@ -850,71 +846,6 @@ const ReservationsListPage = () => {
 
     const isEditMode = Boolean(reservationId);
 
-    // Invoice data memo
-    const invoiceData = useMemo(() => ({
-        resNo: clientData.resNo,
-        guestName: `${clientData.given} ${clientData.surname}`.trim(),
-        clientNo: clientData.clientNo,
-        company: clientData.company,
-        area: clientData.area,
-        roomType: clientData.roomType,
-        arrive: clientData.arrive ? dayjs(clientData.arrive).format('ddd, D MMM YYYY h:mm A') : '',
-        depart: clientData.depart ? dayjs(clientData.depart).format('ddd, D MMM YYYY h:mm A') : '',
-        nights: clientData.nights,
-        baseTariff: parseFloat(clientData.baseTariff.split(' / ')[0]) || 0,
-        package: parseFloat(clientData.package.split(' / ')[0]) || 0,
-        totalTariff: parseFloat(clientData.totalTariff.split(' / ')[0]) || 0,
-        accomm: parseFloat(clientData.accomm) || 0,
-        ar: parseFloat(clientData.ar) || 0,
-        accountNo: clientData.accountNo,
-        generatedDate: dayjs().format('D MMM YYYY'),
-    }), [clientData]);
-
-    // Invoice handlers
-    const handleGenerateInvoice = () => {
-        if (!reservationId || clientData.resNo === '(New Reservation)') {
-            message.warning('Please save the reservation first.');
-            return;
-        }
-        setIsInvoiceModalOpen(true);
-    };
-
-    const handleConfirmInvoice = () => {
-        const doUpdate = clientData.status === 'Unconfirmed' && reservationId;
-        if (doUpdate) {
-            // Build update payload with required fields
-            const updatePayload = {
-                status: 'Confirmed',
-                guestName: `${clientData.given} ${clientData.surname}`.trim(),
-                checkIn: clientData.arrive.toISOString(),
-                checkOut: clientData.depart.toISOString(),
-            };
-
-            updateReservationMutation.mutate(
-                { id: reservationId, data: updatePayload },
-                {
-                    onSuccess: () => {
-                        setClientData(prev => ({ ...prev, status: 'Confirmed' }));
-                        message.success('Reservation confirmed and invoice generated.');
-                        setIsInvoiceModalOpen(false);
-                        // Print the PDF iframe
-                        setTimeout(() => {
-                            const iframe = document.querySelector('.invoice-pdf-viewer iframe');
-                            if (iframe) iframe.contentWindow.print();
-                        }, 500);
-                    },
-                    onError: (err) => message.error('Failed: ' + (err.response?.data?.message || err.message))
-                }
-            );
-        } else {
-            setIsInvoiceModalOpen(false);
-            setTimeout(() => {
-                const iframe = document.querySelector('.invoice-pdf-viewer iframe');
-                if (iframe) iframe.contentWindow.print();
-            }, 500);
-        }
-    };
-
     // Sidebar navigation items
     const sidebarItems = [
         { key: 'Reservation', label: 'Reservation', icon: <HomeOutlined /> },
@@ -1145,7 +1076,7 @@ const ReservationsListPage = () => {
                     <FormField label="Tariff Type" field="tariffType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TARIFF_TYPE_OPTIONS} />
                     <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicRoomTypeOptions} />
                     <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={filteredAreaOptions} error={fieldErrors.area} />
-                    <FormField label="Bkg Source" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
+                    <FormField label="Booking Type" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
                     <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
                     <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
                     <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={allVouchers} />
@@ -1156,52 +1087,7 @@ const ReservationsListPage = () => {
                     <FormField label="Confirmed" field="confirmed" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Confirmed By" field="confirmedBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 </div>
-
-                {/* Account Panel */}
-                <div style={{ flex: 1, minWidth: '380px', backgroundColor: '#fff', padding: '16px', overflowY: 'auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <Text strong style={{ fontSize: '16px' }}>Account</Text>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <Button type="text" size="small" icon={<SaveOutlined />} />
-                            <Button type="text" size="small" icon={<CopyOutlined />} />
-                            <Button
-                                type="primary"
-                                size="small"
-                                icon={<FilePdfOutlined />}
-                                onClick={handleGenerateInvoice}
-                                disabled={!reservationId || clientData.resNo === '(New Reservation)'}
-                            >
-                                Invoice
-                            </Button>
-                            <Button type="text" size="small" icon={<MoreOutlined />} />
-                        </div>
-                    </div>
-
-                    <FormField label="Account No" field="accountNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="Base Tariff" field="baseTariff" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="Package" field="package" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="Total Tariff" field="totalTariff" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="Tariff On Master" value="Yes" bgColor="#b7eb8f" />
-                    <FormField label="Deposit" value="XXXX" />
-                    <FormField label="Dep Req By" value="Sun, 23 Nov 2025" />
-                    <FormField label="POS On Master" value="No" />
-                    <FormField label="Bill Room Type" value="" isDropdown />
-                    <FormField label="Upgrade Reason" value="" isDropdown />
-                    <FormField label="Hide Tariff On Correspondence" value="No" />
-                    <FormField label="Avg Upgrade Tariff" field="avgUpgradeTariff" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="Accomm" field="accomm" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="A/R" field="ar" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="Active Accounts" field="activeAccounts" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                </div>
             </div>
-
-            <InvoiceModal
-                open={isInvoiceModalOpen}
-                onClose={() => setIsInvoiceModalOpen(false)}
-                onConfirm={handleConfirmInvoice}
-                invoiceData={invoiceData}
-                isConfirming={updateReservationMutation.isPending}
-            />
 
             <ClientFormDrawer
                 open={ownClientDrawerOpen}

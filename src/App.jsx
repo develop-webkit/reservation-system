@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AppShell from './components/layout/AppShell.jsx';
 import ProtectedRoute from './components/layout/ProtectedRoute.jsx';
-import AccountingPage from './pages/AccountingPage.jsx';
 import BookingChartPage from './pages/BookingChart.jsx';
 import BookingsPage from './pages/BookingsPage.jsx';
 import BookingsByDate from './pages/BookingsByDate.jsx';
@@ -11,6 +10,8 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import HousekeepingPage from './pages/HousekeepingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import TwoFactorVerifyPage from './pages/TwoFactorVerifyPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
+import MandatorySetup2FAPage from './pages/MandatorySetup2FAPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import ReservationEditPage from './pages/ReservationEditPage.jsx';
 import ReservationsListPage from './pages/ReservationsListPage.jsx';
@@ -40,7 +41,9 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/2fa-verify" element={<TwoFactorVerifyPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route element={<ProtectedRoute />}>
+        <Route path="/setup-2fa" element={<MandatorySetup2FAPage />} />
         <Route element={<AppShell />}>
           <Route index element={<Navigate to={defaultRedirect} replace />} />
           {/* Admin / Manager routes */}
@@ -55,7 +58,6 @@ function App() {
           <Route path="/charts/bookingchart" element={<BookingChartPage />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/housekeeping" element={<HousekeepingPage />} />
-          <Route path="/accounting" element={<AccountingPage />} />
           <Route path="/clients" element={<ClientsPage />} />
           <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/vouchers" element={<VouchersPage />} />

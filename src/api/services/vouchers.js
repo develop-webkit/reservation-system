@@ -15,3 +15,8 @@ export async function updateVoucher(id, payload) {
   const response = await http.patch(`/vouchers/${id}`, payload);
   return unwrapResponse(response);
 }
+
+export async function validateVoucher(code) {
+  const response = await http.get(`/vouchers/validate/${encodeURIComponent(code)}`);
+  return unwrapResponse(response);
+}
