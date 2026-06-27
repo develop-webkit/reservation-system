@@ -36,6 +36,7 @@ const UsersPage = () => {
   const is2FAEnabled = useAuthStore(selectIs2FAEnabled);
   const setLogin = useAuthStore((state) => state.login);
   const isAdmin = currentUser?.role === 'admin';
+  const isManager = currentUser?.role === 'manager';
   const [editingUserId, setEditingUserId] = useState(null);
 
   const { data: usersRaw, isLoading } = useUsers();
@@ -193,18 +194,23 @@ const UsersPage = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>Edit</Button>
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
-        </Space>
-      ),
+      render: (_, record) => {
+        const blocked = isManager && record.role === 'admin';
+        return (
+          <Space>
+            <Tooltip title={blocked ? 'Managers cannot edit Super Admin accounts' : ''}>
+              <Button size="small" icon={<EditOutlined />} disabled={blocked} onClick={() => openEdit(record)}>Edit</Button>
+            </Tooltip>
+            <Tooltip title={blocked ? 'Managers cannot delete Super Admin accounts' : ''}>
+              <Button size="small" danger icon={<DeleteOutlined />} disabled={blocked} onClick={() => handleDelete(record)} />
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
   const isSaving = createUser.isPending || updateUser.isPending;
-
-  const isManager = currentUser?.role === 'manager';
 
   // Only admin and manager can access this page.
   if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'manager') {

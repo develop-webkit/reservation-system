@@ -107,9 +107,19 @@ const BookingChartHeader = ({
     const [localSurname, setLocalSurname] = React.useState(filters.surname || '');
     const [localArea, setLocalArea] = React.useState(filters.area || '');
 
-    // Sync local text state when parent resets filters (e.g. Clear Filters button)
-    React.useEffect(() => { setLocalSurname(filters.surname || ''); }, [filters.surname]);
-    React.useEffect(() => { setLocalArea(filters.area || ''); }, [filters.area]);
+    // Sync local text state when parent resets filters (e.g. Clear Filters button).
+    // Adjusted during render rather than in an effect, per React's guidance for this pattern —
+    // avoids an extra cascading render on every parent filter reset.
+    const [prevFilterSurname, setPrevFilterSurname] = React.useState(filters.surname || '');
+    if ((filters.surname || '') !== prevFilterSurname) {
+        setPrevFilterSurname(filters.surname || '');
+        setLocalSurname(filters.surname || '');
+    }
+    const [prevFilterArea, setPrevFilterArea] = React.useState(filters.area || '');
+    if ((filters.area || '') !== prevFilterArea) {
+        setPrevFilterArea(filters.area || '');
+        setLocalArea(filters.area || '');
+    }
 
     const handlePrev = () => {
         const newDate = dayjs(currentStart).subtract(1, 'days').format('YYYY-MM-DD');

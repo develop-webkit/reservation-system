@@ -1,5 +1,5 @@
 import { Layout, Menu } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { navigationItems } from '../../constants/navigation.js';
 import useAuthStore from '../../store/authStore.js';
@@ -33,13 +33,18 @@ function AppSidebar() {
     isInClientsGroup ? [CLIENTS_SUBMENU_KEY] : [],
   );
 
-  useEffect(() => {
+  // Auto-open the Clients submenu on transitioning into a /clients or /groups route,
+  // without fighting a manual collapse on later re-renders while already inside it.
+  // Adjusted during render rather than in an effect to avoid an extra cascading render.
+  const [prevIsInClientsGroup, setPrevIsInClientsGroup] = useState(isInClientsGroup);
+  if (isInClientsGroup !== prevIsInClientsGroup) {
+    setPrevIsInClientsGroup(isInClientsGroup);
     if (isInClientsGroup) {
       setOpenKeys((prev) =>
         prev.includes(CLIENTS_SUBMENU_KEY) ? prev : [...prev, CLIENTS_SUBMENU_KEY],
       );
     }
-  }, [isInClientsGroup]);
+  }
 
   const menuItems = useMemo(() => buildMenuItems(navigationItems, role), [role]);
 

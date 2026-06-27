@@ -1,5 +1,5 @@
 // src/pages/BookingChart.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import CoreBookingChart from '../components/BookingChart';
 import BookingChartHeader from '../components/BookingChartHeader';

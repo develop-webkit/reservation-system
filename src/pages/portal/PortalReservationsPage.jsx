@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Input, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd';
+import { Alert, Button, Input, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { PlusOutlined, StopOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { createReservation, updateReservation } from '../../api/services/reservations.js';
