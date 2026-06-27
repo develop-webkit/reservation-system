@@ -61,7 +61,7 @@ function ReservationFormDrawer({
       }
     : {
         adults: 1, children: 0, infants: 0, isFixed: false, totalTariff: 0, balance: 0,
-        checkIn: dayjs().hour(15).minute(0).second(0),
+        checkIn: dayjs().hour(6).minute(0).second(0),
         checkOut: dayjs().add(1, 'day').hour(6).minute(0).second(0),
       };
 

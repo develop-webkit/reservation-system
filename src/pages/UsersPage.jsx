@@ -12,23 +12,9 @@ import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetUser2FA 
 import { useClients } from '../hooks/useClients';
 import useAuthStore, { selectCurrentUser, selectIs2FAEnabled } from '../store/authStore';
 import TwoFactorSetupSection from '../components/auth/TwoFactorSetupSection.jsx';
+import { ROLE_OPTIONS, ROLE_COLORS, getRoleLabel } from '../constants/roleLabels.js';
 
 const { Title, Text } = Typography;
-
-const ROLE_OPTIONS = [
-  { value: 'user', label: 'User' },
-  { value: 'housekeeper', label: 'Housekeeper' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'portal_user', label: 'Portal User' },
-];
-
-const ROLE_COLORS = {
-  admin: 'red',
-  manager: 'orange',
-  portal_user: 'blue',
-  user: 'green',
-  housekeeper: 'cyan',
-};
 
 const DEFAULT_FORM = {
   fullName: '',
@@ -175,7 +161,7 @@ const UsersPage = () => {
       key: 'role',
       render: (role) => (
         <Tag color={ROLE_COLORS[role] || 'default'}>
-          {(role || '').replace('_', ' ').toUpperCase()}
+          {getRoleLabel(role).toUpperCase()}
         </Tag>
       ),
     },

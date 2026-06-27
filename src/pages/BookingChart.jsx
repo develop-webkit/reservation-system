@@ -30,7 +30,7 @@ const EXPORT_HEADERS = {
     adults: 'Adults',
     tariffType: 'Tariff Type',
     voucherNo: 'Voucher No',
-    bkgSource: 'Booking Source',
+    bkgSource: 'Booking Type',
 };
 
 function applyChartFilters(bookings, rooms, filters) {

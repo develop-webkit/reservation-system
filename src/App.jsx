@@ -30,6 +30,7 @@ import PortalRoomAvailabilityPage from './pages/portal/PortalRoomAvailabilityPag
 import PortalUsersPage from './pages/portal/PortalUsersPage.jsx';
 import PortalClientsPage from './pages/portal/PortalClientsPage.jsx';
 import InvoiceGeneratorPage from './pages/InvoiceGeneratorPage.jsx';
+import InvoiceHistoryPage from './pages/InvoiceHistoryPage.jsx';
 import MyAccountPage from './pages/MyAccountPage.jsx';
 import useAuthStore from './store/authStore.js';
 
@@ -65,6 +66,7 @@ function App() {
           <Route path="/booking-requests" element={<BookingRequestsAdminPage />} />
           <Route path="/groups" element={<GroupsManagementPage />} />
           <Route path="/invoice-generator" element={<InvoiceGeneratorPage />} />
+          <Route path="/invoice-history" element={<InvoiceHistoryPage />} />
           <Route path="/account" element={<MyAccountPage />} />
           {/* Portal user (corporate client) routes */}
           <Route path="/portal/dashboard" element={<PortalDashboardPage />} />

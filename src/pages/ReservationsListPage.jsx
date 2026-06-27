@@ -132,7 +132,7 @@ const FormField = ({
                                 format: 'h:mm A',
                                 use12Hours: true,
                                 defaultValue: [
-                                    dayjs('15:00', 'HH:mm'),
+                                    dayjs('06:00', 'HH:mm'),
                                     dayjs('06:00', 'HH:mm')
                                 ]
                             }}
@@ -388,7 +388,7 @@ const ReservationsListPage = () => {
         resNo: '(New Reservation)',
         masterResNo: '(New Reservation)',
         status: 'Unconfirmed',
-        arrive: arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0).toDate() : dayjs().hour(15).minute(0).second(0).toDate(),
+        arrive: arriveParam ? dayjs(arriveParam).hour(6).minute(0).second(0).toDate() : dayjs().hour(6).minute(0).second(0).toDate(),
         depart: arriveParam ? dayjs(arriveParam).add(1, 'day').hour(6).minute(0).second(0).toDate() : dayjs().add(1, 'day').hour(6).minute(0).second(0).toDate(),
         nights: 1,
         adults: 1,
@@ -435,8 +435,8 @@ const ReservationsListPage = () => {
                 resNo: resNoParam || prev.resNo,
                 masterResNo: masterResNoParam || prev.masterResNo,
                 // Dates
-                arrive: arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0).toDate() : prev.arrive,
-                depart: departParam ? dayjs(departParam).hour(7).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(7).minute(0).second(0).toDate() : prev.depart),
+                arrive: arriveParam ? dayjs(arriveParam).hour(6).minute(0).second(0).toDate() : prev.arrive,
+                depart: departParam ? dayjs(departParam).hour(6).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(6).minute(0).second(0).toDate() : prev.depart),
                 area: areaParam || prev.area,
                 roomType: roomTypeParam || prev.roomType,
                 // Client fields
@@ -548,7 +548,7 @@ const ReservationsListPage = () => {
                     // 1. Apply Default Times if they haven't been set by the user yet
                     // Ant Design defaults to 00:00 if only a date is clicked.
                     if (arrive.hour() === 0 && arrive.minute() === 0) {
-                        arrive = arrive.hour(15).minute(0).second(0);
+                        arrive = arrive.hour(6).minute(0).second(0);
                     }
                     if (depart.hour() === 0 && depart.minute() === 0) {
                         depart = depart.hour(6).minute(0).second(0);

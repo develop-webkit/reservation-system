@@ -34,8 +34,17 @@ const buildInitial = () => ({
   lineItems: [newLineItem()],
 });
 
+// Keys that belong on the form/save-payload. Persistence-only fields (_id,
+// clientNumber, createdBy, canEdit, net/gst/total, __v, timestamps) live in
+// `meta`, never in `invoice` — otherwise they'd get serialized back into the
+// next save request and rejected by the backend's forbidNonWhitelisted DTO.
+const FORM_FIELDS = Object.keys(buildInitial()).filter((f) => f !== 'lineItems');
+
+const initialMeta = () => ({ id: null, canEdit: true, createdAt: null });
+
 export function useInvoiceGenerator() {
   const [invoice, setInvoice] = useState(buildInitial);
+  const [meta, setMeta] = useState(initialMeta);
 
   const setField = useCallback((field, value) => {
     setInvoice((prev) => {
@@ -75,7 +84,31 @@ export function useInvoiceGenerator() {
     });
   }, []);
 
-  const resetInvoice = useCallback(() => setInvoice(buildInitial), []);
+  const resetInvoice = useCallback(() => {
+    setInvoice(buildInitial());
+    setMeta(initialMeta());
+  }, []);
+
+  // Loads a previously saved invoice into the form. Deliberately bypasses
+  // setField — going through it would zero out a real saved voucherDiscount
+  // the moment voucherNo gets set (see FORM_FIELDS comment above).
+  const loadInvoice = useCallback((saved) => {
+    const next = buildInitial();
+    FORM_FIELDS.forEach((field) => {
+      if (saved[field] !== undefined && saved[field] !== null) {
+        next[field] = saved[field];
+      }
+    });
+    next.lineItems = saved.lineItems?.length
+      ? saved.lineItems.map((item) => ({ id: Date.now() + Math.random(), ...item }))
+      : [newLineItem()];
+    setInvoice(next);
+    setMeta({
+      id: saved._id || saved.id || null,
+      canEdit: saved.canEdit !== false,
+      createdAt: saved.createdAt || null,
+    });
+  }, []);
 
   const totals = useMemo(() => {
     const net = invoice.lineItems.reduce((s, i) => s + Number(i.totalPrice || 0), 0);
@@ -85,5 +118,15 @@ export function useInvoiceGenerator() {
     return { net, gst, voucherDiscount, total };
   }, [invoice.lineItems, invoice.voucherDiscount]);
 
-  return { invoice, setField, addLineItem, removeLineItem, updateLineItem, resetInvoice, totals };
+  return {
+    invoice,
+    meta,
+    setField,
+    addLineItem,
+    removeLineItem,
+    updateLineItem,
+    loadInvoice,
+    resetInvoice,
+    totals,
+  };
 }

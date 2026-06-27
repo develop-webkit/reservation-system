@@ -1,3 +1,176 @@
+## Park / Unpark Reservation in the Booking Chart — 2026-06-27
+
+Added a "Park Reservation" / "Unpark" workflow to the Booking Chart, modeled on the equivalent feature in the legacy reference system: right-click a booking → Park → it moves into a dedicated holding row (multiple parked bookings stack visibly) → later, Unpark → pick a real room → it moves there, optionally recalculating its tariff and/or re-pointing an existing housekeeping task.
+
+Three pieces of half-finished scaffolding for this already existed and were built on rather than replaced: `src/components/BookingChart.jsx` already had full multi-track stacking/rendering logic keyed on a hardcoded `room.id === 'PK01'`; `src/data/rooms.js`/`mockData.js` already defined a mock `PK01` "Parked Reservation" room; `update-booking.dto.ts` had a stale, unused `isParked?: boolean` field.
+
+### Critical design decision: parking does NOT touch `isParked`
+`Booking.isParked` is already live for an unrelated purpose — the cancellation flow (`updateStatus()`/`remove()` in `booking.service.ts`) sets it directly via document mutation to hide canceled bookings from the chart query. Reusing it for "this booking is parked" would have made parked bookings invisible, the opposite of the goal. **Parking is implemented purely as `roomId` reassignment** to a dedicated, always-seeded "Parked Reservation" room — `isParked` is never read or written by any of this feature's code. The stale `isParked` field was removed from `UpdateBookingDto` (confirmed via grep that the cancellation flow sets it server-side directly, never through this DTO, so removal is safe).
+
+### Backend (`Rms Booking Backend`)
+- `src/modules/seed/seed.service.ts` — `seedParkingRoom()` (idempotent find-or-create, mirrors `seedStaffAccommodation()`'s pattern, not gated behind the bulk `roomCount === 0` check). Creates one Room: `name: 'Parked Reservation'`, `type: 'PARKED'`, no `category` set (renders as a top-level/uncategorized row, same as how `topLevelRooms` already groups rooms with no category — passing `category: null` explicitly was tried first and rejected by TypeScript, since `Room.category` is typed as a required `string`; omitting the field entirely is both type-correct and behaviorally identical, since `undefined` is just as falsy as `null` for the grouping check).
+- `src/modules/booking/dto/update-booking.dto.ts` — removed stale `isParked`; added `recreateTariff?: boolean` and `reassignHousekeeping?: boolean` — one-time instructions for a single `update()` call, never persisted to the Booking document.
+- `src/modules/booking/booking.service.ts` — `PARKING_ROOM_NAME` constant; `isParkingRoom(roomId)` helper (looks up the room, compares `name`); `resolveCurrentRate(clientId, requestUser)` (reuses the same rate fallback chain already used at booking creation). `update()` rewritten to: skip the availability check entirely when the target room is the parking room (unlimited overlapping bookings allowed there by design); recompute `appliedRate` when `recreateTariff` is set; call `tasksService.reassignRoomForBooking()` after a successful room change when `reassignHousekeeping` is set.
+- `src/modules/tasks/tasks.service.ts` — new `reassignRoomForBooking(bookingId, newRoomId)`: re-points any not-yet-completed task tied to a booking to its new room (otherwise an already-created departure-clean task stays orphaned on the old room after an unpark).
+
+### Frontend (`Rms-Frontend`)
+- `src/components/BookingChart.jsx` — replaced the hardcoded `room.id === 'PK01'` check with `PARKING_ROOM_NAME = 'Parked Reservation'` matched against `room.name` (real Mongo `_id`s can't be the literal string `'PK01'`). Booking context menu gained "Park Reservation" (`Modal.confirm`, reuses `useUpdateBookingChart` unchanged) or "Unpark Reservation" (new controlled modal: Area `Select` + two unchecked-by-default checkboxes for Recreate Tariff / Reassign Housekeeping), gated behind `!isPortalUser` like the existing Out Of Service/Out Of Order items. No new hooks or API functions needed — the existing `updateBookingChartMutation` already PATCHes arbitrary fields to `/bookings/:id`.
+
+### Two real, pre-existing bugs found and fixed during verification
+Neither bug is new — both predate this session (confirmed via `git show HEAD:...` against the last commit before any of today's changes) and simply had no code path exercising them until this feature became the first to ever change an *existing* booking's room through `PATCH /bookings/:id` (drag-resize only ever changes dates).
+
+1. **`update()` silently dropped room changes.** `UpdateBookingDto.roomId` was spread directly into the Mongoose update payload, but the schema's actual field is `room` (an ObjectId ref) — Mongoose's default `strict: true` silently discards unknown keys, so every `{roomId: ...}` PATCH was a no-op on the room itself (everything else in the payload still saved, masking the issue). Fixed by destructuring `roomId` out and explicitly setting `normalizedUpdate.room = new Types.ObjectId(roomId)`.
+2. **`checkAvailability()` never matched on room.** Its query used `room: roomId` with a plain string, never wrapped in `new Types.ObjectId(...)` (unlike every other room/booking query elsewhere in this codebase, e.g. `tasks.service.ts`'s `buildTaskQuery`). The mismatch meant the conflict query matched zero existing bookings regardless of actual occupancy — a double-booking into an already-occupied room would have silently succeeded. Fixed by wrapping `roomId` the same way as everywhere else.
+
+Both were caught because the plan's own verification checklist specifically called for testing "unpark into an occupied room → expect a conflict," which the original implementation could not have passed without these fixes.
+
+### Verified live
+Used a fresh `npm run start:dev` instance (the long-running dev server from earlier in the day turned out to be running stale, pre-fix code — `nest start --watch`'s auto-restart was silently failing with `EADDRINUSE` against itself on this machine, leaving the old process serving forever; confirmed by checking `netstat`/`Get-Process` and restarting cleanly) and disposable test reservations/a test housekeeper/a temporary client-rate change, all deleted after:
+- Parking room seeds exactly once and stays that way across a second clean restart (idempotency confirmed, not just assumed).
+- Parked a booking → room became "Parked Reservation"; its original room+dates immediately became bookable again (proved by creating a fresh reservation in the vacated slot).
+- Parked a second, date-overlapping booking into the same holding room → succeeded with no conflict (the parking-room bypass works).
+- Unparked into a free room with both flags off → landed correctly, `appliedRate` untouched.
+- Unparked with "Recreate tariff" checked (after bumping the test client's rate from 500 → 650) → `appliedRate` correctly became 650, not the stale 500.
+- Unparked with "Reassign housekeeping" checked (booking had an existing task pointed at a different room) → task's `room` field correctly updated to the new room.
+- Attempted to move a booking into an already-occupied room → correctly rejected with `409 Conflict`, booking's room unchanged (this is the case that surfaced both bugs above).
+- Regression-checked the unrelated drag-resize path (dates-only PATCH, no `roomId`) — room correctly left untouched, confirming the `update()` rewrite didn't disturb existing behavior.
+
+---
+
+## Default Reservation Time (06:00 AM) + Bookings Export Column Rename — 2026-06-27
+
+**Default Reservation Time:** The Add Reservation form's arrival/departure time defaulted to 15:00 (3 PM) in several places, not just the obvious `RangePicker`'s `showTime.defaultValue`. Fixed all of them to 06:00 AM, consistently: `ReservationsListPage.jsx` (`showTime.defaultValue`, the `useState` initializer's `arrive` for both branches, the URL-param-sync `useEffect`'s `arrive`/`depart`, and the `onChange` handler's separate "patch 00:00 to a real default" logic — this last one is a distinct code path from `showTime.defaultValue` and needed its own fix, not redundant with it), `ReservationEditPage.jsx` (same `showTime.defaultValue` + initial-state + param-sync spots), and `ReservationFormDrawer.jsx`'s `checkIn` initializer. Still fully user-editable after the default applies.
+
+**Bookings Export Column Rename:** `EXPORT_HEADERS.bkgSource` in `src/pages/BookingChart.jsx` changed from `'Booking Source'` to `'Booking Type'` to match updated terminology used elsewhere in the system (confirmed via grep this was the only occurrence of the old label anywhere in the export pipeline).
+
+---
+
+## Invoice Generator ↔ Voucher Integration — Verified, Not Rebuilt — 2026-06-27
+
+Asked to wire the Invoice Generator's Voucher No field to the Vouchers module (validate on entry, apply discount automatically, handle invalid/expired/already-used codes). Found the entire feature already fully implemented and committed (part of `1ba2bb4`, untouched by anything else this session) — `InvoiceVoucherField.jsx` calls `GET /vouchers/validate/:code`, `useInvoiceGenerator.js`'s `totals` already subtracts `voucherDiscount` from the total, and both the on-screen `InvoiceTotals` and the downloadable `InvoiceGeneratorPDF.jsx` already conditionally render the "Voucher Discount" line. Rather than re-implement working code, did a live end-to-end verification instead (created disposable test vouchers + a disposable Manager account, deleted both after):
+
+### What "already-used" means in this system
+There's no auto-redemption/single-use counter — `Voucher.usedByCompany` is a static *scoping* field set at creation time (which company this voucher is restricted to), not a "consumed" flag, and nothing anywhere sets it dynamically on redemption. The actual lifecycle is manual: an admin/manager flips the `isActive` switch off once a voucher has been given out and used. `vouchers.service.ts`'s `validateForInvoice`/`resolveApplicableVoucher` already query `{code, isActive: true}`, so a deactivated voucher is correctly treated as not-found. This is a deliberate, reasonable design for a system with no persisted invoice/redemption record to count against — not a gap.
+
+### Verified live as Admin
+- Valid voucher (`isActive: true`, no expiry, $25 credit) on a $100 line item → "Voucher applied: -$25.00", totals exactly NET $100 / GST $10 / Voucher Discount -$25 / **Total $85.00**.
+- Expired voucher (`isActive: true`, expiry in the past) → "Voucher has expired", discount correctly reset to $0.
+- Inactive voucher (`isActive: false`) → "Voucher code X not found", discount reset to $0.
+- Nonexistent code → "Voucher code X not found".
+- PDF component (`InvoiceGeneratorPDF.jsx`) confirmed to use byte-identical total/discount calculation logic to the on-screen version (read source directly) — the embedded PDF preview iframe renders as a black box under automated screenshot capture (a capture-tooling limitation of native PDF viewers, not an app bug; zero console errors during generation).
+
+### Verified live as Manager (tenant isolation)
+- A disposable Manager account only sees vouchers it creates (`GET /vouchers` returned empty before creating one — confirms `findAll`'s `managerClientNumber` scoping).
+- A voucher created by that Manager auto-scopes `managerClientNumber` to their own `clientNumber` server-side — the "Manager client number" form field's value is ignored for non-admins (`vouchers.service.ts`'s `create()` always overrides it from `requestUser.clientNumber`), so a manager cannot self-assign a different tenant's scope even by editing the field.
+- That Manager's own voucher applied correctly in their own Invoice Generator ($200 + $20 GST − $30 = **$190.00**, math verified).
+- The same Manager attempting to redeem the *Admin's* test voucher (created with no `managerClientNumber`) got "not found" — confirmed cross-tenant rejection works correctly via `resolveApplicableVoucher`'s exact `managerClientNumber` match requirement.
+
+**Found, not fixed (out of scope — UI gap, not a voucher-integration bug):** `VouchersTable.jsx` has no Delete action and `api/services/vouchers.js` has no `deleteVoucher()`, even though the backend's `DELETE /vouchers/:id` already exists and works (used directly via `fetch()` to clean up this session's test vouchers). Flagged for the user to decide if it's worth adding a Delete button later.
+
+---
+
+## Invoice Save & Edit Permissions — 2026-06-27
+
+Added backend persistence to the Invoice Generator (previously a pure client-side PDF tool with zero saved state) plus time-boxed edit permissions: Manager can edit a saved invoice for 5 days from creation; Admin always can. A companion bug report (nights/day calculation showing "10" instead of an expected "11" for a 01–10 June range) was investigated and resolved as **no code change** — confirmed with the user that the existing `diff + 1` formula already matches the stated "inclusive of both dates" rule; the expected number in the report was a manual miscount.
+
+Planned via `EnterPlanMode` given the scope (new schema/module + multi-file frontend wiring); a Plan-agent stress-test of the design caught two real issues before any code was written, both addressed in the implementation:
+- **A genuine bug, not hypothetical**: `useInvoiceGenerator.js`'s `setField('voucherNo', ...)` always reset `voucherDiscount` to 0. Naively seeding form state for a *loaded* saved invoice through that same setter would have silently wiped a real saved discount back to zero on every reload. Fixed with a dedicated `loadInvoice()` action that replaces state atomically in one `setInvoice` call, bypassing `setField` entirely.
+- The "create → attach id to URL → next save PATCHes" pattern doesn't exist anywhere else in this codebase (`ReservationEditPage.jsx` only ever updates, never creates) — built fresh using `useSearchParams()`'s setter rather than assumed to mirror an existing pattern.
+
+### Backend — new `invoices` module (`Rms Booking Backend`)
+- `src/schemas/invoice.schema.ts` — mirrors the Invoice Generator's existing form fields plus an embedded `InvoiceLineItem` subschema, `clientNumber` (tenant scope) and `createdBy`. `invoiceNo` globally unique (matches `resNo`/voucher `code` precedent).
+- `src/modules/invoices/invoices.service.ts` — `ensureScope()` mirrors `vouchers.service.ts`'s tenant check. A single `canEdit()` helper (`role === ADMIN || daysSinceCreation <= 5`) and `decorate()` helper (adds `canEdit` + computed `net`/`gst`/`total`) used by every read/write path, so the time-math and the admin bypass each live in exactly one place. `update()` checks tenant scope *before* the edit-window, so a cross-tenant manager gets "not yours" rather than leaking "window expired" about a record they can't access at all. `remove()` is admin-only (no UI button yet, kept for cleanup parity with how `vouchers.service.ts` already has an unused-by-UI `remove()`).
+- `src/modules/invoices/invoices.controller.ts`/`invoices.module.ts` — same `@RoleDecorator`/guard shape as `vouchers.controller.ts`. Registered in `app.module.ts`.
+- Reused the existing `USER_DISPLAY_FIELDS` constant (from the password-leak fix earlier this session) for the `createdBy` populate — caught and fixed a moment where this was first written as a hardcoded `'username fullName'` string instead of importing the shared constant.
+
+### Frontend
+- `src/api/services/invoices.js` + `src/hooks/useInvoices.js` — query-key-factory shape (mirrors `useReservations.js`), mutations wrapped in the existing `useAppMutation` for consistent toasts.
+- `src/hooks/useInvoiceGenerator.js` — added `loadInvoice()` (see bug above) and a separate `meta` state (`{ id, canEdit, createdAt }`), deliberately kept out of the `invoice` object so it's never serialized back into a save payload — the backend's global `forbidNonWhitelisted` validation pipe would otherwise reject the request outright.
+- `src/pages/InvoiceGeneratorPage.jsx` — `?invoiceId=` via `useSearchParams`; "Save Invoice" moved to the front of the header actions (red/danger button, matching the reference image) with a double-click guard and a disabled+tooltip state when `canEdit === false`. "New Invoice" now also clears `?invoiceId=` so the next save can't accidentally PATCH the previous record. Existing Preview/Download PDF behavior is unchanged — saving is purely additive.
+- `src/pages/InvoiceHistoryPage.jsx` + `src/components/invoice/InvoiceHistoryTable.jsx` (new) — a minimal list of saved invoices with an "Open" action, added because there was otherwise no way to find a saved invoice again to edit it (not explicitly requested, but necessary for the feature to be reachable at all). New `/invoice-history` route, nav entry, and `ProtectedRoute.jsx` `ADMIN_PATHS` entry (same treatment as `/invoice-generator`).
+
+### Verified live
+Created a real invoice as Admin with a line item and a voucher discount applied (used the existing `457dt433` voucher) → saved → **reloaded the page and confirmed the voucher discount survived** ($300 + $30 GST − $200 = $130, exactly — this is the specific bug described above, directly confirmed fixed). Edited and re-saved: confirmed exactly one record existed throughout (PATCH, not a duplicate create). "New Invoice" confirmed to clear the URL and start a true new record on the next save.
+
+For the 5-day window, rather than mutating `createdAt` directly against the live shared dev database (attempted once via a one-off script — correctly blocked by the permission system as an unauthorized direct database mutation bypassing the app layer, since this hadn't been explicitly approved as its own action) — the edit window was temporarily set to 0 days in code, tested, then reverted to 5:
+- Manager attempting to PATCH their own just-created invoice → 403 "edit window has expired"; Save button correctly disabled+tooltipped in the UI.
+- Admin PATCHing the same invoice → 200 OK, succeeds regardless of the window.
+- A second Manager (different `clientNumber`) attempting to GET or list the first Manager's invoice → 403 "not your account" / excluded entirely from their own list — confirmed via direct API calls.
+- Invoice History page: Admin sees all saved invoices (including ones created by both test Managers); "Open" correctly round-trips into the generator with all fields reloaded.
+
+All disposable test invoices and the two test Manager accounts were deleted after verification.
+
+---
+
+## Backend-wide User-populate Password Leak Fix — 2026-06-27
+
+Follow-up to the security finding below (clients.service.ts's `createdBy` populate leaking `password`/`refreshToken`). Audited every `.populate()` call across `Rms Booking Backend/src` referencing the `User` model and fixed all of them, not just the one found live.
+
+### Root cause
+`src/schemas/user.schema.ts`'s `password`, `refreshToken`, `resetPasswordToken`, `resetPasswordExpires` fields have no `select: false` (only `two_factor_secret` does). Any `.populate('someUserRef')` call with no field projection pulls the entire `User` document — credentials included — into the populated subdocument, which then serializes straight into the JSON response for any caller with read access to that endpoint.
+
+### New shared constant
+`src/constants/user-display.constants.ts` — `USER_DISPLAY_FIELDS = 'username fullName'`. Verified this is the *exact* and *only* set ever read from a populated `createdBy`/`assignedTo`/`confirmedBy`/`completedBy`/`assignedHousekeeper` field on the frontend (`readUserName()` in `reservation-payload.helper.ts`, and `record.assignedTo?.fullName || record.assignedTo?.username` in the Tasks/Housekeeping tables) — not a blanket reuse of `clients.service.ts`'s broader `CREATED_BY_SAFE_FIELDS` allowlist, which was sized for a different consumer.
+
+### Fixed (real, currently-exploitable leaks — no mapper/DTO was filtering these)
+- `accounting.service.ts` — `createdBy` (`findAll`, `findOne`, `syncReservationCharge`)
+- `asset-maintenance.service.ts` — `assignedTo` (`findAll`, `findOne`) — note: this module has no live frontend consumer at all currently (`grep` for `assetMaintenance`/`asset-maintenance` in `src/api` returns nothing), fixed anyway for when it's wired up
+- `housekeeping.service.ts` — `assignedTo` (`getAssignments`, also used by `getPrintableRoster`)
+- `tasks.service.ts` — `assignedTo`, `createdBy`, **and `completedBy`** (found while reading the file — same root cause, not in the original report) via the shared `populateTask()` helper (4 call sites) plus `update()`'s separate populate chain
+- `rooms.service.ts` — `assignedHousekeeper` (`findAll`, `findOne`, `update`) — reachable by `portal_user` per the existing `Role.PORTAL_USER` grant on `GET /rooms`
+- `booking.service.ts` — `assignedHousekeeper` (`ensureCheckoutWorkflow`, found via the full-schema sweep below) **and** `createdBy`, both as a direct populate (8 call sites) and nested inside the shared `reservationPopulate` config object (which alone covers 7 more call sites: `create`, `getChartData`, `update`, `updateStatus`, `findAll`, `findOne`, `remove`)
+
+### Fixed defensively (not currently exploitable — already redacted before reaching the response)
+`reservations.service.ts`'s 5 `createdBy`/`confirmedBy` populates and the corresponding ones in `booking.service.ts` all route through `mapReservationEntityToFrontend`/`mapBookingEntityToFrontend`, whose `readUserName()` helper already reduces the populated object to a plain name string before serialization — so the password was never actually reaching these two endpoints' JSON. Fixed anyway: the unprojected populate still pulls the hash out of MongoDB into Node memory needlessly, and the safety depended entirely on every future code path continuing to go through the mapper.
+
+### Full-schema sweep (confirmed nothing else needed fixing)
+Grepped every schema for `ref: 'User'` to get the complete set of fields, then checked each: `client-group.schema.ts`'s `createdBy` and `group.schema.ts`'s `createdBy` (a separate, distinct "Group Master / sibling bookings" module at `/api/v1/groups`, not the corporate `client-groups` module) are both stored but **never populated anywhere** in their services — returned as raw ObjectId strings, not a leak. `booking.schema.ts`'s `canceledBy` — same, set but never populated. `helper.service.ts`'s generic `paginationResponse()` already accepts a `select` per populate entry by design, and has zero callers anyway.
+
+### Verified
+Live, post-fix: `GET /tasks`, `GET /rooms`, `GET /accounting` all return 200 with zero occurrences of `password`/`refreshToken`/`resetPassword` anywhere in the full response body (checked 8–24KB of JSON per endpoint, not just a snippet). A task's populated `assignedTo` now returns exactly `{_id, fullName, username}` — confirmed the projection is exact, not just "smaller." Tasks page still renders "Manager Ahsan" in the Assigned To column with no frontend changes needed. Backend recompiled with 0 TypeScript errors after all edits.
+
+---
+
+## Client (portal_user) Reservations Access Fix + DevTools Lockout — 2026-06-27
+
+### Problem reported
+Client (portal_user) couldn't create/manage reservations; reported as "clicking Reservations redirects to Dashboard." Separately asked to disable right-click/DevTools shortcuts for the Client role only.
+
+### Investigation
+Routing (`navigation.js` → `/portal/reservations`, `App.jsx` route, `ProtectedRoute.jsx`'s `ADMIN_PATHS`) was already correct — reproducing with a fresh disposable `portal_user` test account, the sidebar click landed on `/portal/reservations` with no redirect. The real defect, found via `preview_network`: `GET /clients` and `GET /companies` returned **403** for `portal_user`. `PortalReservationsPage.jsx` depends on both (`useClientsQuery`/`useCompaniesQuery`) to feed `ReservationFormDrawer`, which resolves the hidden billing `client` field from the selected group member by matching against the `clients` list (`handleMemberSelect` in `ReservationFormDrawer.jsx`) — with that list always empty, the match always failed silently, so reservation creation was effectively broken even though the page itself rendered without any visible redirect.
+
+### Fix — Backend (`Rms Booking Backend`)
+- `src/modules/clients/clients.controller.ts` — added `Role.PORTAL_USER` to `GET /clients` (`findAll`). No service change needed: `ClientsService.buildAccessibleQuery()` already scopes any non-admin caller to `clientNo === requestUser.clientNumber` (+ children via `parentClientNumber`), so a portal user only ever receives their own client record — verified live (CL-998 logged in → only CL-998 and its child CL-1928 returned, no cross-tenant leak).
+- `src/modules/companies/companies.controller.ts` — added `Role.PORTAL_USER` to `GET /companies` (`findAll`). `Company` has no tenant-ownership field at all (it's a flat lookup, same unscoped list USER/HOUSEKEEPER already receive), so this mirrors existing precedent rather than introducing new exposure.
+
+### Security fix found during verification (same file)
+Inspecting the live `GET /clients` response, the populated `createdBy` field returned the **full `User` document — including the bcrypt password hash and `refreshToken`** (`user.schema.ts`'s `password`/`refreshToken` fields lack `select: false`, unlike `two_factor_secret`). This pre-existed for every role already permitted on this endpoint, but extending it to the external-facing `portal_user` role raised the severity enough to fix inline:
+- `src/modules/clients/clients.service.ts` — `findAll()`/`findOne()` now call `.populate('createdBy', CREATED_BY_SAFE_FIELDS)` with an explicit allowlist (`username fullName email role clientNumber linkedClientNo`) instead of populating the whole document.
+- The same unprotected-populate pattern exists in `accounting`, `asset-maintenance`, `housekeeping`, `tasks`, `reservations`, and `booking` services (`.populate('createdBy'|'assignedTo')` with no projection) — flagged as a separate follow-up task, not fixed here (out of scope for this change).
+
+### Fix — Frontend (DevTools/right-click lockout)
+- New `src/hooks/useDisableDevTools.js` — reusable hook; when `enabled`, attaches `contextmenu` (blocks right-click) and `keydown` (blocks F12, Ctrl+Shift+I/J/C, Ctrl+U) listeners on `document`, cleaned up on unmount/disable.
+- `src/components/layout/AppShell.jsx` — calls `useDisableDevTools(role === 'portal_user')`. `AppShell` is the shared layout for every authenticated route (admin and portal alike), so this is the single place to gate the behavior by role without duplicating it per-page.
+- Caveat (by design, not a gap to fix): this is a client-side UX deterrent, not a real security boundary — DevTools remains reachable via the browser's own menu. Communicated as such; no attempt was made at devtools-open detection (unreliable, easily defeated, not appropriate to ship).
+
+### Verified
+Created a disposable `portal_user` test account (`CL-998`/`qa_portal_test`, deleted after) since the real reported account's password was unknown and not to be reset without asking. Confirmed via `preview_network`: `/clients` and `/companies` now return 200 (previously 403) and the response no longer contains `password`/`refreshToken`; reservation list and "New Reservation" drawer render correctly. Confirmed via synthetic `contextmenu`/`keydown` dispatch + `defaultPrevented`: blocked for the portal_user session, **not** blocked for admin afterward (re-logged in as admin) — confirmed Reservations page, filters, and table still fully functional for admin (no regression).
+
+**Not done — flagged, not assumed:** the broader role spec provided alongside this request (Manager's 5-day invoice-edit window + edit-request-to-admin workflow, a full Dashboard/Reservation/Group-Management permission audit against the spec) was treated as background context for *why* the two reported bugs mattered, not as additional work — those are sizable, separate efforts and weren't reproduced as broken, so they were left for the user to explicitly scope.
+
+### Follow-up: "Portal User" → "Client" display label
+User confirmed this one piece of the broader spec as in-scope (display label only — the underlying `portal_user` role value, route prefixes, and variable names are all unchanged).
+
+- New `src/constants/roleLabels.js` — single source of truth: `ROLE_LABELS` (`portal_user` → `'Client'`, others unchanged), `ROLE_COLORS`, `ROLE_OPTIONS` (for the role `<Select>`), and `getRoleLabel(role)` helper.
+- `src/pages/UsersPage.jsx` — removed its local `ROLE_OPTIONS`/`ROLE_COLORS` (duplicated the same data) in favor of the shared module; Role column now renders `getRoleLabel(role).toUpperCase()` instead of `role.replace('_',' ').toUpperCase()`.
+- `src/components/account/MyAccountCard.jsx` — same: removed local `ROLE_COLORS`, now imports from `roleLabels.js`. (Used by both `/account` (user/housekeeper) and the portal user's own "My Account" page.)
+- `src/components/layout/AppHeader.jsx` — the top-right role text (previously rendered the raw `user.role` string verbatim — this is the exact spot in the user's screenshot showing literal `portal_user`) now renders `getRoleLabel(user.role)`.
+- Note: `src/constants/roles.js` is a *different*, pre-existing, unrelated permissions-style module (`ROLES`/`ROLE_PERMISSIONS`/`roleHasPermission`) — confirmed it has zero live importers (only the already-dead `AntdSidebar.jsx`/`AntdTopBar.jsx`/`pages/Users/UserForm.jsx`), so the new `roleLabels.js` was named distinctly rather than extending dead code.
+
+**Verified:** admin's own header label changed from lowercase `admin` to `Admin` (same `getRoleLabel` lookup, confirms the function works); the real `Ahsan Client` (CL-6767) row's Role tag now reads `CLIENT` instead of `PORTAL USER`; the New/Edit User role dropdown now lists `User / Housekeeper / Manager / Client`.
+
+---
+
 ## Invoice Generator: Field Relabeling, Meal Only Rate Type, Content Fixes — 2026-06-22
 
 ### Header Field Renames (display labels only — underlying state field names unchanged for backward compatibility)

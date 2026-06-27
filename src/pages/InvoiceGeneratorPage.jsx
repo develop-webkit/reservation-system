@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
 import {
   Button, Col, DatePicker, Divider, Input,
   InputNumber, Modal, Row, Space, Tooltip, Typography,
 } from 'antd';
-import { DownloadOutlined, EyeOutlined, PrinterOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined, EyeOutlined, PrinterOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import InvoiceGeneratorPDF from '../components/invoice/InvoiceGeneratorPDF.jsx';
 import InvoiceLineItemsTable from '../components/invoice/InvoiceLineItemsTable.jsx';
@@ -14,6 +14,7 @@ import PageHeader from '../components/common/PageHeader.jsx';
 import SectionCard from '../components/common/SectionCard.jsx';
 import useAuthStore from '../store/authStore.js';
 import { useInvoiceGenerator } from '../hooks/useInvoiceGenerator.js';
+import { useInvoice, useCreateInvoice, useUpdateInvoice } from '../hooks/useInvoices.js';
 
 const { Text } = Typography;
 
@@ -84,8 +85,23 @@ function InvoiceGeneratorPage() {
   const role = useAuthStore((state) => state.user?.role);
   const [previewOpen, setPreviewOpen] = useState(false);
   const pdfViewerRef = useRef(null);
-  const { invoice, setField, addLineItem, removeLineItem, updateLineItem, resetInvoice, totals } =
-    useInvoiceGenerator();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const invoiceId = searchParams.get('invoiceId');
+  const {
+    invoice, meta, setField, addLineItem, removeLineItem, updateLineItem,
+    loadInvoice, resetInvoice, totals,
+  } = useInvoiceGenerator();
+
+  const savedInvoiceQuery = useInvoice(invoiceId);
+  const createMutation = useCreateInvoice();
+  const updateMutation = useUpdateInvoice();
+
+  useEffect(() => {
+    if (savedInvoiceQuery.data) {
+      loadInvoice(savedInvoiceQuery.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedInvoiceQuery.data]);
 
   if (!['admin', 'manager'].includes(role)) {
     return <Navigate to="/dashboard" replace />;
@@ -95,10 +111,44 @@ function InvoiceGeneratorPage() {
     (invoice.billedTo?.trim() || invoice.clientName?.trim()) &&
     invoice.lineItems.some((item) => Number(item.totalPrice) > 0);
 
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const editLocked = Boolean(meta.id) && meta.canEdit === false;
+
   const handlePrint = () => {
     if (!pdfViewerRef.current) return;
     const iframe = pdfViewerRef.current.querySelector('iframe');
     if (iframe) iframe.contentWindow?.print();
+  };
+
+  const handleSaveInvoice = () => {
+    if (isSaving || editLocked) return;
+    const payload = {
+      ...invoice,
+      lineItems: invoice.lineItems.map((item) => ({
+        date: item.date,
+        roomNo: item.roomNo,
+        withMeals: item.withMeals,
+        mealOnly: item.mealOnly,
+        roomOnly: item.roomOnly,
+        fromDate: item.fromDate,
+        toDate: item.toDate,
+        totalPrice: item.totalPrice,
+      })),
+    };
+    if (meta.id) {
+      updateMutation.mutate({ id: meta.id, data: payload });
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: (created) => {
+          setSearchParams({ invoiceId: created._id }, { replace: true });
+        },
+      });
+    }
+  };
+
+  const handleNewInvoice = () => {
+    resetInvoice();
+    setSearchParams({}, { replace: true });
   };
 
   return (
@@ -108,7 +158,19 @@ function InvoiceGeneratorPage() {
         subtitle="Create professional Tax Invoices (AUD) for corporate clients."
         extra={
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={resetInvoice}>New Invoice</Button>
+            <Tooltip title={editLocked ? 'This invoice can no longer be edited — the 5-day edit window has expired' : ''}>
+              <Button
+                type="primary"
+                danger
+                icon={<SaveOutlined />}
+                onClick={handleSaveInvoice}
+                loading={isSaving}
+                disabled={!hasData || editLocked}
+              >
+                Save Invoice
+              </Button>
+            </Tooltip>
+            <Button icon={<ReloadOutlined />} onClick={handleNewInvoice}>New Invoice</Button>
             <Tooltip title={!hasData ? 'Fill in client name and at least one line item with a price to preview' : ''}>
               <Button
                 icon={<EyeOutlined />}

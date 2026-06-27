@@ -130,7 +130,7 @@ const FormField = ({
                                 format: 'h:mm A',
                                 use12Hours: true,
                                 defaultValue: [
-                                    dayjs('15:00', 'HH:mm'),
+                                    dayjs('06:00', 'HH:mm'),
                                     dayjs('06:00', 'HH:mm')
                                 ]
                             }}
@@ -300,7 +300,7 @@ const ReservationEditPage = () => {
         resNo: '',
         masterResNo: '',
         status: 'Unconfirmed',
-        arrive: dayjs('2026-02-04').hour(15).minute(0).toDate(),
+        arrive: dayjs('2026-02-04').hour(6).minute(0).toDate(),
         depart: dayjs('2026-02-05').hour(6).minute(0).toDate(),
         nights: 1,
         adults: 1,
@@ -392,7 +392,7 @@ const ReservationEditPage = () => {
                 ...prev,
                 resNo: resNoParam || prev.resNo,
                 masterResNo: masterResNoParam || prev.masterResNo,
-                arrive: arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0).toDate() : prev.arrive,
+                arrive: arriveParam ? dayjs(arriveParam).hour(6).minute(0).second(0).toDate() : prev.arrive,
                 depart: departParam ? dayjs(departParam).hour(6).minute(0).second(0).toDate() : (arriveParam ? dayjs(arriveParam).add(1, 'day').hour(6).minute(0).second(0).toDate() : prev.depart),
                 area: areaParam || prev.area,
                 roomType: roomTypeParam || prev.roomType,

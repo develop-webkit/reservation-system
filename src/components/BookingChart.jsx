@@ -1,7 +1,7 @@
 // src/components/BookingChart.jsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Tooltip, Popover, Card, Spin, Alert, message, Modal, Input, DatePicker } from 'antd';
+import { Typography, Tooltip, Popover, Card, Spin, Alert, message, Modal, Input, DatePicker, Select, Checkbox } from 'antd';
 import dayjs from 'dayjs';
 import { useBookingChart, useUpdateBookingChart } from '../hooks/useBookings';
 import { useRooms, useUpdateRoomServiceStatus, useUpdateRoomStatus, useRemoveRoomServiceEntry } from '../hooks/useRooms';
@@ -32,6 +32,9 @@ const ROOM_STATUS_COLORS = {
     'OOO': '#722ed1',   // Out of Order (Purple)
 };
 
+// Dedicated holding area a booking is moved to when "parked" — seeded once on the backend.
+const PARKING_ROOM_NAME = 'Parked Reservation';
+
 const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightProp, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {}, chartOptions = {}, isPortalUser = false }) => {
     const rowHeight = rowHeightProp || 30;
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
@@ -40,6 +43,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null, serviceEntry: null });
     const [resizeDraft, setResizeDraft] = useState(null);
     const [serviceModal, setServiceModal] = useState({ visible: false, type: null, roomId: null, description: '', startDate: null, endDate: null });
+    const [unparkModal, setUnparkModal] = useState({ visible: false, booking: null, roomId: null, recreateTariff: false, reassignHousekeeping: false });
     const updateBookingChartMutation = useUpdateBookingChart();
     const updateRoomServiceStatusMutation = useUpdateRoomServiceStatus();
     const removeServiceEntryMutation = useRemoveRoomServiceEntry();
@@ -62,6 +66,8 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
             : roomsFromData;
         return isPortalUser ? source.filter(r => r.category !== 'Staff Accommodation') : source;
     }, [chartData, isPortalUser]);
+
+    const parkingRoom = useMemo(() => rooms.find(r => r.name === PARKING_ROOM_NAME), [rooms]);
 
 
     // 1. Generate column dates (Immutable)
@@ -258,7 +264,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
             return null;
         }
 
-        const isParkedRow = room.id === 'PK01';
+        const isParkedRow = room.name === PARKING_ROOM_NAME;
         const rowHeightPx = isParkedRow ? `${rowHeight * 2}px` : `${rowHeight}px`;
 
         const cleanStatus = room.status || room.defaultCleanStatus || 'Clean';
@@ -684,6 +690,52 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
         );
     };
 
+    const handleParkReservation = () => {
+        const booking = contextMenu.booking;
+        handleCloseContextMenu();
+        if (!booking) return;
+        if (!parkingRoom) {
+            message.error('Parked Reservation holding area was not found. Please contact support.');
+            return;
+        }
+        Modal.confirm({
+            title: 'Park Reservation',
+            content: `Move ${booking.clientName || 'this reservation'} to the Parked Reservation holding area? The original area and dates will become bookable again. You can unpark it into a real area later.`,
+            okText: 'Park Reservation',
+            onOk: () => {
+                updateBookingChartMutation.mutate(
+                    { id: booking.id, data: { roomId: parkingRoom.id } },
+                    {
+                        onSuccess: () => message.success('Reservation parked.'),
+                        onError: (error) => message.error(error.response?.data?.message || 'Failed to park reservation.'),
+                    },
+                );
+            },
+        });
+    };
+
+    const handleOpenUnparkModal = () => {
+        const booking = contextMenu.booking;
+        handleCloseContextMenu();
+        if (!booking) return;
+        setUnparkModal({ visible: true, booking, roomId: null, recreateTariff: false, reassignHousekeeping: false });
+    };
+
+    const handleConfirmUnpark = () => {
+        const { booking, roomId, recreateTariff, reassignHousekeeping } = unparkModal;
+        if (!roomId) { message.error('Please select an area to unpark this reservation into.'); return; }
+        updateBookingChartMutation.mutate(
+            { id: booking.id, data: { roomId, recreateTariff, reassignHousekeeping } },
+            {
+                onSuccess: () => {
+                    message.success('Reservation unparked.');
+                    setUnparkModal({ visible: false, booking: null, roomId: null, recreateTariff: false, reassignHousekeeping: false });
+                },
+                onError: (error) => message.error(error.response?.data?.message || 'Failed to unpark reservation.'),
+            },
+        );
+    };
+
     const handleMenuItemClick = (action) => {
         if (action === 'add_reservation') {
             const params = new URLSearchParams();
@@ -847,6 +899,20 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('assign_housekeeping')}>
                                 Assign Housekeeping Task
                             </div>
+                            {!isPortalUser && (
+                                <>
+                                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                                    {contextMenu.room?.name === PARKING_ROOM_NAME ? (
+                                        <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#1890ff', fontWeight: 500 }} onClick={handleOpenUnparkModal}>
+                                            Unpark Reservation
+                                        </div>
+                                    ) : (
+                                        <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#fa8c16', fontWeight: 500 }} onClick={handleParkReservation}>
+                                            Park Reservation
+                                        </div>
+                                    )}
+                                </>
+                            )}
                             <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
                         </>
@@ -946,6 +1012,43 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                             />
                         </div>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Unpark Reservation modal */}
+            <Modal
+                title="Unpark Reservation"
+                open={unparkModal.visible}
+                onOk={handleConfirmUnpark}
+                onCancel={() => setUnparkModal({ visible: false, booking: null, roomId: null, recreateTariff: false, reassignHousekeeping: false })}
+                confirmLoading={updateBookingChartMutation.isPending}
+                okText="Unpark"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div>
+                        <label style={{ fontSize: 13, color: '#595959', display: 'block', marginBottom: 4 }}>Area</label>
+                        <Select
+                            style={{ width: '100%' }}
+                            placeholder="Select an area to move this reservation to"
+                            value={unparkModal.roomId}
+                            onChange={(roomId) => setUnparkModal(prev => ({ ...prev, roomId }))}
+                            options={rooms.filter(r => r.name !== PARKING_ROOM_NAME).map(r => ({ value: r.id, label: r.name }))}
+                            showSearch
+                            optionFilterProp="label"
+                        />
+                    </div>
+                    <Checkbox
+                        checked={unparkModal.recreateTariff}
+                        onChange={(e) => setUnparkModal(prev => ({ ...prev, recreateTariff: e.target.checked }))}
+                    >
+                        Recreate tariff (recalculate rate from the client&apos;s current rate)
+                    </Checkbox>
+                    <Checkbox
+                        checked={unparkModal.reassignHousekeeping}
+                        onChange={(e) => setUnparkModal(prev => ({ ...prev, reassignHousekeeping: e.target.checked }))}
+                    >
+                        Reassign housekeeping (move any existing task to the new area)
+                    </Checkbox>
                 </div>
             </Modal>
         </Card>

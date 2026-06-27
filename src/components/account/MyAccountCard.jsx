@@ -4,16 +4,9 @@ import { useState } from 'react';
 import useAuthStore, { selectCurrentUser, selectCurrentClient, selectIs2FAEnabled } from '../../store/authStore.js';
 import { useUpdateUser } from '../../hooks/useUsers.js';
 import TwoFactorSetupSection from '../auth/TwoFactorSetupSection.jsx';
+import { ROLE_COLORS, getRoleLabel } from '../../constants/roleLabels.js';
 
 const { Title, Text } = Typography;
-
-const ROLE_COLORS = {
-  admin: 'red',
-  manager: 'orange',
-  portal_user: 'blue',
-  user: 'green',
-  housekeeper: 'cyan',
-};
 
 function MyAccountCard({
   title = 'My Account',
@@ -73,7 +66,7 @@ function MyAccountCard({
           <div>
             <Text strong style={{ fontSize: 18, display: 'block' }}>{currentUser?.fullName || currentUser?.username}</Text>
             <Tag color={ROLE_COLORS[currentUser?.role] || 'default'}>
-              {(currentUser?.role || '').replace('_', ' ').toUpperCase()}
+              {getRoleLabel(currentUser?.role).toUpperCase()}
             </Tag>
           </div>
         </div>
@@ -84,7 +77,7 @@ function MyAccountCard({
           <Descriptions.Item label="Email">{currentUser?.email || '—'}</Descriptions.Item>
           <Descriptions.Item label="Role">
             <Tag color={ROLE_COLORS[currentUser?.role] || 'default'}>
-              {(currentUser?.role || '').replace('_', ' ').toUpperCase()}
+              {getRoleLabel(currentUser?.role).toUpperCase()}
             </Tag>
           </Descriptions.Item>
           {extraItems.map((item) => (

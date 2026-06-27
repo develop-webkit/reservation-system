@@ -6,6 +6,7 @@ import useAuthStore, {
   selectCurrentClient,
   selectCurrentUser,
 } from '../../store/authStore.js';
+import { getRoleLabel } from '../../constants/roleLabels.js';
 
 function AppHeader() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ function AppHeader() {
           <Avatar>{(user?.username || 'U').slice(0, 1).toUpperCase()}</Avatar>
           <div className="header-user">
             <Typography.Text strong>{user?.fullName || user?.username}</Typography.Text>
-            <Typography.Text type="secondary">{user?.role || 'guest'}</Typography.Text>
+            <Typography.Text type="secondary">{user?.role ? getRoleLabel(user.role) : 'guest'}</Typography.Text>
           </div>
         </Space>
         <Button icon={<LogoutOutlined />} onClick={handleLogout}>
