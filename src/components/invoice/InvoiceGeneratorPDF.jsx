@@ -138,6 +138,9 @@ function InvoiceGeneratorPDF({ invoice }) {
               item.fromDate && item.toDate
                 ? Math.max(0, dayjs(item.toDate).diff(dayjs(item.fromDate), 'day') + 1)
                 : 0;
+            // Requested display-only convention: the printed line always reads one more than the
+            // actual billed nights. Billing (rowGst/rowAmt below, and NET/GST/Total) stays on `nights`.
+            const displayNights = nights + 1;
             const rateType = item.withMeals
               ? 'HM Occupied Rate Including Meals'
               : item.mealOnly
@@ -155,7 +158,7 @@ function InvoiceGeneratorPDF({ invoice }) {
                       {item.date ? `(${dayjs(item.date).format('DD-MMM-YY')})` : ''}
                     </Text>
                   ) : null}
-                  <Text style={S.detailLine}>{nights} x {rateType}.</Text>
+                  <Text style={S.detailLine}>{displayNights} x {rateType}.</Text>
                 </View>
                 <Text style={S.cGst}>${fm(rowGst)}</Text>
                 <Text style={S.cAmount}>${fm(rowAmt)}</Text>

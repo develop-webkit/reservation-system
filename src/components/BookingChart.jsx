@@ -311,18 +311,23 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                         <Text strong style={{ textAlign: 'right' }}>Area:</Text>
                         <Text>{room.name}</Text>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline' }}>
-                        <Text strong style={{ textAlign: 'right' }}>Clean Status:</Text>
-                        <Text>{roomStatusText}</Text>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginTop: '4px' }}>
-                        <Text strong style={{ textAlign: 'right' }}>Last Clean:</Text>
-                        <Text>{room.lastCleanDate}</Text>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginTop: '4px' }}>
-                        <Text strong style={{ textAlign: 'right' }}>Days Since:</Text>
-                        <Text>{room.daysSinceLastClean}</Text>
-                    </div>
+                    {/* Housekeeping status is internal-only — never shown to Client/portal_user */}
+                    {!isPortalUser && (
+                        <>
+                            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline' }}>
+                                <Text strong style={{ textAlign: 'right' }}>Clean Status:</Text>
+                                <Text>{roomStatusText}</Text>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginTop: '4px' }}>
+                                <Text strong style={{ textAlign: 'right' }}>Last Clean:</Text>
+                                <Text>{room.lastCleanDate}</Text>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'baseline', marginTop: '4px' }}>
+                                <Text strong style={{ textAlign: 'right' }}>Days Since:</Text>
+                                <Text>{room.daysSinceLastClean}</Text>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -399,13 +404,16 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                         onContextMenu={(e) => handleContextMenu(e, room, null)}
                     >
                         <Text strong style={{ fontSize: '12px' }}>{room.name}</Text>
-                        <Tooltip title={roomStatusText}>
-                            <div style={{
-                                width: '11px', height: '11px', borderRadius: '50%',
-                                backgroundColor: statusColor,
-                                flexShrink: 0
-                            }} />
-                        </Tooltip>
+                        {/* Housekeeping status dot is internal-only — never shown to Client/portal_user */}
+                        {!isPortalUser && (
+                            <Tooltip title={roomStatusText}>
+                                <div style={{
+                                    width: '11px', height: '11px', borderRadius: '50%',
+                                    backgroundColor: statusColor,
+                                    flexShrink: 0
+                                }} />
+                            </Tooltip>
+                        )}
                     </div>
                 </Popover>
                 <div data-booking-grid="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays * 2}, 1fr)`, position: 'relative' }}>
@@ -420,8 +428,8 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                             />
                         );
                     })}
-                    {/* Service blocks — one bar per entry; right-click to remove */}
-                    {(room.serviceEntries || []).map((entry) => {
+                    {/* Service blocks — one bar per entry; right-click to remove. Internal-only — never shown to Client/portal_user */}
+                    {!isPortalUser && (room.serviceEntries || []).map((entry) => {
                         if (!entry.startDate || !entry.endDate) return null;
                         const servicePos = getGridPosition(entry.startDate, entry.endDate, true);
                         if (!servicePos.isVisible) return null;
@@ -737,6 +745,11 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     };
 
     const handleMenuItemClick = (action) => {
+        // Portal users (clients) only have access to /portal/reservations —
+        // /reservations/list is an admin-only path and ProtectedRoute bounces
+        // them straight to /portal/dashboard if they're sent there.
+        const reservationsBasePath = isPortalUser ? '/portal/reservations' : '/reservations/list';
+
         if (action === 'add_reservation') {
             const params = new URLSearchParams();
             if (contextMenu.date) {
@@ -746,13 +759,13 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                 params.set('area', contextMenu.room.name);
                 params.set('roomType', contextMenu.room.category || '');
             }
-            navigate(`/reservations/list?${params.toString()}`);
+            navigate(`${reservationsBasePath}?${params.toString()}`);
         } else if (action === 'edit_booking') {
             if (contextMenu.booking) {
                 const booking = contextMenu.booking;
                 const params = new URLSearchParams();
 
-                // reservationId drives edit mode in ReservationsListPage
+                // reservationId drives edit mode in both ReservationsListPage and PortalReservationsPage
                 if (booking.reservationId) params.set('reservationId', booking.reservationId);
 
                 // Pre-fill all form fields
@@ -773,7 +786,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                 params.set('fixed', booking.isFixed ? 'Yes' : 'No');
                 params.set('groupname', booking.groupName || '');
 
-                navigate(`/reservations/list?${params.toString()}`);
+                navigate(`${reservationsBasePath}?${params.toString()}`);
             }
         } else if (action === 'assign_housekeeping') {
             // Navigate to housekeeping roster with the booking's checkout date pre-filled
@@ -919,27 +932,24 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                     ) : (
                         <>
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
-                            {contextMenu.room && (
+                            {/* Out Of Service/Out Of Order + housekeeping status changes are internal-only — never shown to Client/portal_user */}
+                            {!isPortalUser && contextMenu.room && (
                                 <>
-                                    {!isPortalUser && (
-                                        <>
-                                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
-                                            <div
-                                                className="context-menu-item"
-                                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#003a8c', fontWeight: 500 }}
-                                                onClick={() => handleOpenServiceModal('out_of_service')}
-                                            >
-                                                Out Of Service
-                                            </div>
-                                            <div
-                                                className="context-menu-item"
-                                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#722ed1', fontWeight: 500 }}
-                                                onClick={() => handleOpenServiceModal('out_of_order')}
-                                            >
-                                                Out Of Order
-                                            </div>
-                                        </>
-                                    )}
+                                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                                    <div
+                                        className="context-menu-item"
+                                        style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#003a8c', fontWeight: 500 }}
+                                        onClick={() => handleOpenServiceModal('out_of_service')}
+                                    >
+                                        Out Of Service
+                                    </div>
+                                    <div
+                                        className="context-menu-item"
+                                        style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#722ed1', fontWeight: 500 }}
+                                        onClick={() => handleOpenServiceModal('out_of_order')}
+                                    >
+                                        Out Of Order
+                                    </div>
                                     <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                                     <div style={{ padding: '4px 16px', fontSize: '11px', color: '#8c8c8c', fontWeight: 600, letterSpacing: '0.5px' }}>
                                         CHANGE ROOM STATUS

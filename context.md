@@ -1,3 +1,104 @@
+## Backend: User Password/RefreshToken/ResetToken Leak Fix (`Rms Booking Backend`) — 2026-06-28
+
+Follow-up to the 2026-06-27 "Backend-wide User-populate Password Leak Fix" — that pass fixed leaks via `.populate()` calls pulling whole `User` documents into *other* documents' responses. This is the same root vulnerability class, but found in `UserController`'s own endpoints returning a `User` document directly: confirmed live that `POST /user` echoed the bcrypt `password` hash (and `two_factor_secret: null`) straight into its JSON response.
+
+**Root cause:** `src/schemas/user.schema.ts`'s `password`, `refreshToken`, `resetPasswordToken`, `resetPasswordExpires` had no `select: false` at all (only `two_factor_secret` did) — every query-based method in `user.service.ts` (`findAll`, `findById`, `update`, `remove`, `resetUser2FA`) was already leaking these 4 fields to any caller, not just `create()`. `create()` leaked all 5 (including `two_factor_secret`) for a different reason: it returns `createdUser.save()`'s in-memory document directly — `select: false` is a query-time projection default, it does nothing for a document you constructed yourself and never re-queried.
+
+**Fix:**
+- `user.schema.ts` — added `select: false` to all 4 previously-unprotected fields, matching the existing `two_factor_secret` precedent. This alone fixes `findAll`/`findById`/`findByIdForRequester`/`update`/`remove`/`resetUser2FA` for free.
+- Audited every `.password`/`.refreshToken`/`.resetPasswordToken`/`.resetPasswordExpires` property read in the whole backend (not just this file) before making the schema change, to find what would break: exactly two internal call sites read a now-hidden field — `auth.service.ts`'s `validateUser()` (`bcrypt.compare(pass, user.password)`, sourced from `findByUsername()`) and `user.service.ts`'s `getUserIfRefreshTokenMatches()` (`bcrypt.compare(refreshToken, user.refreshToken)`). Both updated to explicitly `.select('+password')`/`.select('+refreshToken')`. (`resetPasswordToken`/`resetPasswordExpires` are only ever used as query *filters* in `findByResetToken`, never read back as properties — confirmed safe with no code change needed there.)
+- `create()` — now does `await createdUser.save()` then re-fetches via `this.userModel.findById(createdUser._id).exec()` and returns *that* instead of the in-memory document, so it gets the same `select: false` protection as every other method instead of needing a one-off sanitizer.
+
+**Verified live:** created a disposable user via `POST /user` as admin — response confirmed to contain none of the 5 sensitive fields. Logged in as that user (validates the `findByUsername` fix), called `POST /auth/refresh` immediately after (validates the `getUserIfRefreshTokenMatches` fix) — both 200 OK. Confirmed the Users page UI still lists users correctly (`findAll`) and deleting the test user still works (`remove`) — both query-based paths now also automatically protected. Confirmed via grep that no frontend code reads `password`/`refreshToken`/`two_factor_secret` off any `/user` response (`UsersPage.jsx`'s `password` references are all about the *input* field for setting a new password, never the API response). Test user deleted afterward.
+
+---
+
+## ReservationEditPage.jsx Deleted — Confirmed Dead Code — 2026-06-28
+
+Follow-up to the "found, not fixed" item flagged in the Client-Role Bug Batch below (`ReservationEditPage.jsx`'s API-load effect reading `res.room?.x`/`res.client?.x`, fields that don't exist on `mapReservationEntityToFrontend`'s response shape).
+
+**Investigation, not just the originally-asked "is it broken":** confirmed live that `/reservations/edit` (the page's route) renders fine standalone but nothing in the current app ever navigates there — grepped the whole frontend for the string `reservations/edit`; the only matches were the route registration in `App.jsx` and the component's own file. Checked git history (`git log --all -p -S"reservations/edit"`) and found the real story: commit `2695965` originally added this route *with* a `navigate('/reservations/edit?...')` call; a later commit, `928c0d0` ("fix the reservation and booking issues"), removed that navigate call when the booking chart's "Open in Reservations" action was rewired to go through `/reservations/list?reservationId=...` instead (which already handles create *and* edit via the `reservationId` query param, see `ReservationsListPage.jsx`'s `isEditMode = Boolean(reservationId)`). The route + component were simply never cleaned up after that rewire — so the broken `res.room?.x` reads were real but inert, since the effect could never run against real data through any reachable path.
+
+Presented this finding to the user with three options (delete / leave as dead code / fix-and-revive-as-a-real-feature) rather than deciding unilaterally — they chose **delete**.
+
+**Removed:**
+- `src/pages/ReservationEditPage.jsx` (file deleted)
+- Its lazy import and `<Route path="/reservations/edit" .../>` in `src/App.jsx`
+
+**Verified live:** `/reservations/edit` now correctly hits the `NotFoundPage` ("Page not found") instead of rendering the old component. Re-ran the *actual* live edit flow end-to-end as a regression check — right-clicked a real booking on the Booking Chart → "Open in Reservations" → lands on `/reservations/list?reservationId=...&resNo=...&area=...&given=...` (the chart embeds every field directly in the query string, never re-fetches by id) → confirmed Surname, Given, Res No, Master Res No, Status, Tariff Type, Room Type, Area, Booking Type, and Stay Dates (including the 3PM default from the same-day time-default fix above) all populated correctly — completely unaffected by the deletion, since this flow never referenced `ReservationEditPage` at all. Production build confirms the page's JS chunk no longer exists in `dist/`.
+
+---
+
+## Client-Role Bug Batch: Room Status Visibility, Invoice Text, Default Times, Favicon, Room-Field-on-Edit — 2026-06-28
+
+Follow-up batch of fixes/investigations reported in one consolidated message after the redirect fix below.
+
+### 1. Room status (Clean/Dirty/Inspect/OOS/OOO) hidden from Client view
+**Problem:** Client (`portal_user`) could see the housekeeping status dot next to every room, the Out Of Service/Out Of Order colored bars on the chart grid, and the "CHANGE ROOM STATUS" context-menu submenu — all meant for internal staff only.
+
+**Fix (`src/components/BookingChart.jsx`):**
+- Room-name-row status dot + Tooltip — wrapped in `!isPortalUser`.
+- The `RoomInfoContent` hover popover's "Clean Status"/"Last Clean"/"Days Since" rows — wrapped in `!isPortalUser` (Property Name/Room Type/Area rows stay visible — harmless and useful for picking a room to book).
+- The OOS/OOO colored bars (`room.serviceEntries.map(...)`) — the whole render guarded by `!isPortalUser`, so existing entries don't just lose their context-menu, they don't render at all for portal.
+- Context menu's "Out Of Service"/"Out Of Order" actions and the "CHANGE ROOM STATUS" (Clean/Dirty/Inspect) submenu — both already-separate `!isPortalUser` guards merged into one (`{!isPortalUser && contextMenu.room && (...)}`), since there's no reason to offer changing a status that's invisible to this role.
+- Confirmed via grep that the backend never reads `serviceEntries`/OOS/OOO anywhere in `booking.service.ts`/`reservations.service.ts` — it's a pure chart overlay, no booking-creation enforcement — so hiding the UI alone is sufficient; portal users were already able to book any room regardless of OOS/OOO status server-side.
+
+**Verified live:** disposable portal account, chart scrolled back to a date range covering a real pre-existing `B03` "Out Of Order: Mattress Clean" entry — confirmed zero dots/bars/submenu items for portal, then re-confirmed admin's view is completely unchanged (dots, bars, full context menu all still present).
+
+### 2. Reservations sidebar redirect — investigated, could not reproduce
+**Reported again as unresolved:** "When the Client clicks on the Reservations menu, they are still redirected back to the Dashboard."
+
+Read `navigation.js` (`/portal/reservations` key, correctly role-scoped), `AppSidebar.jsx` (`navigate(key)`, no transformation), `ProtectedRoute.jsx` (`/portal/reservations` doesn't match any `ADMIN_PATHS` prefix), and `App.jsx`'s route registration — all correct by inspection. Reproduced live with a **fresh** disposable portal account: sidebar click → lands on `/portal/reservations` correctly, no redirect; a hard reload on that URL also lands correctly. Could not reproduce the reported symptom with the current code.
+
+**Not fixed — flagged back to the user**, since there's nothing in the code to change: most likely a stale cached frontend bundle on whatever session reproduced it (possibly testing against an older build than the chart-context-menu fix below, since that fix landed in the same session as this report). Recommend a hard refresh / clear cache and retest; ask for exact click path if it still reproduces.
+
+### 3. Invoice line text: display one more "night" than actually billed
+**Ask:** for a 01–10 June line item, keep billing at 10 days (NET/GST/Total unchanged) but change the printed text from "10 x HM Occupied Rate Including Meals." to "11 x ...". Explicitly *not* the same as the 2026-06-22/2026-06-27 nights-formula fixes — user confirmed this is a deliberate display-only convention, one more than the real inclusive day count.
+
+**Fix (`src/components/invoice/InvoiceGeneratorPDF.jsx`):** `nights` (the existing, already-correct inclusive day-count formula) is left untouched; a new `displayNights = nights + 1` is used only in the printed `{displayNights} x {rateType}.` line. `nights` was already isolated to this one line (confirmed via repo-wide grep) — `totalPrice`/NET/GST/Total are all driven by the line item's independently-entered dollar amount, never by `nights`, so this is a pure text change with zero billing impact.
+
+### 4. Default check-in time → 3:00 PM (check-out stays 6:00 AM)
+**Reverts part of the 2026-06-27 "Default Reservation Time (06:00 AM)" change** — that session homogenized both check-in and check-out to 6 AM everywhere; this request asks for check-in specifically back to 3 PM, check-out unchanged at 6 AM. Notably, `ReservationEditPage.jsx`'s interactive date-range-picker `onChange` handler (`handleFieldChange`'s `bookingDates` branch, lines ~425-430) **already hardcoded arrival=15:00/departure=06:00** and was never touched by the 2026-06-27 change — i.e. the 3PM/6AM rule already existed in one corner of the codebase and this request restores it everywhere else to match.
+
+Changed (arrival/check-in side only; every departure/check-out `.hour(6)` left as-is):
+- `src/components/reservations/ReservationFormDrawer.jsx` — blank-form default `checkIn`.
+- `src/pages/portal/PortalReservationsPage.jsx` — chart-handoff prefill `checkIn`; `checkOut` changed from `checkIn.add(1,'day')` (would have inherited 15:00) to `checkIn.add(1,'day').hour(6)...` (explicit, independent of checkIn's hour).
+- `src/pages/ReservationsListPage.jsx` — `RangePicker`'s `showTime.defaultValue[0]`, the blank-state initializer, the URL-param-sync effect, and the `handleFieldChange`'s "patch AntD's 00:00 default" branch (4 distinct spots, same as the 2026-06-27 fix touched, just flipping arrival back to 15).
+- `src/pages/ReservationEditPage.jsx` — `showTime.defaultValue[0]`, the blank-state initializer, and the URL-param-sync effect (the `onChange` handler did **not** need a change — already correct).
+
+**Verified live:** portal chart "Add Reservation" → drawer shows Check in `15:00`/Check out next-day `06:00`; admin `ReservationsListPage` blank-state Arrive/Depart inputs read "...3:00 PM"/"...6:00 AM"; picking a fresh date in the RangePicker applies the 3:00 PM default to the Arrive slot.
+
+### 5. Favicon
+`index.html` had no `<link rel="icon">` at all (blank browser tab). `src/assets/logo.png` (2108×957) is a vertical lockup — a house/roofline icon mark on top, "MOUNT MORGAN VILLAGE / EST 2024" wordmark below — not square, and the icon mark sits flush against the top edge with zero source-side headroom, so it can't be used directly as a favicon without distortion. Measured the icon's exact pixel bounding box via a canvas alpha-channel scan in the browser (x: 611–1473, y: 0–587 of the source), then used PowerShell's `System.Drawing` (no new npm/pip dependency) to crop that region and center it with 12% padding on a new transparent 512×512 canvas, saved to `public/favicon.png`. Wired via `<link rel="icon" type="image/png" href="/favicon.png" />` in `index.html`. Confirmed served correctly in dev (`GET /favicon.png` → 200, `image/png`) and present in `dist/` after a production build.
+
+### 6. Blank Room field when editing a reservation
+**Root cause:** `mapReservationEntityToFrontend` (backend, `reservation-payload.helper.ts`) only ever returned the room as `roomId` — a display label (room *name*, via the pre-existing `readRoomId` helper) — never the room's actual Mongo `_id`. `ReservationFormDrawer.jsx`'s prefill logic (`initialValues.room?._id || initialValues.room`) looks for a field literally named `room` holding that id; since it didn't exist, the Room `<Select>` (keyed by room `_id`) never matched and rendered blank on every edit.
+
+**Fix:** added a new `readRoomObjectId(room)` helper (mirrors `readRoomId`'s shape-handling, returns `room._id?.toString?.()` instead of the name) and a new, purely additive `room` field in `mapReservationEntityToFrontend`'s output, alongside the unchanged `roomId`. No frontend change needed — `ReservationFormDrawer.jsx`'s existing fallback chain already does exactly the right thing once `initialValues.room` (a string id) is present. `doc.room` is confirmed always populated (`.populate('room')`, full subdocument) everywhere this mapper is called, so `room._id` is reliably available.
+
+**Found, not fixed (separate, likely pre-existing bug, out of scope):** `ReservationEditPage.jsx`'s "populate form from API data" effect reads `res.room?.name`, `res.room?.category`, `res.client?.given`, `res.client?.title`, etc. directly off the response of `GET /reservations/:id` — but that endpoint returns the same mapped shape (confirmed `findOne()` also calls `mapReservationEntityToFrontend`), which has neither a `client` object nor (before today) a `room` object, only flattened fields like `clientName`. This suggests the admin Edit-via-URL flow's API-driven enrichment effect has been silently mostly-no-op-ing (probably masked by the separate URL-query-param prefill effect already populating the visible fields first). Not investigated further or fixed at the time — flagged for a dedicated pass. **Resolved later the same day, see "ReservationEditPage.jsx Deleted" entry below: the page turned out to be unreachable dead code, deleted rather than fixed.**
+
+**Verified live:** created a disposable portal reservation (Room B01), opened Edit — Room field now shows "B01" pre-selected instead of blank. All disposable test reservations/users/clients created across this session deleted afterward.
+
+---
+
+## Booking Chart "Add Reservation" Redirecting Client to Dashboard — 2026-06-28
+
+**Problem reported:** Logged in as a Client (`portal_user`), right-clicking the Booking Chart (`/portal/bookings`) and choosing "Add Reservation" (or "Open in Reservations" on an existing booking) bounced straight to the dashboard instead of opening the reservation form.
+
+**Root cause — distinct from the similarly-worded 2026-06-27 fix:** that earlier fix was about the sidebar's "Reservations" link (a 403 on `/clients`/`/companies`); routing itself was already correct there. This bug is a different code path: `CoreBookingChart`'s context-menu handler (`src/components/BookingChart.jsx`'s `handleMenuItemClick`) hardcoded `navigate('/reservations/list?...')` for both `add_reservation` and `edit_booking` actions, regardless of role. `/reservations/list` is in `ProtectedRoute.jsx`'s `ADMIN_PATHS` (matched via the `/reservations` prefix), so for a `portal_user` the navigation itself immediately triggered `ProtectedRoute`'s "portal user on an admin path" redirect to `/portal/dashboard` — the chart's context menu was the only entry point still pointing at the admin-only page; the sidebar link was unaffected.
+
+**Fix:**
+- `BookingChart.jsx` — `handleMenuItemClick` now picks the base path via the existing `isPortalUser` prop: `/portal/reservations` for portal users, `/reservations/list` otherwise (both actions, same query params as before).
+- `PortalReservationsPage.jsx` — previously ignored the URL entirely (its "New"/"Edit" drawer only ever opened from in-page button clicks). Added handling for the same `arrive`/`area`/`reservationId` params the chart already sends: resolves the room name (`area`) against the loaded rooms list to the room's `_id`, or looks up the existing reservation by `reservationId` in the loaded reservations list, then opens `ReservationFormDrawer` pre-filled. Implemented as a render-time "adjust state during render" update (guarded by a processed-params key, gated on the relevant query's `isLoading`) rather than inside a `useEffect`, to satisfy the same `react-hooks/set-state-in-effect` lint rule already worked around in `BookingChartHeader.jsx`/`AppSidebar.jsx` on 2026-06-27 — only the final URL-clearing (`setSearchParams`) runs inside an actual `useEffect`, since that's the part that's a genuine external-system side effect.
+- `ReservationFormDrawer.jsx` — fixed `title={initialValues ? 'Edit reservation' : 'New reservation'}` → `title={isEditing ? ... }`. The chart's "Add Reservation" prefill passes a non-null `initialValues` object (room/checkIn/checkOut) with no `_id`, which was tripping the old `Boolean(initialValues)` check and mislabeling a brand-new reservation as "Edit reservation"; `isEditing` (already used correctly by the submit button) checks for an actual `_id`/`id`.
+
+**Verified live** (disposable `QA-TEST-PORTAL-01` client + `qa_portal_test` portal_user, completed mandatory 2FA setup, deleted after): right-clicking room B01 on `/portal/bookings` → "Add Reservation" now stays on `/portal/reservations`, opens correctly titled "New reservation" pre-filled with Room=B01 and the clicked date, and successfully creates the reservation end-to-end. "Open in Reservations" on that booking opens "Edit reservation" correctly pre-filled with the existing guest name/res no. Confirmed via direct backend reads that `reservations.service.ts`'s `remove()` cascades to `bookingModel.deleteMany`, so deleting the test reservation left no orphaned chart entry.
+
+**Found, not fixed (separate pre-existing bug, flagged as a follow-up task):** editing any reservation — via this new chart path *or* the pre-existing plain "Edit" button on `PortalReservationsPage.jsx` — shows the Room field blank. `mapReservationEntityToFrontend` (backend) returns the room as `roomId` (a name string), but `ReservationFormDrawer.jsx`'s prefill logic looks for a field named `room` holding the room's `_id`. Confirmed this is not a regression from this fix — the plain Edit button has the identical gap.
+
+---
+
 ## Full QA Pass + Fixes — 2026-06-27
 
 Ran a full QA pass across the app (no browser/preview tools available — done via static code review + direct API testing across all 5 roles using disposable test accounts) and fixed every finding except the "4 backend modules have no frontend" one (Accounting/Asset Maintenance/Reports/Help — left as-is, scope decision deferred to the user).

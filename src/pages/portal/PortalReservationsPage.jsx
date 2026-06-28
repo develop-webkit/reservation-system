@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Input, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { PlusOutlined, StopOutlined } from '@ant-design/icons';
@@ -27,6 +28,7 @@ const STATUS_COLOR = {
 
 function PortalReservationsPage() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(undefined);
   const [groupFilter, setGroupFilter] = useState('');
@@ -37,6 +39,51 @@ function PortalReservationsPage() {
   const roomsQuery = useRoomsQuery();
   const clientsQuery = useClientsQuery({});
   const companiesQuery = useCompaniesQuery();
+
+  // Booking Chart's "Add Reservation" / "Open in Reservations" context-menu actions land
+  // here (rather than the admin-only /reservations/list) carrying these query params.
+  // Resolved once their backing query data has loaded, then the drawer opens pre-filled.
+  // Uses React's "adjust state during render" pattern instead of an effect for the state
+  // update itself (only the URL cleanup below is a real effect), matching the approach
+  // already established in BookingChartHeader.jsx / AppSidebar.jsx for this lint rule.
+  const reservationIdParam = searchParams.get('reservationId');
+  const arriveParam = searchParams.get('arrive');
+  const areaParam = searchParams.get('area');
+  const chartParamsKey = (reservationIdParam || arriveParam || areaParam)
+    ? `${reservationIdParam || ''}|${arriveParam || ''}|${areaParam || ''}`
+    : null;
+  const [processedChartParamsKey, setProcessedChartParamsKey] = useState(null);
+
+  if (chartParamsKey && chartParamsKey !== processedChartParamsKey) {
+    const stillLoading = reservationIdParam ? reservationsQuery.isLoading : roomsQuery.isLoading;
+    if (!stillLoading) {
+      setProcessedChartParamsKey(chartParamsKey);
+
+      if (reservationIdParam) {
+        const match = (reservationsQuery.data || []).find(
+          (r) => r.id === reservationIdParam || r._id === reservationIdParam,
+        );
+        if (match) {
+          setEditingReservation(match);
+          setDrawerOpen(true);
+        }
+      } else {
+        const matchedRoom = (roomsQuery.data || []).find((r) => r.name === areaParam);
+        const checkIn = arriveParam ? dayjs(arriveParam).hour(15).minute(0).second(0) : undefined;
+        setEditingReservation({
+          room: matchedRoom?._id,
+          checkIn,
+          checkOut: checkIn ? checkIn.add(1, 'day').hour(6).minute(0).second(0) : undefined,
+        });
+        setDrawerOpen(true);
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!processedChartParamsKey) return;
+    setSearchParams({}, { replace: true });
+  }, [processedChartParamsKey, setSearchParams]);
 
   const clients = useMemo(() => {
     const raw = clientsQuery.data;

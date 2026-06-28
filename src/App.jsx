@@ -17,7 +17,6 @@ const TwoFactorVerifyPage = lazy(() => import('./pages/TwoFactorVerifyPage.jsx')
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
 const MandatorySetup2FAPage = lazy(() => import('./pages/MandatorySetup2FAPage.jsx'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
-const ReservationEditPage = lazy(() => import('./pages/ReservationEditPage.jsx'));
 const ReservationsListPage = lazy(() => import('./pages/ReservationsListPage.jsx'));
 const ReservationsPage = lazy(() => import('./pages/ReservationsPage.jsx'));
 const TasksPage = lazy(() => import('./pages/TasksPage.jsx'));
@@ -61,7 +60,6 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/reservations" element={<ReservationsPage />} />
             <Route path="/reservations/list" element={<ReservationsListPage />} />
-            <Route path="/reservations/edit" element={<ReservationEditPage />} />
             <Route path="/reservations/by-date" element={<BookingsByDate />} />
             <Route path="/bookings" element={<BookingChartPage />} />
             <Route path="/bookings/list" element={<BookingsPage />} />
