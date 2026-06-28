@@ -36,7 +36,7 @@ function ReservationFormDrawer({
   clients,
   companies,
   initialValues,
-  hideBillingFields = false,
+  isPortalUser = false,
 }) {
   const [form] = Form.useForm();
   const [memberOptions, setMemberOptions] = useState([]);
@@ -269,7 +269,7 @@ function ReservationFormDrawer({
           </Select>
         </Form.Item>
 
-        {!hideBillingFields && (
+        {!isPortalUser && (
           <>
             <Form.Item label="Booking source" name="bookingSource">
               <Input placeholder="Direct" />
@@ -293,9 +293,11 @@ function ReservationFormDrawer({
           <InputNumber min={0} className="full-width" />
         </Form.Item>
 
-        <Form.Item label="Infants" name="infants">
-          <InputNumber min={0} className="full-width" />
-        </Form.Item>
+        {!isPortalUser && (
+          <Form.Item label="Infants" name="infants">
+            <InputNumber min={0} className="full-width" />
+          </Form.Item>
+        )}
 
         <Form.Item label="Fixed reservation" name="isFixed" valuePropName="checked">
           <Switch />

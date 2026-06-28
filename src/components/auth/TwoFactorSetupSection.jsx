@@ -2,6 +2,7 @@ import { Alert, Button, Divider, Form, Input, Space, Spin, Switch, Typography, m
 import { LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { disable2FA, setup2FA, verifySetup2FA } from '../../api/services/auth.js';
+import { useCreateTwoFactorRequest, useTwoFactorRequests } from '../../hooks/useTwoFactorRequests.js';
 
 const { Text, Paragraph } = Typography;
 
@@ -10,6 +11,21 @@ function TwoFactorSetupSection({ is2FAEnabled, onStatusChange, canDisable = true
   const [setupData, setSetupData] = useState(null);
   const [disableForm] = Form.useForm();
   const [setupForm] = Form.useForm();
+
+  // Only fetch when this account actually needs the request-to-admin escape hatch
+  // (2FA on, but this role can't self-disable it).
+  const needsResetRequest = is2FAEnabled && !canDisable;
+  const { data: myRequestsRaw } = useTwoFactorRequests({ enabled: needsResetRequest });
+  const myRequests = Array.isArray(myRequestsRaw) ? myRequestsRaw : (myRequestsRaw?.data || []);
+  const pendingRequest = myRequests.find((r) => r.status === 'Pending');
+  const createResetRequest = useCreateTwoFactorRequest();
+
+  const handleRequestReset = () => {
+    createResetRequest.mutate(undefined, {
+      onSuccess: () => message.success('Reset request submitted. An admin will review it shortly.'),
+      onError: (err) => message.error(err.response?.data?.message || 'Failed to submit request.'),
+    });
+  };
 
   const handleToggle = async (enabled) => {
     if (enabled) {
@@ -77,10 +93,26 @@ function TwoFactorSetupSection({ is2FAEnabled, onStatusChange, canDisable = true
             {is2FAEnabled
               ? canDisable
                 ? 'Your account is protected with 2FA. You will need your authenticator app to log in.'
-                : 'Two-factor authentication is required on your account. Contact your Super Admin if you need it reset.'
+                : 'Two-factor authentication is required on your account. Submit a request below if you need it reset.'
               : 'Add an extra layer of security. Works with Google Authenticator, Microsoft Authenticator, or Authy.'}
           </Text>
         </div>
+        {needsResetRequest && (
+          pendingRequest ? (
+            <Text type="warning" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
+              Reset request submitted — waiting on admin review.
+            </Text>
+          ) : (
+            <Button
+              size="small"
+              style={{ marginTop: 8 }}
+              loading={createResetRequest.isPending}
+              onClick={handleRequestReset}
+            >
+              Request Reset from Admin
+            </Button>
+          )
+        )}
       </div>
 
       {setupData && !is2FAEnabled && (

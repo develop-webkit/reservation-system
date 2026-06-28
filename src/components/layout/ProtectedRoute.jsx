@@ -17,6 +17,7 @@ const ADMIN_PATHS = [
   '/invoice-generator',
   '/invoice-history',
   '/account',
+  '/2fa-requests',
 ];
 
 function ProtectedRoute() {

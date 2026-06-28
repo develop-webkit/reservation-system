@@ -1,6 +1,5 @@
 import {
   ApartmentOutlined,
-  AppstoreOutlined,
   BuildOutlined,
   CalendarOutlined,
   FileSearchOutlined,
@@ -8,6 +7,7 @@ import {
   HistoryOutlined,
   HomeOutlined,
   ReadOutlined,
+  SafetyCertificateOutlined,
   ScheduleOutlined,
   SolutionOutlined,
   TeamOutlined,
@@ -40,6 +40,7 @@ export const navigationItems = [
   { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
   { key: '/invoice-generator', label: 'Invoice Generator', icon: FileTextOutlined,   roles: ['admin', 'manager'] },
   { key: '/invoice-history',   label: 'Invoice History',   icon: HistoryOutlined,    roles: ['admin', 'manager'] },
+  { key: '/2fa-requests',      label: '2FA Requests',      icon: SafetyCertificateOutlined, roles: ['admin'] },
   { key: '/account',           label: 'My Account',        icon: UserOutlined,       roles: ['user', 'housekeeper'] },
   // Portal user (corporate client) navigation
   { key: '/portal/dashboard',   label: 'Dashboard',        icon: HomeOutlined,       roles: ['portal_user'] },
@@ -49,5 +50,4 @@ export const navigationItems = [
   { key: '/portal/users',        label: 'Users',           icon: UserOutlined,       roles: ['portal_user'] },
   { key: '/portal/groups',       label: 'Group Management', icon: ApartmentOutlined, roles: ['portal_user'] },
   { key: '/portal/staff',        label: 'Staff Management', icon: UserAddOutlined,   roles: ['portal_user'] },
-  { key: '/portal/rooms',        label: 'Room Availability', icon: AppstoreOutlined, roles: ['portal_user'] },
 ];

@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import API_CONFIG from '../api/config';
 import apiClient from '../api/client';
 
-export const useVouchers = () => {
+export const useVouchers = (options = {}) => {
     return useQuery({
         queryKey: ['vouchers'],
         queryFn: async () => {
             const response = await apiClient.get(API_CONFIG.ENDPOINTS.VOUCHERS);
             return response.data;
         },
+        ...options,
     });
 };
 

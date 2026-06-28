@@ -29,12 +29,12 @@ const PortalGroupsPage = lazy(() => import('./pages/portal/PortalGroupsPage.jsx'
 const PortalReservationsPage = lazy(() => import('./pages/portal/PortalReservationsPage.jsx'));
 const PortalStaffPage = lazy(() => import('./pages/portal/PortalStaffPage.jsx'));
 const PortalBookingRequestPage = lazy(() => import('./pages/portal/PortalBookingRequestPage.jsx'));
-const PortalRoomAvailabilityPage = lazy(() => import('./pages/portal/PortalRoomAvailabilityPage.jsx'));
 const PortalUsersPage = lazy(() => import('./pages/portal/PortalUsersPage.jsx'));
 const PortalClientsPage = lazy(() => import('./pages/portal/PortalClientsPage.jsx'));
 const InvoiceGeneratorPage = lazy(() => import('./pages/InvoiceGeneratorPage.jsx'));
 const InvoiceHistoryPage = lazy(() => import('./pages/InvoiceHistoryPage.jsx'));
 const MyAccountPage = lazy(() => import('./pages/MyAccountPage.jsx'));
+const TwoFactorRequestsAdminPage = lazy(() => import('./pages/TwoFactorRequestsAdminPage.jsx'));
 
 const PageLoadingFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -76,13 +76,14 @@ function App() {
             <Route path="/invoice-generator" element={<InvoiceGeneratorPage />} />
             <Route path="/invoice-history" element={<InvoiceHistoryPage />} />
             <Route path="/account" element={<MyAccountPage />} />
+            <Route path="/2fa-requests" element={<TwoFactorRequestsAdminPage />} />
             {/* Portal user (corporate client) routes */}
             <Route path="/portal/dashboard" element={<PortalDashboardPage />} />
             <Route path="/portal/reservations" element={<PortalReservationsPage />} />
+            <Route path="/portal/reservations/edit" element={<ReservationsListPage />} />
             <Route path="/portal/groups" element={<PortalGroupsPage />} />
             <Route path="/portal/booking-requests" element={<PortalBookingRequestPage />} />
             <Route path="/portal/staff" element={<PortalStaffPage />} />
-            <Route path="/portal/rooms" element={<PortalRoomAvailabilityPage />} />
             <Route path="/portal/users" element={<PortalUsersPage />} />
             <Route path="/portal/clients" element={<PortalClientsPage />} />
             <Route path="/portal/bookings" element={<BookingChartPage />} />

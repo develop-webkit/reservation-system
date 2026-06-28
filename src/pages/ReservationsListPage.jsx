@@ -265,6 +265,7 @@ const FormField = ({
 
 const ReservationsListPage = () => {
     const currentUser = useAuthStore(selectCurrentUser);
+    const isPortalUser = currentUser?.role === 'portal_user';
     const [selectedTab, setSelectedTab] = useState('Reservation');
     const [savedReservationId, setSavedReservationId] = useState(null);
     const [ownClientDrawerOpen, setOwnClientDrawerOpen] = useState(false);
@@ -293,7 +294,9 @@ const ReservationsListPage = () => {
     // --- Hooks for Data and Mutation ---
     const { data: roomsFromApi } = useRooms();
     const { data: companiesFromApi } = useCompanies();
-    const { data: vouchersFromApi } = useVouchers();
+    // GET /vouchers is ADMIN/MANAGER/USER-only on the backend — skip it for portal_user
+    // rather than let it 403 on every load (its only consumer, Voucher No, is hidden below).
+    const { data: vouchersFromApi } = useVouchers({ enabled: !isPortalUser });
     const { data: clientsFromApi } = useClients();
     const { data: reservationsFromApi } = useReservations();
     const { data: bookingsFromApi } = useBookings();
@@ -398,7 +401,7 @@ const ReservationsListPage = () => {
         bkgSource: 'Contracted with Meals',
         fixed: 'Yes',
         voucherNo: '',
-        madeBy: 'Admin',
+        madeBy: isPortalUser ? 'Client' : 'Admin',
         dateMade: '',
         cancelled: '',
         cancelledBy: '',
@@ -818,6 +821,13 @@ const ReservationsListPage = () => {
                 importId: `IMPORT-${generatedResNo}`,
             };
 
+            // Portal users' new reservations auto-confirm server-side (reservations.service.ts's
+            // create()) only when no status is sent at all — omit it here so that still applies,
+            // instead of always sending this page's 'Unconfirmed' default and silently defeating it.
+            if (isPortalUser) {
+                delete createPayload.status;
+            }
+
             createReservationMutation.mutate(createPayload, {
                 onSuccess: (response) => {
                     const newId = response?.data?._id || response?.data?.id || response?._id || response?.id;
@@ -845,6 +855,24 @@ const ReservationsListPage = () => {
     }, [reservationIdParam, savedReservationId, resNoParam, allReservations]);
 
     const isEditMode = Boolean(reservationId);
+
+    // Client's Company is locked (see the disabled Company FormFields above) and auto-filled
+    // from their own client record — only the company, not the rest of handleSelectClient's
+    // fields, since the guest being booked is often a different staff member each time.
+    useEffect(() => {
+        if (isPortalUser && !isEditMode && !clientData.companyId && allClients.length > 0) {
+            const ownClient = allClients.find(c => c.clientNo === currentUser?.linkedClientNo);
+            if (ownClient) {
+                setClientData(prev => ({
+                    ...prev,
+                    company: typeof ownClient.company === 'object'
+                        ? (ownClient.company?.name || ownClient.company?.tradingAs)
+                        : (ownClient.company || ownClient.companyName),
+                    companyId: typeof ownClient.company === 'object' ? ownClient.company?._id : ownClient.company,
+                }));
+            }
+        }
+    }, [isPortalUser, isEditMode, clientData.companyId, allClients, currentUser]);
 
     // Sidebar navigation items
     const sidebarItems = [
@@ -993,15 +1021,19 @@ const ReservationsListPage = () => {
                 />
                 <FormField label="Email 2" field="email2" clientData={clientData} handleFieldChange={handleFieldChange} />
 
-                <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', marginBottom: '4px', minHeight: '32px' }}>
-                    <Text style={{ fontSize: '12px', color: '#262626', paddingRight: '8px' }}>Black List</Text>
-                    <Button size="small" style={{ width: '100%', textAlign: 'center', backgroundColor: '#f0f0f0' }}>No</Button>
-                </div>
+                {/* Internal-only blacklist flag — hidden for Client */}
+                {!isPortalUser && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', marginBottom: '4px', minHeight: '32px' }}>
+                        <Text style={{ fontSize: '12px', color: '#262626', paddingRight: '8px' }}>Black List</Text>
+                        <Button size="small" style={{ width: '100%', textAlign: 'center', backgroundColor: '#f0f0f0' }}>No</Button>
+                    </div>
+                )}
 
                 <FormField label="Date Created" field="dateCreated" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 <FormField label="Date Modified" field="dateModified" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                 <FormField label="Client Type" field="clientType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={CLIENT_TYPE_OPTIONS} />
-                <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined />} />
+                {/* Auto-filled from the Client's own record below — locked, not manually searchable, for portal */}
+                <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined />} disabled={isPortalUser} />
             </div>
 
             {/* Main Content Area (Reservation + Account) with Overlay Container */}
@@ -1073,13 +1105,25 @@ const ReservationsListPage = () => {
                     <FormField label="Stay Dates" field="bookingDates" clientData={clientData} handleFieldChange={handleFieldChange} isRange yellowBg error={fieldErrors.bookingDates} />
                     <FormField label="Nights" field="nights" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Adults" field="adults" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
-                    <FormField label="Tariff Type" field="tariffType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TARIFF_TYPE_OPTIONS} />
+                    {/* Internal rate/billing classification — hidden for Client */}
+                    {!isPortalUser && (
+                        <FormField label="Tariff Type" field="tariffType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={TARIFF_TYPE_OPTIONS} />
+                    )}
                     <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicRoomTypeOptions} />
                     <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={filteredAreaOptions} error={fieldErrors.area} />
-                    <FormField label="Booking Type" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
-                    <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
-                    <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} />
-                    <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={allVouchers} />
+                    {/* Booking source/voucher are billing-internal — hidden for Client, same boundary as ReservationFormDrawer's isPortalUser */}
+                    {!isPortalUser && (
+                        <FormField label="Booking Type" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
+                    )}
+                    {/* Internal scheduling flag — hidden for Client */}
+                    {!isPortalUser && (
+                        <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
+                    )}
+                    {/* Auto-filled from the Client's own record below — locked, not manually searchable, for portal */}
+                    <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} disabled={isPortalUser} />
+                    {!isPortalUser && (
+                        <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={allVouchers} />
+                    )}
                     <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Date Made" field="dateMade" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Cancelled" field="cancelled" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />

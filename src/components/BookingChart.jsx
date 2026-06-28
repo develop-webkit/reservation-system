@@ -745,10 +745,10 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     };
 
     const handleMenuItemClick = (action) => {
-        // Portal users (clients) only have access to /portal/reservations —
-        // /reservations/list is an admin-only path and ProtectedRoute bounces
-        // them straight to /portal/dashboard if they're sent there.
-        const reservationsBasePath = isPortalUser ? '/portal/reservations' : '/reservations/list';
+        // Portal users get the same rich ReservationsListPage as admin, just under a
+        // /portal-namespaced route — /reservations/list itself is an admin-only path
+        // and ProtectedRoute bounces them straight to /portal/dashboard if sent there.
+        const reservationsBasePath = isPortalUser ? '/portal/reservations/edit' : '/reservations/list';
 
         if (action === 'add_reservation') {
             const params = new URLSearchParams();
