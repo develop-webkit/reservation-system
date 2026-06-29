@@ -6,6 +6,7 @@ import {
 import { SearchOutlined } from '@ant-design/icons';
 import { STATUS_OPTIONS } from '../../data/options';
 import clientGroupsApi from '../../api/services/clientGroups.js';
+import VoucherCodeField from '../common/VoucherCodeField.jsx';
 import dayjs from 'dayjs';
 
 const STATUS_COLOR_MAP = {
@@ -41,6 +42,12 @@ function ReservationFormDrawer({
   const [form] = Form.useForm();
   const [memberOptions, setMemberOptions] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  // Live-validated voucher discount preview for Client (display-only — the backend
+  // independently resolves and credits the real voucherAmount on save). Always reset
+  // on open rather than derived from a saved reservation's voucherAmount, since that's
+  // a historical snapshot, not proof the code is still valid this session.
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const voucherNoValue = Form.useWatch('voucherNo', form);
 
   const isEditing = Boolean(initialValues?._id || initialValues?.id);
 
@@ -144,6 +151,7 @@ function ReservationFormDrawer({
       afterOpenChange={(visible) => {
         if (visible) {
           form.setFieldsValue(mappedValues);
+          setVoucherDiscount(0);
         } else {
           form.resetFields();
           setMemberOptions([]);
@@ -283,6 +291,25 @@ function ReservationFormDrawer({
               <InputNumber min={0} className="full-width" prefix="$" />
             </Form.Item>
           </>
+        )}
+
+        {/* Client redeems a voucher they were given — validated live against
+            GET /vouchers/validate/:code, same component the Invoice Generator uses.
+            voucherNo stays a registered form field (hidden) so it's submitted like
+            any other antd Form.Item; VoucherCodeField reads/writes it imperatively,
+            mirroring the existing client-field pattern above. */}
+        {isPortalUser && (
+          <Form.Item label="Voucher No">
+            <Form.Item name="voucherNo" noStyle>
+              <Input type="hidden" />
+            </Form.Item>
+            <VoucherCodeField
+              code={voucherNoValue}
+              discount={voucherDiscount}
+              onCodeChange={(v) => form.setFieldValue('voucherNo', v)}
+              onApply={setVoucherDiscount}
+            />
+          </Form.Item>
         )}
 
         <Form.Item label="Adults" name="adults">

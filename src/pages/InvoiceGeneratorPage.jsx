@@ -9,7 +9,7 @@ import { DownloadOutlined, EyeOutlined, PrinterOutlined, ReloadOutlined, SaveOut
 import dayjs from 'dayjs';
 import InvoiceGeneratorPDF from '../components/invoice/InvoiceGeneratorPDF.jsx';
 import InvoiceLineItemsTable from '../components/invoice/InvoiceLineItemsTable.jsx';
-import InvoiceVoucherField from '../components/invoice/InvoiceVoucherField.jsx';
+import VoucherCodeField from '../components/common/VoucherCodeField.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import SectionCard from '../components/common/SectionCard.jsx';
 import useAuthStore from '../store/authStore.js';
@@ -271,7 +271,7 @@ function InvoiceGeneratorPage() {
               </Col>
               <Col xs={24} sm={8}>
                 <FieldLabel optional>Voucher No</FieldLabel>
-                <InvoiceVoucherField
+                <VoucherCodeField
                   code={invoice.voucherNo}
                   discount={invoice.voucherDiscount}
                   onCodeChange={(v) => setField('voucherNo', v)}

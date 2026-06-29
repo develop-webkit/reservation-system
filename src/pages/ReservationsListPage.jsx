@@ -23,6 +23,7 @@ import { useBookings } from '../hooks/useBookings';
 import { useClients, useUpdateClient } from '../hooks/useClients';
 import { useCompanies } from '../hooks/useCompanies';
 import { useVouchers } from '../hooks/useVouchers';
+import VoucherCodeField from '../components/common/VoucherCodeField.jsx';
 import { useSearchGroupMembers } from '../hooks/useClientGroups';
 import useAuthStore, { selectCurrentUser } from '../store/authStore.js';
 import { COUNTRY_CODES } from '../data/countryCodes';
@@ -422,6 +423,9 @@ const ReservationsListPage = () => {
     });
 
     const [fieldErrors, setFieldErrors] = useState({});
+    // Live-validated voucher discount preview for Client (display-only — the
+    // backend independently resolves and credits the real voucherAmount on save).
+    const [voucherDiscount, setVoucherDiscount] = useState(0);
 
     const clearFieldError = (field) => {
         if (field && fieldErrors[field]) {
@@ -1123,6 +1127,18 @@ const ReservationsListPage = () => {
                     <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} disabled={isPortalUser} />
                     {!isPortalUser && (
                         <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={allVouchers} />
+                    )}
+                    {/* Client redeems a voucher they were given — validated live against GET /vouchers/validate/:code, same component the Invoice Generator uses */}
+                    {isPortalUser && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'start', marginBottom: '4px', minHeight: '32px' }}>
+                            <Text style={{ fontSize: '12px', color: '#262626', paddingRight: '8px', paddingTop: '4px' }}>Voucher No</Text>
+                            <VoucherCodeField
+                                code={clientData.voucherNo}
+                                discount={voucherDiscount}
+                                onCodeChange={(v) => handleFieldChange('voucherNo', v)}
+                                onApply={setVoucherDiscount}
+                            />
+                        </div>
                     )}
                     <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Date Made" field="dateMade" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />

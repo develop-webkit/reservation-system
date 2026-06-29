@@ -4,7 +4,7 @@ import { validateVoucher } from '../../api/services/vouchers.js';
 
 const { Text } = Typography;
 
-function InvoiceVoucherField({ code, discount, onCodeChange, onApply }) {
+function VoucherCodeField({ code, discount, onCodeChange, onApply }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -48,4 +48,4 @@ function InvoiceVoucherField({ code, discount, onCodeChange, onApply }) {
   );
 }
 
-export default InvoiceVoucherField;
+export default VoucherCodeField;
