@@ -11,7 +11,7 @@ function VoucherFormDrawer({ open, onClose, onSubmit, loading, clients, companie
         usedByCompany: initialValues.usedByCompany?._id || initialValues.usedByCompany,
         expiryDate: initialValues.expiryDate ? dayjs(initialValues.expiryDate) : null,
       }
-    : { isActive: true };
+    : { isActive: true, usageLimit: 1 };
 
   return (
     <Drawer
@@ -49,6 +49,13 @@ function VoucherFormDrawer({ open, onClose, onSubmit, loading, clients, companie
         </Form.Item>
         <Form.Item label="Credit amount" name="creditAmount">
           <InputNumber min={0} className="full-width" />
+        </Form.Item>
+        <Form.Item
+          label="Usage Limit"
+          name="usageLimit"
+          tooltip="Maximum number of times this voucher can be redeemed."
+        >
+          <InputNumber min={1} className="full-width" />
         </Form.Item>
         <Form.Item label="Manager client number" name="managerClientNumber">
           <Input />

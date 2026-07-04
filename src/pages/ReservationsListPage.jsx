@@ -5,10 +5,7 @@ import {
     UserOutlined,
     SearchOutlined,
     SaveOutlined,
-    MoreOutlined,
     CloseOutlined,
-    DollarOutlined,
-    UserSwitchOutlined,
     CaretDownOutlined,
     EllipsisOutlined,
 } from '@ant-design/icons';
@@ -23,7 +20,6 @@ import { useBookings } from '../hooks/useBookings';
 import { useClients, useUpdateClient } from '../hooks/useClients';
 import { useCompanies } from '../hooks/useCompanies';
 import { useVouchers } from '../hooks/useVouchers';
-import VoucherCodeField from '../components/common/VoucherCodeField.jsx';
 import { useSearchGroupMembers } from '../hooks/useClientGroups';
 import useAuthStore, { selectCurrentUser } from '../store/authStore.js';
 import { COUNTRY_CODES } from '../data/countryCodes';
@@ -423,9 +419,6 @@ const ReservationsListPage = () => {
     });
 
     const [fieldErrors, setFieldErrors] = useState({});
-    // Live-validated voucher discount preview for Client (display-only — the
-    // backend independently resolves and credits the real voucherAmount on save).
-    const [voucherDiscount, setVoucherDiscount] = useState(0);
 
     const clearFieldError = (field) => {
         if (field && fieldErrors[field]) {
@@ -878,10 +871,11 @@ const ReservationsListPage = () => {
         }
     }, [isPortalUser, isEditMode, clientData.companyId, allClients, currentUser]);
 
-    // Sidebar navigation items
+    // Sidebar navigation items — Client sub-item is admin-only; portal users manage
+    // their own client record via the Client panel directly, not this nav entry.
     const sidebarItems = [
         { key: 'Reservation', label: 'Reservation', icon: <HomeOutlined /> },
-        { key: 'Client', label: 'Client', icon: <UserOutlined /> },
+        ...(isPortalUser ? [] : [{ key: 'Client', label: 'Client', icon: <UserOutlined /> }]),
     ];
 
     const handleSidebarItemClick = (key) => {
@@ -986,11 +980,6 @@ const ReservationsListPage = () => {
             <div style={{ width: '450px', flexShrink: 0, backgroundColor: '#fff', borderRight: '1px solid #e8e8e8', padding: '16px', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <Text strong style={{ fontSize: '16px' }}>Client</Text>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <Button type="text" size="small" icon={<DollarOutlined />} />
-                        <Button type="text" size="small" icon={<UserSwitchOutlined />} />
-                        <Button type="text" size="small" icon={<MoreOutlined />} />
-                    </div>
                 </div>
 
                 <FormField label="MMV SmartSearch" field="smartSearch" clientData={clientData} handleFieldChange={handleFieldChange} setSmartSearch={setSmartSearch} suffix={<SearchOutlined />} />
@@ -1088,7 +1077,6 @@ const ReservationsListPage = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <Text strong style={{ fontSize: '16px' }}>{isEditMode ? 'Edit Reservation' : 'New Reservation'}</Text>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <Button type="text" size="small" icon={<SearchOutlined />} />
                             <Button
                                 type="primary"
                                 size="small"
@@ -1099,7 +1087,6 @@ const ReservationsListPage = () => {
                             >
                                 {isSaving ? 'Saving...' : isEditMode ? 'Update' : 'Save'}
                             </Button>
-                            <Button type="text" size="small" icon={<MoreOutlined />} />
                         </div>
                     </div>
 
@@ -1115,30 +1102,17 @@ const ReservationsListPage = () => {
                     )}
                     <FormField label="Room Type" field="roomType" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicRoomTypeOptions} />
                     <FormField label="Area" field="area" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={filteredAreaOptions} error={fieldErrors.area} />
-                    {/* Booking source/voucher are billing-internal — hidden for Client, same boundary as ReservationFormDrawer's isPortalUser */}
-                    {!isPortalUser && (
-                        <FormField label="Booking Type" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} />
-                    )}
+                    {/* Booking Type is view-only for Client — informational, not editable */}
+                    <FormField label="Booking Type" field="bkgSource" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={BKG_SOURCE_OPTIONS} disabled={isPortalUser} />
                     {/* Internal scheduling flag — hidden for Client */}
                     {!isPortalUser && (
                         <FormField label="Fixed" field="fixed" clientData={clientData} handleFieldChange={handleFieldChange} bgColor="#b7eb8f" />
                     )}
                     {/* Auto-filled from the Client's own record below — locked, not manually searchable, for portal */}
                     <FormField label="Company" field="company" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={dynamicCompanyOptions} suffix={<SearchOutlined style={{ fontSize: '10px' }} />} disabled={isPortalUser} />
+                    {/* Voucher No is billing-internal — hidden for Client entirely */}
                     {!isPortalUser && (
                         <FormField label="Voucher No" field="voucherNo" clientData={clientData} handleFieldChange={handleFieldChange} isAutoComplete options={allVouchers} />
-                    )}
-                    {/* Client redeems a voucher they were given — validated live against GET /vouchers/validate/:code, same component the Invoice Generator uses */}
-                    {isPortalUser && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'start', marginBottom: '4px', minHeight: '32px' }}>
-                            <Text style={{ fontSize: '12px', color: '#262626', paddingRight: '8px', paddingTop: '4px' }}>Voucher No</Text>
-                            <VoucherCodeField
-                                code={clientData.voucherNo}
-                                discount={voucherDiscount}
-                                onCodeChange={(v) => handleFieldChange('voucherNo', v)}
-                                onApply={setVoucherDiscount}
-                            />
-                        </div>
                     )}
                     <FormField label="Made By" field="madeBy" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Date Made" field="dateMade" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />

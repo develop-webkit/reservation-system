@@ -42,6 +42,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null, serviceEntry: null });
     const [resizeDraft, setResizeDraft] = useState(null);
+    const [dragDraft, setDragDraft] = useState(null);
     const [serviceModal, setServiceModal] = useState({ visible: false, type: null, roomId: null, description: '', startDate: null, endDate: null });
     const [unparkModal, setUnparkModal] = useState({ visible: false, booking: null, roomId: null, recreateTariff: false, reassignHousekeeping: false });
     const updateBookingChartMutation = useUpdateBookingChart();
@@ -113,6 +114,13 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     }, [dateRange, visibleDays]);
 
     const getDisplayedBookingDates = useCallback((booking) => {
+        if (dragDraft?.bookingId === booking.id) {
+            return {
+                checkIn: dragDraft.startDate,
+                checkOut: dragDraft.endDate,
+            };
+        }
+
         if (resizeDraft?.bookingId === booking.id) {
             return {
                 checkIn: resizeDraft.startDate,
@@ -124,7 +132,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
             checkIn: booking.checkIn || booking.startDate,
             checkOut: booking.checkOut || booking.endDate,
         };
-    }, [resizeDraft]);
+    }, [resizeDraft, dragDraft]);
 
     const handleResizeStart = useCallback((event, booking, edge) => {
         event.preventDefault();
@@ -206,6 +214,93 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                     },
                     onError: (error) => {
                         message.error(error.response?.data?.message || 'Failed to update booking dates.');
+                    },
+                },
+            );
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [updateBookingChartMutation, visibleDays]);
+
+    // Drag the whole booking bar to reschedule it to a different date and/or room —
+    // same mutation shape as Park Reservation (roomId change) and resize (date change),
+    // combined. Room rows carry a `data-room-id` marker (see renderRoomRow) so the
+    // room under the cursor can be resolved on every mousemove via elementFromPoint.
+    const handleBookingDragStart = useCallback((event, booking, sourceRoom) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const grid = event.currentTarget.closest('[data-booking-grid="true"]');
+        if (!grid) {
+            return;
+        }
+
+        const gridRect = grid.getBoundingClientRect();
+        const cellWidth = gridRect.width / visibleDays;
+        const originalStart = dayjs(booking.checkIn || booking.startDate).startOf('day');
+        const originalEnd = dayjs(booking.checkOut || booking.endDate).startOf('day');
+        const durationDays = originalEnd.diff(originalStart, 'day');
+        const originalRoomId = sourceRoom.id;
+
+        let nextStart = originalStart;
+        let nextEnd = originalEnd;
+        let nextRoomId = originalRoomId;
+
+        setDragDraft({
+            bookingId: booking.id,
+            startDate: originalStart.format('YYYY-MM-DD'),
+            endDate: originalEnd.format('YYYY-MM-DD'),
+            roomId: originalRoomId,
+        });
+
+        const handleMouseMove = (moveEvent) => {
+            const deltaDays = Math.round((moveEvent.clientX - event.clientX) / cellWidth);
+            nextStart = originalStart.add(deltaDays, 'day');
+            nextEnd = nextStart.add(durationDays, 'day');
+
+            const hoveredRoomEl = document
+                .elementFromPoint(moveEvent.clientX, moveEvent.clientY)
+                ?.closest('[data-room-id]');
+            if (hoveredRoomEl) {
+                nextRoomId = hoveredRoomEl.dataset.roomId;
+            }
+
+            setDragDraft({
+                bookingId: booking.id,
+                startDate: nextStart.format('YYYY-MM-DD'),
+                endDate: nextEnd.format('YYYY-MM-DD'),
+                roomId: nextRoomId,
+            });
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            setDragDraft(null);
+
+            const changed =
+                !nextStart.isSame(originalStart, 'day') || nextRoomId !== originalRoomId;
+
+            if (!changed) {
+                return;
+            }
+
+            updateBookingChartMutation.mutate(
+                {
+                    id: booking.id,
+                    data: {
+                        startDate: nextStart.format('YYYY-MM-DD'),
+                        endDate: nextEnd.format('YYYY-MM-DD'),
+                        roomId: nextRoomId,
+                    },
+                },
+                {
+                    onSuccess: () => {
+                        message.success('Booking moved.');
+                    },
+                    onError: (error) => {
+                        message.error(error.response?.data?.message || 'Failed to move booking.');
                     },
                 },
             );
@@ -332,8 +427,15 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
             </div>
         );
 
-        // Pre-process bookings for this room to determine vertical stacking for 'Parked' row
-        let roomBookings = bookingsData.filter(b => b.roomId === room.id || b.roomId === room.name);
+        // Pre-process bookings for this room to determine vertical stacking for 'Parked' row.
+        // While a booking is being dragged, it renders only in the room row under the cursor
+        // (dragDraft.roomId) instead of its actual saved room, so it visually follows the drag.
+        let roomBookings = bookingsData.filter(b => {
+            if (dragDraft?.bookingId === b.id) {
+                return dragDraft.roomId === room.id;
+            }
+            return b.roomId === room.id || b.roomId === room.name;
+        });
 
         // Apply filters
         if (filters && Object.keys(filters).length > 0) {
@@ -416,7 +518,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                         )}
                     </div>
                 </Popover>
-                <div data-booking-grid="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays * 2}, 1fr)`, position: 'relative' }}>
+                <div data-booking-grid="true" data-room-id={room.id} style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleDays * 2}, 1fr)`, position: 'relative' }}>
                     {dateRange.map((date, idx) => {
                         const dayOfWeek = dayjs(date).day();
                         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -428,19 +530,21 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                             />
                         );
                     })}
-                    {/* Service blocks — one bar per entry; right-click to remove. Internal-only — never shown to Client/portal_user */}
-                    {!isPortalUser && (room.serviceEntries || []).map((entry) => {
+                    {/* Service blocks — one bar per entry. Shown to Client/portal_user too, so they
+                        can see a room is unavailable; right-click removal stays admin-only below. */}
+                    {(room.serviceEntries || []).map((entry) => {
                         if (!entry.startDate || !entry.endDate) return null;
                         const servicePos = getGridPosition(entry.startDate, entry.endDate, true);
                         if (!servicePos.isVisible) return null;
                         const isOOS = entry.type === 'out_of_service';
                         const serviceColor = isOOS ? '#003a8c' : '#722ed1';
-                        const serviceLabel = `${isOOS ? 'Out Of Service' : 'Out Of Order'}${entry.description ? ': ' + entry.description : ''}`;
+                        const serviceStatusLabel = isOOS ? 'Room Out Of Service' : 'Room Out Of Order';
+                        const serviceLabel = `${serviceStatusLabel}${entry.description ? ': ' + entry.description : ''}`;
                         const entryId = entry._id || entry.id;
                         const ServiceBlockContent = (
                             <div style={{ width: 280 }}>
                                 <div style={{ backgroundColor: serviceColor, color: '#fff', padding: '10px 14px', margin: '-12px -16px 12px -16px', borderRadius: '4px 4px 0 0' }}>
-                                    <Text strong style={{ color: '#fff' }}>{isOOS ? 'Out Of Service' : 'Out Of Order'}</Text>
+                                    <Text strong style={{ color: '#fff' }}>{serviceStatusLabel}</Text>
                                 </div>
                                 <div style={{ padding: '0 4px' }}>
                                     {[
@@ -448,21 +552,24 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                         { label: 'From Date', value: dayjs(entry.startDate).format('ddd DD MMM YYYY HH:mm') },
                                         { label: 'To Date', value: dayjs(entry.endDate).format('ddd DD MMM YYYY HH:mm') },
                                         { label: 'Area', value: room.name },
-                                        { label: 'Status', value: isOOS ? 'Out Of Service' : 'Out Of Order' },
+                                        { label: 'Status', value: serviceStatusLabel },
                                     ].map((item, i) => (
                                         <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: 8, marginBottom: 6 }}>
                                             <Text strong style={{ fontSize: 12, textAlign: 'right' }}>{item.label}</Text>
                                             <Text style={{ fontSize: 12 }}>{item.value}</Text>
                                         </div>
                                     ))}
-                                    <div style={{ marginTop: 8, fontSize: 11, color: '#888' }}>Right-click to remove this entry</div>
+                                    {/* Removing a service entry is an admin-only action */}
+                                    {!isPortalUser && (
+                                        <div style={{ marginTop: 8, fontSize: 11, color: '#888' }}>Right-click to remove this entry</div>
+                                    )}
                                 </div>
                             </div>
                         );
                         return (
                             <Popover key={entryId} content={ServiceBlockContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
                                 <div
-                                    onContextMenu={(e) => {
+                                    onContextMenu={isPortalUser ? undefined : (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         setContextMenu({
@@ -487,7 +594,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                         color: '#fff',
                                         padding: '0 8px',
                                         overflow: 'hidden',
-                                        cursor: 'context-menu',
+                                        cursor: isPortalUser ? 'default' : 'context-menu',
                                         alignSelf: 'center',
                                     }}
                                 >
@@ -506,6 +613,41 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                         // Use the booking object directly as it comes from reservations.js now
                         const displayBooking = { ...booking, checkIn, checkOut };
 
+                        // Client/portal_user sees only enough to know the room is taken and by which
+                        // company — guest identity and internal billing fields stay admin-only.
+                        const reservationInfoFields = isPortalUser
+                            ? [
+                                { label: 'Reserved By', value: displayBooking.company },
+                                { label: 'Arrive', value: `${dayjs(displayBooking.checkIn).format('ddd DD MMM YYYY')} ${displayBooking.arriveTime || ''}` },
+                                { label: 'Depart', value: `${dayjs(displayBooking.checkOut).format('ddd DD MMM YYYY')} ${displayBooking.departTime || ''}` },
+                                { label: 'Room Type', value: room.category },
+                                { label: 'Area', value: room.name },
+                                { label: 'Status', value: displayBooking.status || 'Unknown' },
+                            ]
+                            : [
+                                { label: 'Master Res No', value: displayBooking.masterResNo },
+                                { label: 'Reservation No', value: displayBooking.resNo || displayBooking.reservationNo },
+                                { label: 'Groupname', value: displayBooking.groupName },
+                                { label: 'Client Name', value: displayBooking.clientName || displayBooking.guestName },
+                                { label: 'Arrive', value: `${dayjs(displayBooking.checkIn).format('ddd DD MMM YYYY')} ${displayBooking.arriveTime || ''}` },
+                                { label: 'Depart', value: `${dayjs(displayBooking.checkOut).format('ddd DD MMM YYYY')} ${displayBooking.departTime || ''}` },
+                                { label: 'Property', value: propertyName },
+                                { label: 'Room Type', value: room.category },
+                                { label: 'Area', value: room.name },
+                                { label: 'Status', value: displayBooking.status || 'Unknown' },
+                                { label: 'People', value: displayBooking.people },
+                                { label: 'Bkg Source', value: displayBooking.bkgSource },
+                                { label: 'Tariff Type', value: displayBooking.tariffType },
+                                { label: 'Caravan Sales Slide', value: displayBooking.caravanSalesSlide },
+                                { label: 'Company', value: displayBooking.company },
+                                { label: 'Fixed', value: displayBooking.isFixed ? 'Yes' : 'No' },
+                                { label: 'Voucher No', value: displayBooking.voucherNo },
+                                { label: 'Created By', value: displayBooking.createdBy },
+                                { label: 'Date Made', value: displayBooking.createDate },
+                                { label: 'Confirmed By', value: displayBooking.confirmedBy },
+                                { label: 'Date Confirmed', value: displayBooking.confirmedDate },
+                            ];
+
                         const ReservationInfoContent = (
                             <div style={{ width: '350px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                                 <div style={{
@@ -515,33 +657,14 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                     margin: '-12px -16px 12px -16px',
                                     borderRadius: '4px 4px 0 0'
                                 }}>
-                                    <Text strong style={{ color: '#fff', fontSize: '16px' }}>Reservation No: {displayBooking.resNo || displayBooking.reservationNo || 'N/A'}</Text>
+                                    <Text strong style={{ color: '#fff', fontSize: '16px' }}>
+                                        {isPortalUser
+                                            ? `Reserved By: ${displayBooking.company || 'Another Guest'}`
+                                            : `Reservation No: ${displayBooking.resNo || displayBooking.reservationNo || 'N/A'}`}
+                                    </Text>
                                 </div>
                                 <div style={{ padding: '0 8px' }}>
-                                    {[
-                                        { label: 'Master Res No', value: displayBooking.masterResNo },
-                                        { label: 'Reservation No', value: displayBooking.resNo || displayBooking.reservationNo },
-                                        { label: 'Groupname', value: displayBooking.groupName },
-                                        { label: 'Client Name', value: displayBooking.clientName || displayBooking.guestName },
-                                        { label: 'Arrive', value: `${dayjs(displayBooking.checkIn).format('ddd DD MMM YYYY')} ${displayBooking.arriveTime || ''}` },
-                                        { label: 'Depart', value: `${dayjs(displayBooking.checkOut).format('ddd DD MMM YYYY')} ${displayBooking.departTime || ''}` },
-                                        { label: 'Property', value: propertyName },
-                                        { label: 'Room Type', value: room.category },
-                                        { label: 'Area', value: room.name },
-                                        { label: 'Status', value: displayBooking.status || 'Unknown' },
-                                        { label: 'People', value: displayBooking.people },
-                                        { label: 'Bkg Source', value: displayBooking.bkgSource },
-                                        { label: 'Tariff Type', value: displayBooking.tariffType },
-                                        { label: 'Caravan Sales Slide', value: displayBooking.caravanSalesSlide },
-                                        { label: 'Company', value: displayBooking.company },
-                                        { label: 'Fixed', value: displayBooking.isFixed ? 'Yes' : 'No' },
-                                        // Added fields from reservations.js
-                                        { label: 'Voucher No', value: displayBooking.voucherNo },
-                                        { label: 'Created By', value: displayBooking.createdBy },
-                                        { label: 'Date Made', value: displayBooking.createDate },
-                                        { label: 'Confirmed By', value: displayBooking.confirmedBy },
-                                        { label: 'Date Confirmed', value: displayBooking.confirmedDate }
-                                    ].map((item, index) => (
+                                    {reservationInfoFields.map((item, index) => (
                                         <div key={index} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '8px', alignItems: 'baseline', marginBottom: '4px' }}>
                                             <Text strong style={{ textAlign: 'right', fontSize: '12px' }}>{item.label}</Text>
                                             <Text style={{ fontSize: '12px' }}>{item.value || '-'}</Text>
@@ -560,11 +683,12 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                             <Popover key={booking.id} content={ReservationInfoContent} trigger="hover" placement="rightTop" styles={{ content: { padding: '12px 16px' } }}>
                                 <div
                                     onContextMenu={(e) => { e.stopPropagation(); handleContextMenu(e, room, null, booking); }}
+                                    onMouseDown={isPortalUser ? undefined : (event) => handleBookingDragStart(event, booking, room)}
                                     style={{
                                     gridColumnStart: Math.max(1, pos.start),
                                     gridColumnEnd: Math.min(visibleDays * 2 + 1, pos.end),
                                     gridRow: 1,
-                                    zIndex: 2,
+                                    zIndex: dragDraft?.bookingId === booking.id ? 4 : 2,
                                     height: '22px',
                                     backgroundColor: STATUS_COLORS[booking.status] || '#1890ff',
                                     borderRadius: '4px',
@@ -574,7 +698,8 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                     color: '#fff',
                                     padding: '0 4px',
                                     overflow: 'hidden',
-                                    cursor: 'pointer',
+                                    cursor: isPortalUser ? 'pointer' : 'grab',
+                                    opacity: dragDraft?.bookingId === booking.id ? 0.75 : 1,
                                     alignSelf: alignProp,
                                     marginTop: isParkedRow ? `${topPosition}px` : 0,
                                     position: isParkedRow ? 'absolute' : 'relative',
@@ -594,7 +719,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                         }}
                                     />
                                     <Text ellipsis style={{ color: '#fff', fontSize: '10px', width: '100%', textAlign: 'center', padding: '0 8px' }}>
-                                        {booking.clientName}
+                                        {isPortalUser ? `Reserved By: ${booking.company || 'Another Guest'}` : booking.clientName}
                                     </Text>
                                     <div
                                         onMouseDown={(event) => handleResizeStart(event, booking, 'end')}

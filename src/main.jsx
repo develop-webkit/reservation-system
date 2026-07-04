@@ -3,9 +3,16 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ConfigProvider, App as AntdApp } from 'antd';
+import dayjs from 'dayjs';
+import dayjsUpdateLocale from 'dayjs/plugin/updateLocale';
 import App from './App.jsx';
 import { queryClient } from './lib/queryClient.js';
 import './index.css';
+
+// All antd DatePicker/RangePicker instances derive their first-day-of-week from this
+// dayjs locale setting, so this one call fixes every calendar in the app at once.
+dayjs.extend(dayjsUpdateLocale);
+dayjs.updateLocale('en', { weekStart: 1 });
 
 const theme = {
   token: {
