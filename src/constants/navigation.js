@@ -3,6 +3,7 @@ import {
   BuildOutlined,
   CalendarOutlined,
   FileSearchOutlined,
+  FileProtectOutlined,
   FileTextOutlined,
   HistoryOutlined,
   HomeOutlined,
@@ -37,10 +38,12 @@ export const navigationItems = [
   { key: '/rooms',             label: 'Rooms',             icon: BuildOutlined,      roles: ['admin', 'manager'] },
   { key: '/vouchers',          label: 'Vouchers',          icon: WalletOutlined,     roles: ['admin', 'manager'] },
   { key: '/users',             label: 'Users',             icon: UserAddOutlined,    roles: ['admin', 'manager'] },
-  { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
+  // Booking Requests feature is not in use yet — commented out until it's implemented and enabled.
+  // { key: '/booking-requests',  label: 'Booking Requests',  icon: FileSearchOutlined, roles: ['admin', 'manager'] },
   { key: '/invoice-generator', label: 'Invoice Generator', icon: FileTextOutlined,   roles: ['admin', 'manager'] },
   { key: '/invoice-history',   label: 'Invoice History',   icon: HistoryOutlined,    roles: ['admin', 'manager'] },
   { key: '/2fa-requests',      label: '2FA Requests',      icon: SafetyCertificateOutlined, roles: ['admin'] },
+  { key: '/invoice-edit-requests', label: 'Invoice Edit Requests', icon: FileProtectOutlined, roles: ['admin'] },
   { key: '/account',           label: 'My Account',        icon: UserOutlined,       roles: ['user', 'housekeeper'] },
   // Portal user (corporate client) navigation
   { key: '/portal/dashboard',   label: 'Dashboard',        icon: HomeOutlined,       roles: ['portal_user'] },

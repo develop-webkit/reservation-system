@@ -13,9 +13,10 @@ const ADMIN_PATHS = [
   '/vouchers',
   '/users',
   '/groups',
-  '/booking-requests',
+  // '/booking-requests', // feature not in use yet — commented out until it's implemented and enabled.
   '/invoice-generator',
   '/invoice-history',
+  '/invoice-edit-requests',
   '/account',
   '/2fa-requests',
 ];

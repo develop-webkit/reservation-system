@@ -8,7 +8,8 @@ import useAuthStore from './store/authStore.js';
 const BookingChartPage = lazy(() => import('./pages/BookingChart.jsx'));
 const BookingsPage = lazy(() => import('./pages/BookingsPage.jsx'));
 const BookingsByDate = lazy(() => import('./pages/BookingsByDate.jsx'));
-const BookingRequestsAdminPage = lazy(() => import('./pages/BookingRequestsAdminPage.jsx'));
+// Booking Requests feature is not in use yet — commented out until it's implemented and enabled.
+// const BookingRequestsAdminPage = lazy(() => import('./pages/BookingRequestsAdminPage.jsx'));
 const ClientsPage = lazy(() => import('./pages/ClientsPage.jsx'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const HousekeepingPage = lazy(() => import('./pages/HousekeepingPage.jsx'));
@@ -35,6 +36,7 @@ const InvoiceGeneratorPage = lazy(() => import('./pages/InvoiceGeneratorPage.jsx
 const InvoiceHistoryPage = lazy(() => import('./pages/InvoiceHistoryPage.jsx'));
 const MyAccountPage = lazy(() => import('./pages/MyAccountPage.jsx'));
 const TwoFactorRequestsAdminPage = lazy(() => import('./pages/TwoFactorRequestsAdminPage.jsx'));
+const InvoiceEditRequestsAdminPage = lazy(() => import('./pages/InvoiceEditRequestsAdminPage.jsx'));
 
 const PageLoadingFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -71,12 +73,14 @@ function App() {
             <Route path="/rooms" element={<RoomsPage />} />
             <Route path="/vouchers" element={<VouchersPage />} />
             <Route path="/users" element={<UsersPage />} />
-            <Route path="/booking-requests" element={<BookingRequestsAdminPage />} />
+            {/* Booking Requests feature is not in use yet — commented out until it's implemented and enabled. */}
+            {/* <Route path="/booking-requests" element={<BookingRequestsAdminPage />} /> */}
             <Route path="/groups" element={<GroupsManagementPage />} />
             <Route path="/invoice-generator" element={<InvoiceGeneratorPage />} />
             <Route path="/invoice-history" element={<InvoiceHistoryPage />} />
             <Route path="/account" element={<MyAccountPage />} />
             <Route path="/2fa-requests" element={<TwoFactorRequestsAdminPage />} />
+            <Route path="/invoice-edit-requests" element={<InvoiceEditRequestsAdminPage />} />
             {/* Portal user (corporate client) routes */}
             <Route path="/portal/dashboard" element={<PortalDashboardPage />} />
             <Route path="/portal/reservations" element={<PortalReservationsPage />} />

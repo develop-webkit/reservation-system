@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { useBookingChart, useUpdateBookingChart } from '../hooks/useBookings';
 import { useRooms, useUpdateRoomServiceStatus, useUpdateRoomStatus, useRemoveRoomServiceEntry } from '../hooks/useRooms';
 import { rooms as roomsFromData } from '../data/rooms';
+import useAuthStore from '../store/authStore';
 
 
 const { Text } = Typography;
@@ -38,6 +39,10 @@ const PARKING_ROOM_NAME = 'Parked Reservation';
 const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightProp, collapsedCategories, onToggleCategory, propertyName = "Mount Morgan Space Solutions", filters = {}, chartOptions = {}, isPortalUser = false }) => {
     const rowHeight = rowHeightProp || 30;
     const { isLoading: roomsLoading, error: roomsError } = useRooms();
+    // Client's own tenant id — used to tell "my reservation" apart from another
+    // client's on the shared chart (equals linkedClientNo for portal accounts).
+    const currentClientNumber = useAuthStore((s) => s.user?.clientNumber);
+    const isOwnedBooking = (booking) => !isPortalUser || booking?.billingClientNumber === currentClientNumber;
 
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null, serviceEntry: null });
@@ -612,10 +617,13 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
 
                         // Use the booking object directly as it comes from reservations.js now
                         const displayBooking = { ...booking, checkIn, checkOut };
+                        const isOwnBooking = isOwnedBooking(booking);
 
-                        // Client/portal_user sees only enough to know the room is taken and by which
-                        // company — guest identity and internal billing fields stay admin-only.
-                        const reservationInfoFields = isPortalUser
+                        // A client only sees the full reservation for their own bookings (same as
+                        // admin) — for another client's booking, they see only enough to know the
+                        // room is taken and by which company; guest identity and internal billing
+                        // fields stay hidden.
+                        const reservationInfoFields = isPortalUser && !isOwnBooking
                             ? [
                                 { label: 'Reserved By', value: displayBooking.company },
                                 { label: 'Arrive', value: `${dayjs(displayBooking.checkIn).format('ddd DD MMM YYYY')} ${displayBooking.arriveTime || ''}` },
@@ -658,7 +666,7 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                     borderRadius: '4px 4px 0 0'
                                 }}>
                                     <Text strong style={{ color: '#fff', fontSize: '16px' }}>
-                                        {isPortalUser
+                                        {isPortalUser && !isOwnBooking
                                             ? `Reserved By: ${displayBooking.company || 'Another Guest'}`
                                             : `Reservation No: ${displayBooking.resNo || displayBooking.reservationNo || 'N/A'}`}
                                     </Text>
@@ -706,33 +714,37 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                     top: isParkedRow ? `${topPosition}px` : 'auto',
                                     width: isParkedRow ? 'calc(100% - 4px)' : 'auto'
                                 }}>
-                                    <div
-                                        onMouseDown={(event) => handleResizeStart(event, booking, 'start')}
-                                        style={{
-                                            position: 'absolute',
-                                            left: 0,
-                                            top: 0,
-                                            bottom: 0,
-                                            width: '8px',
-                                            cursor: 'ew-resize',
-                                            zIndex: 3,
-                                        }}
-                                    />
+                                    {isOwnBooking && (
+                                        <div
+                                            onMouseDown={(event) => handleResizeStart(event, booking, 'start')}
+                                            style={{
+                                                position: 'absolute',
+                                                left: 0,
+                                                top: 0,
+                                                bottom: 0,
+                                                width: '8px',
+                                                cursor: 'ew-resize',
+                                                zIndex: 3,
+                                            }}
+                                        />
+                                    )}
                                     <Text ellipsis style={{ color: '#fff', fontSize: '10px', width: '100%', textAlign: 'center', padding: '0 8px' }}>
-                                        {isPortalUser ? `Reserved By: ${booking.company || 'Another Guest'}` : booking.clientName}
+                                        {isPortalUser && !isOwnBooking ? `Reserved By: ${booking.company || 'Another Guest'}` : booking.clientName}
                                     </Text>
-                                    <div
-                                        onMouseDown={(event) => handleResizeStart(event, booking, 'end')}
-                                        style={{
-                                            position: 'absolute',
-                                            right: 0,
-                                            top: 0,
-                                            bottom: 0,
-                                            width: '8px',
-                                            cursor: 'ew-resize',
-                                            zIndex: 3,
-                                        }}
-                                    />
+                                    {isOwnBooking && (
+                                        <div
+                                            onMouseDown={(event) => handleResizeStart(event, booking, 'end')}
+                                            style={{
+                                                position: 'absolute',
+                                                right: 0,
+                                                top: 0,
+                                                bottom: 0,
+                                                width: '8px',
+                                                cursor: 'ew-resize',
+                                                zIndex: 3,
+                                            }}
+                                        />
+                                    )}
                                 </div>
                             </Popover>
                         );
@@ -1024,6 +1036,13 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                 Remove this entry
                             </div>
                             <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
+                        </>
+                    ) : contextMenu.booking && !isOwnedBooking(contextMenu.booking) ? (
+                        <>
+                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#f5f5f5' }}>
+                                Reserved By: {contextMenu.booking.company || 'Another Guest'}
+                            </div>
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
                         </>
                     ) : contextMenu.booking ? (
