@@ -44,6 +44,20 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
     const currentClientNumber = useAuthStore((s) => s.user?.clientNumber);
     const isOwnedBooking = (booking) => !isPortalUser || booking?.billingClientNumber === currentClientNumber;
 
+    // A client can never start a reservation on a room/date covered by an Out Of Service /
+    // Out Of Order entry — overriding that is staff-only. Falls back to "today" when no
+    // specific date is targeted (e.g. right-click on the room label itself).
+    const findBlockingServiceEntry = (room, date) => {
+        if (!room?.serviceEntries?.length) return null;
+        const target = dayjs(date || undefined).startOf('day');
+        return room.serviceEntries.find((entry) => {
+            if (!entry.startDate || !entry.endDate) return false;
+            const start = dayjs(entry.startDate).startOf('day');
+            const end = dayjs(entry.endDate).startOf('day');
+            return !target.isBefore(start) && !target.isAfter(end);
+        }) || null;
+    };
+
     const navigate = useNavigate();
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, room: null, date: null, booking: null, serviceEntry: null });
     const [resizeDraft, setResizeDraft] = useState(null);
@@ -938,6 +952,10 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
 
     // ... (rest of your existing logic)
 
+    const contextMenuBlockingEntry = isPortalUser && contextMenu.room && !contextMenu.booking
+        ? findBlockingServiceEntry(contextMenu.room, contextMenu.date)
+        : null;
+
     return (
         <Card variant="borderless" styles={{ body: { padding: 0 } }} style={{ borderRadius: '8px', overflow: 'hidden' }} onClick={handleCloseContextMenu}>
             <div
@@ -1024,18 +1042,24 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                                 {contextMenu.serviceEntry.type === 'out_of_service' ? 'Out Of Service' : 'Out Of Order'}
                                 {contextMenu.serviceEntry.description ? `: ${contextMenu.serviceEntry.description}` : ''}
                             </div>
-                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>
-                                Add Reservation
-                            </div>
-                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
-                            <div
-                                className="context-menu-item"
-                                style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#cf1322' }}
-                                onClick={handleRemoveServiceEntry}
-                            >
-                                Remove this entry
-                            </div>
-                            <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                            {/* Overriding a service block to still add a reservation, or clearing the
+                                block entirely, is a staff-only action — never offered to Client/portal_user */}
+                            {!isPortalUser && (
+                                <>
+                                    <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>
+                                        Add Reservation
+                                    </div>
+                                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                                    <div
+                                        className="context-menu-item"
+                                        style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px', color: '#cf1322' }}
+                                        onClick={handleRemoveServiceEntry}
+                                    >
+                                        Remove this entry
+                                    </div>
+                                    <div style={{ height: '1px', backgroundColor: '#f0f0f0', margin: '4px 0' }} />
+                                </>
+                            )}
                             <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={handleCloseContextMenu}>Close Menu</div>
                         </>
                     ) : contextMenu.booking && !isOwnedBooking(contextMenu.booking) ? (
@@ -1075,7 +1099,15 @@ const CoreBookingChart = ({ startDate, visibleDays = 30, rowHeight: rowHeightPro
                         </>
                     ) : (
                         <>
-                            <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
+                            {/* A client can't add a reservation onto a room/date that's Out Of Service or
+                                Out Of Order — only staff can override that block */}
+                            {contextMenuBlockingEntry ? (
+                                <div style={{ padding: '8px 16px', fontSize: '13px', color: '#8c8c8c' }}>
+                                    {contextMenuBlockingEntry.type === 'out_of_service' ? 'Out Of Service' : 'Out Of Order'} — unavailable
+                                </div>
+                            ) : (
+                                <div className="context-menu-item" style={{ padding: '8px 16px', cursor: 'pointer', fontSize: '13px' }} onClick={() => handleMenuItemClick('add_reservation')}>Add Reservation</div>
+                            )}
                             {/* Out Of Service/Out Of Order + housekeeping status changes are internal-only — never shown to Client/portal_user */}
                             {!isPortalUser && contextMenu.room && (
                                 <>
