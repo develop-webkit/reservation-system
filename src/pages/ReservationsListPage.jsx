@@ -27,7 +27,7 @@ import {
     TITLE_OPTIONS,
     CLIENT_TYPE_OPTIONS,
     TARIFF_TYPE_OPTIONS,
-    STATUS_OPTIONS,
+    getSettableStatusOptions,
     BKG_SOURCE_OPTIONS
 } from '../data/options';
 
@@ -1092,7 +1092,7 @@ const ReservationsListPage = () => {
 
                     <FormField label="Res No" field="resNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
                     <FormField label="Master Res No" field="masterResNo" clientData={clientData} handleFieldChange={handleFieldChange} yellowBg disabled={true} />
-                    <FormField label="Status" field="status" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={STATUS_OPTIONS} bgColor="#ffa940" />
+                    <FormField label="Status" field="status" clientData={clientData} handleFieldChange={handleFieldChange} isDropdown options={getSettableStatusOptions(currentUser?.role)} bgColor="#ffa940" />
                     <FormField label="Stay Dates" field="bookingDates" clientData={clientData} handleFieldChange={handleFieldChange} isRange yellowBg error={fieldErrors.bookingDates} />
                     <FormField label="Nights" field="nights" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />
                     <FormField label="Adults" field="adults" clientData={clientData} handleFieldChange={handleFieldChange} type="number" />

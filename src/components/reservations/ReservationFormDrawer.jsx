@@ -4,7 +4,7 @@ import {
   InputNumber, Select, Switch,
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { STATUS_OPTIONS } from '../../data/options';
+import { getStatusOptionsForDeparturePermission } from '../../data/options';
 import clientGroupsApi from '../../api/services/clientGroups.js';
 import dayjs from 'dayjs';
 
@@ -37,7 +37,9 @@ function ReservationFormDrawer({
   companies,
   initialValues,
   isPortalUser = false,
+  canMarkDeparted = false,
 }) {
+  const statusOptions = getStatusOptionsForDeparturePermission(canMarkDeparted);
   const [form] = Form.useForm();
   const [memberOptions, setMemberOptions] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -251,7 +253,7 @@ function ReservationFormDrawer({
           rules={[{ required: true, message: 'Status is required.' }]}
         >
           <Select placeholder="Select status">
-            {STATUS_OPTIONS.map((s) => (
+            {statusOptions.map((s) => (
               <Select.Option key={s} value={s}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{

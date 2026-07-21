@@ -13,8 +13,11 @@ import { useClientsQuery } from '../hooks/useClientsQuery.js';
 import { useCompaniesQuery } from '../hooks/useCompaniesQuery.js';
 import { useReservationsQuery } from '../hooks/useReservationsQuery.js';
 import { useRoomsQuery } from '../hooks/useRoomsQuery.js';
+import { canRoleMarkDeparted } from '../data/options.js';
+import useAuthStore, { selectCurrentUser } from '../store/authStore.js';
 
 function ReservationsPage() {
+  const currentUser = useAuthStore(selectCurrentUser);
   const queryClient = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState(null);
@@ -154,6 +157,7 @@ function ReservationsPage() {
         rooms={roomsQuery.data}
         clients={clients}
         companies={companiesQuery.data}
+        canMarkDeparted={canRoleMarkDeparted(currentUser?.role)}
       />
     </div>
   );
